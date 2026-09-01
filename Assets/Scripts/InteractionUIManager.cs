@@ -189,7 +189,8 @@ public class InteractionUIManager : MonoBehaviour
                 string actionText = "";
                 if (item.canRead)
                 {
-                    actionText += "<color=#FFD700>[E]</color> อ่านข้อมูล";
+                    string promptLabel = !string.IsNullOrEmpty(item.customReadPromptText) ? item.customReadPromptText : "อ่านข้อมูล";
+                    actionText += $"<color=#FFD700>[E]</color> {promptLabel}";
                 }
                 if (item.canCollect)
                 {

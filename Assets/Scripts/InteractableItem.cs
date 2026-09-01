@@ -11,6 +11,7 @@ public class InteractableItem : MonoBehaviour
 
     [Header("ระบบอ่านข้อมูล (Press E)")]
     public bool canRead = true;
+    public string customReadPromptText = ""; // ข้อความกำหนดเอง เช่น "เปิด/ปิดตำหนัก" หรือ "คุยรับเควส"
     public string readTitle = "ข้อมูลไอเทม";
     [TextArea(3, 8)]
     public string readDescription = "รายละเอียดหรือข้อความที่ต้องการให้อ่าน...";
@@ -22,7 +23,7 @@ public class InteractableItem : MonoBehaviour
     [Header("ระบบการใช้งานไอเทม (Inventory Use)")]
     public bool isUsable = true;
     public AudioClip useSound;
-    public UnityEvent onUse;
+    public UnityEvent onUse = new UnityEvent();
 
     [Header("โมเดล 3D สำหรับถือและวาง (3D Model / Prefab)")]
     [Tooltip("Prefab 3D ของไอเทมนี้เมื่อนำออกมาถือที่มือ หรือวางลงพื้น (ถ้าเว้นว่างจะค้นหา Prefab ของตัวเอง)")]
@@ -45,15 +46,15 @@ public class InteractableItem : MonoBehaviour
     [Tooltip("เสียงเมื่อนำไอเทมมาใช้สำเร็จ")]
     public AudioClip useWithHeldItemSound;
     [Tooltip("Event เมื่อนำไอเทมที่ถือมาใช้สำเร็จ (เช่น เปิดประตู, ปลดล็อคกลไก)")]
-    public UnityEvent onUsedWithHeldItem;
+    public UnityEvent onUsedWithHeldItem = new UnityEvent();
 
     [Header("เสียงประกอบ (Optional)")]
     public AudioClip readSound;
     public AudioClip collectSound;
 
     [Header("Events เพิ่มเติม")]
-    public UnityEvent onRead;
-    public UnityEvent onCollect;
+    public UnityEvent onRead = new UnityEvent();
+    public UnityEvent onCollect = new UnityEvent();
 
     /// <summary>
     /// แปลงข้อมูลของไอเทมชิ้นนี้เป็นข้อมูลสำหรับใส่ในกระเป๋า (InventoryItem)
@@ -70,7 +71,13 @@ public class InteractableItem : MonoBehaviour
     {
         if (heldItem == null) return false;
 
-        // ถ้าเป็นแท่นวางทั่วไป (isPlacementSocket) หรือไอเทมตรงกับที่ต้องการ
+        // หากวัตถุนี้ไม่ได้เป็นแท่นวาง (isPlacementSocket) และไม่ได้ต้องการไอเทมเฉพาะ (requireHeldItem) ให้คืนค่า false เพื่อให้การกด E ทำงานตามปกติ
+        if (!isPlacementSocket && !requireHeldItem)
+        {
+            return false;
+        }
+
+        // ตรวจสอบว่าไอเทมตรงกับที่ต้องการหรือไม่
         bool isMatch = string.IsNullOrEmpty(requiredItemName) || heldItem.itemName.Equals(requiredItemName, System.StringComparison.OrdinalIgnoreCase);
 
         if (requireHeldItem && !isMatch)
@@ -79,7 +86,7 @@ public class InteractableItem : MonoBehaviour
             return false;
         }
 
-        if (isPlacementSocket || isMatch)
+        if (isPlacementSocket || (requireHeldItem && isMatch))
         {
             if (useWithHeldItemSound != null)
             {
