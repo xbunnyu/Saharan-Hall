@@ -14,6 +14,7 @@ public class MinigameManager : MonoBehaviour
 
     [Header("Minigame Runners")]
     public RhythmGameManager rhythmGameManager;
+    public QTEController qteController;
 
     [Header("Runtime State")]
     public bool isMinigameActive = false;
@@ -46,6 +47,15 @@ public class MinigameManager : MonoBehaviour
             if (rhythmGameManager == null)
             {
                 rhythmGameManager = gameObject.AddComponent<RhythmGameManager>();
+            }
+        }
+
+        if (qteController == null)
+        {
+            qteController = QTEController.Instance;
+            if (qteController == null)
+            {
+                qteController = FindFirstObjectByType<QTEController>();
             }
         }
     }
@@ -82,6 +92,40 @@ public class MinigameManager : MonoBehaviour
                 {
                     Debug.LogError("[MinigameManager] ❌ ไม่พบ RhythmGameManager!");
                     OnMinigameFinished(true);
+                }
+                break;
+
+            case MinigameType.DeadByDaylightQTE:
+                if (qteController == null)
+                {
+                    qteController = QTEController.Instance;
+                    if (qteController == null)
+                    {
+                        GameObject qteObj = new GameObject("QTEController");
+                        qteController = qteObj.AddComponent<QTEController>();
+                    }
+                }
+
+                if (qteController != null)
+                {
+                    int minHits = quest != null && quest.customNoteCount > 0 ? quest.customNoteCount : 3;
+                    int maxHits = quest != null && quest.customNoteCount > 0 ? quest.customNoteCount : 5;
+                    float baseSpeed = quest != null && quest.customNoteSpeed > 0 ? quest.customNoteSpeed : 180f;
+
+                    qteController.StartQTE(
+                        minHits,
+                        maxHits,
+                        baseSpeed,
+                        speedInc: 40f,
+                        maxFails: 2,
+                        onSuccess: () => OnMinigameFinished(true),
+                        onFail: () => OnMinigameFinished(false)
+                    );
+                }
+                else
+                {
+                    Debug.LogError("[MinigameManager] ❌ ไม่พบ QTEController!");
+                    OnMinigameFinished(false);
                 }
                 break;
 

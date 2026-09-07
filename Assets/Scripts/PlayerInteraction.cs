@@ -102,6 +102,16 @@ public class PlayerInteraction : MonoBehaviour
             return;
         }
 
+        // 2.8 หากกำลังเล่น QTE Minigame อยู่ (Skill check Dead by Daylight) ให้ข้ามการโต้ตอบอื่น
+        if (QTEController.Instance != null && QTEController.Instance.IsQTEActive())
+        {
+            if (InteractionUIManager.Instance != null)
+            {
+                InteractionUIManager.Instance.UpdatePrompt(null, true, false);
+            }
+            return;
+        }
+
         // 3. หากเปิดกระเป๋าอยู่
         if (isInventoryOpen)
         {

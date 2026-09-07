@@ -16,6 +16,7 @@ public enum MinigameType
 {
     None,               // ไม่มีมินิเกม (เช่นเควสทั่วไปหรือส่งของ)
     RhythmChantWASD,    // มินิเกมท่องคาถา Rhythm Game W A S D
+    DeadByDaylightQTE,  // มินิเกม Skill Check QTE แบบ Dead by Daylight (ปั่นไฟ/กด Spacebar)
     TalismanDrawing,    // สำหรับรองรับมินิเกมวาดผ้ายันต์ในอนาคต
     ExorcismRitual      // สำหรับรองรับมินิเกมทำพิธีขับไล่ผีในอนาคต
 }
