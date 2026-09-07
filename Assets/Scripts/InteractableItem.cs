@@ -9,8 +9,10 @@ public class InteractableItem : MonoBehaviour
     [TextArea(2, 4)]
     public string itemDescription = "รายละเอียดไอเทมเมื่ออยู่ในกระเป๋า...";
 
-    [Header("ระบบอ่านข้อมูล (Press E)")]
+    [Header("ระบบอ่านข้อมูล / โต้ตอบ (Press E / T)")]
     public bool canRead = true;
+    [Tooltip("ปุ่มสำหรับกดโต้ตอบ (เช่น E หรือ T)")]
+    public string interactionKeyText = "E";
     public string customReadPromptText = ""; // ข้อความกำหนดเอง เช่น "เปิด/ปิดตำหนัก" หรือ "คุยรับเควส"
     public string readTitle = "ข้อมูลไอเทม";
     [TextArea(3, 8)]

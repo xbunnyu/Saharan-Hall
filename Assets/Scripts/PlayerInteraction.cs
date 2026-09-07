@@ -82,6 +82,26 @@ public class PlayerInteraction : MonoBehaviour
             return;
         }
 
+        // 2.5 หากเปิด Altar Upgrade Dialog อยู่ ให้หยุดรับ input อื่น
+        if (AltarUpgradeUI.Instance != null && AltarUpgradeUI.Instance.IsOpen())
+        {
+            if (InteractionUIManager.Instance != null)
+            {
+                InteractionUIManager.Instance.UpdatePrompt(null, true, false);
+            }
+            return;
+        }
+
+        // 2.7 หากกำลังเล่นมินิเกมอยู่ (เช่น Rhythm Game ท่องคาถา) ให้ข้ามการโต้ตอบอื่น
+        if (MinigameManager.Instance != null && MinigameManager.Instance.IsPlaying())
+        {
+            if (InteractionUIManager.Instance != null)
+            {
+                InteractionUIManager.Instance.UpdatePrompt(null, true, false);
+            }
+            return;
+        }
+
         // 3. หากเปิดกระเป๋าอยู่
         if (isInventoryOpen)
         {
@@ -146,6 +166,7 @@ public class PlayerInteraction : MonoBehaviour
         var gamepad = Gamepad.current;
 
         bool pressE = (keyboard != null && keyboard.eKey.wasPressedThisFrame) || (gamepad != null && gamepad.buttonWest.wasPressedThisFrame);
+        bool pressT = (keyboard != null && keyboard.tKey.wasPressedThisFrame);
         bool pressLMB = mouse != null && mouse.leftButton.wasPressedThisFrame;
         bool pressF = (keyboard != null && keyboard.fKey.wasPressedThisFrame) || (gamepad != null && gamepad.buttonNorth.wasPressedThisFrame);
 
@@ -164,11 +185,23 @@ public class PlayerInteraction : MonoBehaviour
 
         if (currentTarget == null) return;
 
-        // กด [E] พูดคุย / อ่าน / สลับสวิตช์
-        if (pressE && currentTarget.canRead)
+        // ตรวจสอบปุ่มสำหรับโต้ตอบตาม interactionKeyText (รองรับปุ่ม T และ E)
+        string targetKey = !string.IsNullOrEmpty(currentTarget.interactionKeyText) ? currentTarget.interactionKeyText.ToUpper() : "E";
+        bool isInteractPressed = false;
+        if (targetKey == "T")
+        {
+            isInteractPressed = pressT || pressE;
+        }
+        else
+        {
+            isInteractPressed = pressE;
+        }
+
+        // กด [E] หรือ [T] พูดคุย / อ่าน / สลับสวิตช์ / อัพเกรด
+        if (isInteractPressed && currentTarget.canRead)
         {
             bool isNPC = currentTarget.GetComponent<NPCController>() != null || currentTarget.GetComponentInParent<NPCController>() != null;
-            bool isDirectAction = currentTarget is HallTrigger || string.IsNullOrEmpty(currentTarget.readDescription) || isNPC;
+            bool isDirectAction = currentTarget is HallTrigger || currentTarget is BuddhistAltarManager || string.IsNullOrEmpty(currentTarget.readDescription) || isNPC;
 
             if (isDirectAction)
             {

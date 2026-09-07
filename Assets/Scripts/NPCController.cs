@@ -213,11 +213,15 @@ public class NPCController : MonoBehaviour
         {
             if (HasRequiredItems())
             {
-                interactItem.customReadPromptText = $"ส่งมอบเควส ({questData.requiredItemName} ครบแล้ว)";
+                string req = !string.IsNullOrEmpty(questData.requiredItemName) ? questData.requiredItemName : "ภารกิจ";
+                interactItem.customReadPromptText = $"ส่งมอบเควส ({req} ครบถ้วนแล้ว)";
             }
             else
             {
-                interactItem.customReadPromptText = $"พูดคุย (ต้องการ: {questData.requiredItemName})";
+                string req = !string.IsNullOrEmpty(questData.requiredItemName)
+                    ? $"ต้องการ: {questData.requiredItemName} x{questData.requiredQuantity}"
+                    : "ภารกิจยังไม่เสร็จ";
+                interactItem.customReadPromptText = $"พูดคุย ({req})";
             }
         }
     }
@@ -240,8 +244,10 @@ public class NPCController : MonoBehaviour
     /// </summary>
     public void TriggerQuestDialogue()
     {
-        // หากอยู่ในสถานะยืนรอส่งมอบเควส
-        if (currentState == NPCState.WaitingForDelivery || questData.isAccepted)
+        // ── ตรวจว่ากำลังรอส่งมอบอยู่จริง (สถานะ WaitingForDelivery หรือเควสถูกรับแล้ว)
+        bool isWaitingDelivery = currentState == NPCState.WaitingForDelivery && questData.isAccepted;
+
+        if (isWaitingDelivery)
         {
             if (HasRequiredItems())
             {
@@ -249,23 +255,23 @@ public class NPCController : MonoBehaviour
             }
             else
             {
-                // ผู้เล่นยังไม่มีของ -> แจ้งเตือนข้อความเตือนความจำ และห้ามส่งเควสสำเร็จ
-                string waitMsg = !string.IsNullOrEmpty(questData.waitingDialogue) 
-                    ? questData.waitingDialogue 
-                    : "ข้ากำลังรอของจากท่านอยู่นะ...";
-                
-                string reqText = !string.IsNullOrEmpty(questData.requiredItemName) 
-                    ? $" (ต้องการ: {questData.requiredItemName} x{questData.requiredQuantity})" 
-                    : "";
-                
+                // ผู้เล่นยังไม่มีของ หรือยังทำภารกิจไม่เสร็จ -> แจ้งเตือนข้อความเตือนความจำ และห้ามส่งเควส
+                string waitMsg = "ข้ากำลังรอของจากท่านอยู่นะ...";
+
+                string reqText = !string.IsNullOrEmpty(questData.requiredItemName)
+                    ? $" (ต้องการ: {questData.requiredItemName} x{questData.requiredQuantity})"
+                    : " (ภารกิจยังไม่เสร็จสิ้น)";
+
                 if (InteractionUIManager.Instance != null)
                 {
-                    InteractionUIManager.Instance.ShowNotification($"{questData.npcName}: \"{waitMsg}\"{reqText}", 3.0f);
+                    InteractionUIManager.Instance.ShowNotification(
+                        $"{questData.npcName}: \"{waitMsg}\"{reqText}", 3.0f);
                 }
             }
             return;
         }
 
+        // ยังไม่ได้รับเควส -> เปิดหน้าต่าง Dialog
         currentState = NPCState.InDialogue;
         SetAnimationTalking(true);
 
@@ -276,16 +282,23 @@ public class NPCController : MonoBehaviour
     }
 
     /// <summary>
-    /// ตรวจสอบว่าผู้เล่นมีไอเทมตามที่เควสต้องการครบหรือไม่
+    /// ตรวจสอบว่าผู้เล่นมีไอเทมตามที่เควสต้องการครบหรือไม่ (หรือทำภารกิจเสร็จสิ้นแล้วหรือไม่)
     /// </summary>
     public bool HasRequiredItems()
     {
-        // หากเควสนี้ไม่ต้องใช้ไอเทมใดๆ (เช่น เควสพูดคุย) ให้ถือว่าครบ
-        if (string.IsNullOrEmpty(questData.requiredItemName)) return true;
-        if (QuestUIManager.Instance == null) return false;
+        if (questData == null) return false;
 
-        int currentCount = QuestUIManager.Instance.GetPlayerItemCount(questData.requiredItemName);
-        return currentCount >= questData.requiredQuantity;
+        // 1. กรณีเควสระบุชื่อไอเทม: ต้องมีไอเทมในกระเป๋าหรือในมือครบตามจำนวน
+        if (!string.IsNullOrEmpty(questData.requiredItemName))
+        {
+            if (QuestUIManager.Instance == null) return false;
+            int currentCount = QuestUIManager.Instance.GetPlayerItemCount(questData.requiredItemName);
+            return currentCount >= questData.requiredQuantity;
+        }
+
+        // 2. กรณีเควสไม่ได้ระบุชื่อไอเทม (เช่น เควสทำพิธี/มินิเกม): ต้องมีเงื่อนไข isTaskCompleted เป็นจริงเท่านั้น
+        // ป้องกันบัคส่งเควสผ่านทันทีโดยที่ยังไม่ได้ทำอะไร
+        return questData.isTaskCompleted;
     }
 
     /// <summary>
@@ -293,6 +306,18 @@ public class NPCController : MonoBehaviour
     /// </summary>
     private void CompleteDelivery()
     {
+        // ── Safety check — ตรวจสอบให้แน่ใจว่าได้รับเควสแล้ว และมีของ/เงื่อนไขครบ ────────────────────
+        if (!questData.isAccepted || questData.isCompleted)
+        {
+            Debug.LogWarning($"[NPCController] ⚠️ ไม่สามารถส่งมอบเควสได้: '{questData.questTitle}'");
+            return;
+        }
+        if (!HasRequiredItems())
+        {
+            Debug.LogWarning($"[NPCController] ⚠️ ผู้เล่นไม่มีไอเทมครบ/ภารกิจยังไม่เสร็จ — ยกเลิกการส่งเควส '{questData.questTitle}'");
+            return;
+        }
+
         PlayerInteraction player = FindFirstObjectByType<PlayerInteraction>();
 
         // ลบไอเทมที่ส่งมอบออกจากกระเป๋า/มือของผู้เล่น
@@ -310,13 +335,37 @@ public class NPCController : MonoBehaviour
             QuestUIManager.Instance.CompleteQuest(questData);
         }
 
+        // จ่ายรางวัลเงินผ่าน PlayerWalletManager
+        if (questData.rewardMoney > 0)
+        {
+            if (PlayerWalletManager.Instance != null)
+            {
+                PlayerWalletManager.Instance.EarnMoney(questData.rewardMoney);
+            }
+            else
+            {
+                // Fallback: ยังไม่มี WalletManager — แสดง notification เฉยๆ
+                if (InteractionUIManager.Instance != null)
+                {
+                    InteractionUIManager.Instance.ShowNotification(
+                        $"+{questData.rewardMoney:N0} บาท!", 2.5f);
+                }
+            }
+        }
+
         if (acceptSound != null)
         {
             AudioSource.PlayClipAtPoint(acceptSound, transform.position);
         }
 
-        string completeMsg = !string.IsNullOrEmpty(questData.completeDialogue) 
-            ? questData.completeDialogue 
+        // ให้ Karma ตามค่าที่กำหนดในเควส (ซ่อนจากผู้เล่น)
+        if (KarmaManager.Instance != null)
+        {
+            KarmaManager.Instance.ApplyKarma(questData.karmaReward, questData.questTitle);
+        }
+
+        string completeMsg = !string.IsNullOrEmpty(questData.completeDialogue)
+            ? questData.completeDialogue
             : "ขอบพระคุณท่านมาก! ได้ของครบถ้วนแล้ว ข้าขอตัวลาก่อน";
 
         if (InteractionUIManager.Instance != null)
@@ -329,13 +378,38 @@ public class NPCController : MonoBehaviour
     }
 
     /// <summary>
-    /// ผู้เล่นกดรับเควส (NPC จะยังไม่เดินออก แต่จะยืนรอส่งมอบอยู่ที่เดิม)
+    /// ผู้เล่นกดรับเควส
     /// </summary>
     public void OnQuestAccepted()
     {
         questData.isAccepted = true;
-        currentState = NPCState.WaitingForDelivery;
         SetAnimationTalking(false);
+
+        // 1. กรณีเควสมีมินิเกม (เช่น Rhythm Game ท่องคาถา W A S D)
+        if (questData.minigameType != MinigameType.None)
+        {
+            currentState = NPCState.WaitingForDelivery;
+
+            if (MinigameManager.Instance != null)
+            {
+                MinigameManager.Instance.StartMinigame(questData, this, OnMinigameResult);
+            }
+            else
+            {
+                // Fallback: ค้นหาหรือสร้าง MinigameManager
+                MinigameManager mgr = FindFirstObjectByType<MinigameManager>();
+                if (mgr == null)
+                {
+                    GameObject mgrObj = new GameObject("MinigameManager");
+                    mgr = mgrObj.AddComponent<MinigameManager>();
+                }
+                mgr.StartMinigame(questData, this, OnMinigameResult);
+            }
+            return;
+        }
+
+        // 2. กรณีเควสทั่วไป/ส่งของ (NPC จะยืนรอรับของ)
+        currentState = NPCState.WaitingForDelivery;
 
         if (acceptSound != null)
         {
@@ -346,7 +420,49 @@ public class NPCController : MonoBehaviour
     }
 
     /// <summary>
-    /// ผู้เล่นกดปฏิเสธเควส (NPC จะเดินออกจากตำหนักทันที)
+    /// Callback ผลลัพธ์จากมินิเกม (สำเร็จ หรือ ล้มเหลว)
+    /// </summary>
+    private void OnMinigameResult(bool isSuccess)
+    {
+        if (isSuccess)
+        {
+            // ทำภารกิจสำเร็จ!
+            questData.isTaskCompleted = true;
+            Debug.Log($"[NPCController] 🏆 มินิเกมผ่านฉลุย! กำลังจ่ายรางวัลเควส '{questData.questTitle}'");
+            CompleteDelivery();
+        }
+        else
+        {
+            // ทำภารกิจไม่ผ่าน -> โดนผีร้ายตามติด!
+            Debug.LogWarning($"[NPCController] 💀 มินิเกมล้มเหลว! เควส '{questData.questTitle}'");
+
+            if (GhostCurseManager.Instance != null)
+            {
+                GhostCurseManager.Instance.AttachGhost($"ท่องคาถาให้ {questData.npcName} ล้มเหลว");
+            }
+
+            string failMsg = !string.IsNullOrEmpty(questData.failDialogue)
+                ? questData.failDialogue
+                : "อ๊ากก! มีสิ่งชั่วร้ายเข้าครอบงำ... พิธีล้มเหลวแล้ว!";
+
+            if (InteractionUIManager.Instance != null)
+            {
+                InteractionUIManager.Instance.ShowNotification(
+                    $"<color=#FF3333>[พิธีล้มเหลว!]</color> {questData.npcName}: \"{failMsg}\"", 4.0f);
+            }
+
+            // ลบเควสออกจาก Tracker
+            if (QuestUIManager.Instance != null)
+            {
+                QuestUIManager.Instance.activeQuests.Remove(questData);
+            }
+
+            StartCoroutine(LeaveRoutine());
+        }
+    }
+
+    /// <summary>
+    /// ผู้เล่นกดปฏิเสธเควส (ทำงานหลังจากหน้าต่าง UI ปฏิเสธแสดงผลเสร็จสิ้นแล้ว)
     /// </summary>
     public void OnQuestDeclined()
     {
@@ -358,8 +474,8 @@ public class NPCController : MonoBehaviour
             AudioSource.PlayClipAtPoint(declineSound, transform.position);
         }
 
-        Debug.Log($"[NPCController] ❌ ผู้เล่นปฏิเสธเควส: '{questData.questTitle}' จาก {questData.npcName}");
-        StartCoroutine(LeaveRoutine());
+        Debug.Log($"[NPCController] ❌ ผู้เล่นปฏิเสธเควส: '{questData.questTitle}' จาก {questData.npcName} — กำลังเดินออกจากตำหนัก");
+        StartLeaving();
     }
 
     private IEnumerator LeaveRoutine()

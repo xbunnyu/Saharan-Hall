@@ -28,6 +28,13 @@ public class HallManager : MonoBehaviour
     [Tooltip("รายการเควสและบทสนทนาที่จะสุ่ม/วนส่ง NPC เข้ามา")]
     public List<QuestData> questList = new List<QuestData>();
 
+    [Header("5.5 Difficulty Weight (น้ำหนักการสุ่มระดับความยาก)")]
+    [Tooltip("น้ำหนักการสุ่มเควสแต่ละระดับ (ผลรวมไม่จำเป็นต้องเท่ากับ 100)")]
+    [Range(0, 100)] public int weightEasy     = 40;   // 40% ง่าย
+    [Range(0, 100)] public int weightMedium   = 35;   // 35% ปานกลาง
+    [Range(0, 100)] public int weightHard     = 20;   // 20% ยาก
+    [Range(0, 100)] public int weightVeryHard = 5;    //  5% ยากมาก
+
     [Header("4. การตั้งค่ารอบการปล่อย NPC (Queue Settings)")]
     [Tooltip("ระยะเวลาหน่วงก่อนปล่อย NPC คนแรกเมื่อเริ่มเปิดตำหนัก (วินาที)")]
     public float initialSpawnDelay = 1.5f;
@@ -65,6 +72,9 @@ public class HallManager : MonoBehaviour
             else if (Camera.main != null) playerTransform = Camera.main.transform;
         }
 
+        // ตรวจสอบและสร้าง Manager สำคัญอัตโนมัติหากยังไม่มีในฉาก
+        SetupRequiredManagers();
+
         // สร้างจุด Reception และ Spawn จำลองอัตโนมัติหากยังไม่ได้กำหนดในฉาก
         SetupDefaultWaypointsIfMissing();
 
@@ -74,6 +84,22 @@ public class HallManager : MonoBehaviour
         if (openOnStart)
         {
             OpenHall();
+        }
+    }
+
+    private void SetupRequiredManagers()
+    {
+        if (GhostCurseManager.Instance == null && FindFirstObjectByType<GhostCurseManager>() == null)
+        {
+            GameObject ghostObj = new GameObject("GhostCurseManager");
+            ghostObj.AddComponent<GhostCurseManager>();
+        }
+
+        if (MinigameManager.Instance == null && FindFirstObjectByType<MinigameManager>() == null)
+        {
+            GameObject minigameObj = new GameObject("MinigameManager");
+            minigameObj.AddComponent<MinigameManager>();
+            minigameObj.AddComponent<RhythmGameManager>();
         }
     }
 
@@ -111,49 +137,80 @@ public class HallManager : MonoBehaviour
     {
         if (questList.Count == 0)
         {
+            // ─── EASY ───────────────────────────────────────────
             questList.Add(new QuestData
             {
-                questId = "quest_01",
-                questTitle = "ตามหานมแก้หิว",
-                npcName = "ลุงสมชาย (ชาวบ้าน)",
-                greetingDialogue = "สวัสดีจ้ะพ่อหนุ่ม วันนี้ข้าเดินทางมาไกล รู้สึกคอแห้งเหลือเกิน...",
-                questDescription = "ช่วยหานมกล่อง (นมบูด / MilkCartonRed) มาให้ข้าสัก 1 ชิ้นได้หรือไม่?",
-                acceptDialogue = "ขอบใจมากนะพ่อหนุ่ม ข้าจะยืนรอของอยู่ตรงนี้นะ",
-                waitingDialogue = "ข้ายังรอนมจากท่านอยู่นะพ่อหนุ่ม...",
-                completeDialogue = "ขอบใจมากนะพ่อหนุ่ม! ได้นมแล้วข้าชื่นใจจริง ๆ ข้าขอตัวก่อนนะ",
-                declineDialogue = "เฮ้อ... ไม่เป็นไร เดี๋ยวข้าลองไปถามคนอื่นต่อ",
-                requiredItemName = "นม",
-                requiredQuantity = 1,
-                rewardDescription = "เงิน 150 เหรียญ และคำอวยพร",
-                rewardMoney = 150
+                questId          = "quest_easy_chant",
+                difficulty       = QuestDifficulty.Easy,
+                minigameType     = MinigameType.RhythmChantWASD,
+                questTitle       = "สวดมนต์สะเดาะเคราะห์",
+                npcName          = "ลุงสมชาย (ชาวบ้าน)",
+                greetingDialogue = "สวัสดีจ้ะพ่อหนุ่ม... ช่วงนี้ข้ารู้สึกดวงตกเหลือเกิน รบกวนช่วยท่องคาถาสะเดาะเคราะห์ให้ข้าทีเถิด",
+                questDescription = "ช่วยทำพิธีท่องคาถาสะเดาะเคราะห์ (Rhythm Game W A S D) เพื่อปัดเป่าเคราะห์ร้าย",
+                acceptDialogue   = "ขอบใจมากนะพ่อหนุ่ม! ข้าจะตั้งจิตร่วมพิธีเดี๋ยวนี้เลย",
+                completeDialogue = "สาธุ! ข้ารู้สึกโล่งใจและดวงเปิดขึ้นทันที ขอบคุณท่านผู้ดูแลตำหนักมาก!",
+                failDialogue     = "อ๊าก! ข้ารู้สึกหนาวสั่นแปลกๆ มีเงาดำลอยเข้ามา... พิธีล้มเหลวเสียแล้ว!",
+                declineDialogue  = "เฮ้อ... ไม่เป็นไร เดี๋ยวข้าลองไปวัดอื่นดู",
+                rewardDescription= "เงิน 150 เหรียญ",
+                rewardMoney      = 150,
+                karmaReward      = 15
             });
 
+            // ─── MEDIUM ─────────────────────────────────────────
             questList.Add(new QuestData
             {
-                questId = "quest_02",
-                questTitle = "ตามหาของศักดิ์สิทธิ์",
-                npcName = "ป้าสมศรี (แม่ค้า)",
-                greetingDialogue = "ท่านผู้ดูแลตำหนัก ช่วยข้าด้วยเถิด!",
-                questDescription = "ข้าทำของสำคัญหายไปในบริเวณตำหนัก ช่วยตรวจสอบให้ข้าทีเถิด",
-                acceptDialogue = "สาธุ ขอให้ท่านเจริญรุ่งเรือง ข้าฝากด้วยนะ!",
-                declineDialogue = "โธ่... ข้าคงต้องลองหาดูเองต่อไป",
-                requiredItemName = "",
-                rewardDescription = "เงิน 300 เหรียญ",
-                rewardMoney = 300
+                questId          = "quest_medium_chant",
+                difficulty       = QuestDifficulty.Medium,
+                minigameType     = MinigameType.RhythmChantWASD,
+                questTitle       = "สวดพระปริตรแก้คุณไสย",
+                npcName          = "ป้าสมศรี (แม่ค้า)",
+                greetingDialogue = "ท่านผู้ดูแลตำหนัก ช่วยข้าด้วยเถิด! มีคนทำคุณไสยใส่ร้านค้าของข้าจนขายของไม่ได้เลย",
+                questDescription = "ช่วยทำพิธีท่องคาถาพระปริตรคุ้มครอง (Rhythm Game W A S D) ขับไล่คุณไสย",
+                acceptDialogue   = "สาธุ ขอให้บารมีคุ้มครองร้านของข้าด้วยเถิด ข้าฝากด้วยนะ!",
+                completeDialogue = "ยอดเยี่ยมมาก! กลิ่นอายมืดดำสลายไปหมดแล้ว ขอบพระคุณท่านจากใจจริง!",
+                failDialogue     = "ว้ายย! ลมกรรโชกแรงมาก สิ่งชั่วร้ายสะท้อนกลับมาแล้ว... หนีเร็ว!",
+                declineDialogue  = "โธ่... ข้าคงต้องทนรับเคราะห์ต่อไป",
+                rewardDescription= "เงิน 350 เหรียญ",
+                rewardMoney      = 350,
+                karmaReward      = 25
             });
 
+            // ─── HARD ───────────────────────────────────────────
             questList.Add(new QuestData
             {
-                questId = "quest_03",
-                questTitle = "ขับไล่สิ่งอัปมงคล",
-                npcName = "ทิดมั่น (คนทรง)",
-                greetingDialogue = "บรรยากาศในตำหนักวันนี้ดูแปลกๆ ท่านสัมผัสได้หรือไม่?",
-                questDescription = "มีพลังงานบางอย่างรบกวนรอบๆ ตำหนัก ช่วยทำพิธีปัดเป่าให้สงบเรียบร้อยที",
-                acceptDialogue = "เยี่ยมมาก ตำหนักนี้จะกลับมาสงบร่มเย็นอีกครั้ง",
-                declineDialogue = "ถ้าท่านไม่สะดวก ข้าก็คงทำอะไรไม่ได้...",
-                requiredItemName = "",
-                rewardDescription = "เครื่องรางนำโชค",
-                rewardMoney = 200
+                questId          = "quest_hard_chant",
+                difficulty       = QuestDifficulty.Hard,
+                minigameType     = MinigameType.RhythmChantWASD,
+                questTitle       = "ท่องมหาเวทปราบสัมภเวสี",
+                npcName          = "ทิดมั่น (คนทรง)",
+                greetingDialogue = "ท่านผู้ดูแล... มีวิญญาณสัมภเวสีอาฆาตตามรังควานข้าไม่ยอมปล่อย ต้องใช้คาถามหาเวทขับไล่!",
+                questDescription = "ทำพิธีท่องมหาเวทปราบผีร้าย (Rhythm Game W A S D จังหวะเร็ว) เพื่อสะกดวิญญาณ",
+                acceptDialogue   = "เตรียมสมาธิให้ดี จังหวะคาถานี้รวดเร็วและอันตรายมาก!",
+                completeDialogue = "สำเร็จแล้ว! วิญญาณร้ายถูกสะกดลงหม้อดินเรียบร้อย ฝีมือท่านยอดเยี่ยมสมคำร่ำลือ",
+                failDialogue     = "แย่แล้ว! จิตของท่านหลุด จังหวะคาถาแตก... ผีร้ายตามติดตัวท่านไปแล้ว!",
+                declineDialogue  = "ถ้าท่านไม่กล้าเสี่ยง ข้าก็คงต้องหนีต่อไป...",
+                rewardDescription= "เงิน 800 เหรียญ",
+                rewardMoney      = 800,
+                karmaReward      = 40
+            });
+
+            // ─── VERY HARD ──────────────────────────────────────
+            questList.Add(new QuestData
+            {
+                questId          = "quest_veryhard_chant",
+                difficulty       = QuestDifficulty.VeryHard,
+                minigameType     = MinigameType.RhythmChantWASD,
+                questTitle       = "สวดพระมหาคาถาปราบพญามาร",
+                npcName          = "หลวงพ่อสงัด (พระอาจารย์)",
+                greetingDialogue = "เจริญพรท่านผู้ดูแลตำหนัก... พญามารตนใหญ่กำลังเข้าครอบงำตำหนัก ต้องใช้สมาธิขั้นสูงสวดพระมหาคาถา!",
+                questDescription = "สวดพระมหาคาถาปราบพญามารขั้นสูงสุด (Rhythm Game W A S D ระดับยากมาก) ต้องกดให้แม่นยำเพื่อป้องกันอาถรรพ์",
+                acceptDialogue   = "ขอตั้งมั่นในคุณพระรัตนตรัย เริ่มสวดพระคาถาได้!",
+                completeDialogue = "สาธุ สาธุ! มารร้ายสูญสลาย ตำหนักนี้กลับมาบริสุทธิ์ผุดผ่องอีกครั้ง ท่านคือยอดคนแห่งยุค!",
+                failDialogue     = "อนิจจา... พลังมารร้ายกลืนกินพิธีจนสิ้น อาถรรพ์พญามารได้เกาะกุมวิญญาณท่านแล้ว!",
+                declineDialogue  = "เป็นเรื่องน่าเสียดายยิ่ง... พลังมารยังคงวนเวียนอยู่",
+                rewardDescription= "เงิน 2,000 เหรียญ",
+                rewardMoney      = 2000,
+                karmaReward      = 60
             });
         }
     }
@@ -242,11 +299,11 @@ public class HallManager : MonoBehaviour
         // สุ่มจุดเกิด
         Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
 
-        // ดึงข้อมูลเควสจากรายการ
+        // ดึงข้อมูลเควสจากรายการโดยใช้ Weighted Random ตามระดับความยาก
         QuestData currentQuest = null;
         if (questList != null && questList.Count > 0)
         {
-            currentQuest = questList[currentQueueIndex % questList.Count];
+            currentQuest = PickQuestByWeight();
             currentQueueIndex++;
         }
 
@@ -293,6 +350,57 @@ public class HallManager : MonoBehaviour
             if (queueCoroutine != null) StopCoroutine(queueCoroutine);
             queueCoroutine = StartCoroutine(SpawnNextNPCRoutine(delayBetweenNPCs));
         }
+    }
+
+    /// <summary>
+    /// เลือกเควสจาก questList โดยใช้ Weighted Random ตามระดับความยาก
+    /// Easy: weightEasy%, Medium: weightMedium%, Hard: weightHard%, VeryHard: weightVeryHard%
+    /// </summary>
+    private QuestData PickQuestByWeight()
+    {
+        // แยก pool เควสตามระดับ
+        var easy     = questList.FindAll(q => q.difficulty == QuestDifficulty.Easy);
+        var medium   = questList.FindAll(q => q.difficulty == QuestDifficulty.Medium);
+        var hard     = questList.FindAll(q => q.difficulty == QuestDifficulty.Hard);
+        var veryHard = questList.FindAll(q => q.difficulty == QuestDifficulty.VeryHard);
+
+        // สร้าง Weighted pool (ใส่เฉพาะระดับที่มีเควสอยู่)
+        int totalWeight = 0;
+        if (easy.Count     > 0) totalWeight += weightEasy;
+        if (medium.Count   > 0) totalWeight += weightMedium;
+        if (hard.Count     > 0) totalWeight += weightHard;
+        if (veryHard.Count > 0) totalWeight += weightVeryHard;
+
+        if (totalWeight <= 0)
+        {
+            // Fallback: วนตามลำดับเดิม
+            return questList[currentQueueIndex % questList.Count];
+        }
+
+        int roll = Random.Range(0, totalWeight);
+        int cursor = 0;
+
+        if (easy.Count > 0)
+        {
+            cursor += weightEasy;
+            if (roll < cursor) return easy[Random.Range(0, easy.Count)];
+        }
+        if (medium.Count > 0)
+        {
+            cursor += weightMedium;
+            if (roll < cursor) return medium[Random.Range(0, medium.Count)];
+        }
+        if (hard.Count > 0)
+        {
+            cursor += weightHard;
+            if (roll < cursor) return hard[Random.Range(0, hard.Count)];
+        }
+        if (veryHard.Count > 0)
+        {
+            return veryHard[Random.Range(0, veryHard.Count)];
+        }
+
+        return questList[currentQueueIndex % questList.Count];
     }
 
     /// <summary>

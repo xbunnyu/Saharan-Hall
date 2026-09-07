@@ -101,21 +101,28 @@ public class QuestUIManager : MonoBehaviour
         var keyboard = Keyboard.current;
         if (keyboard != null)
         {
+            // หากกำลังแสดงหน้าต่างตอบกลับ (Response UI) ผู้เล่นสามารถกดปุ่มเพื่อปิดข้ามได้ทันที
+            if (isShowingResponse)
+            {
+                if (keyboard.escapeKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame 
+                    || keyboard.enterKey.wasPressedThisFrame || keyboard.eKey.wasPressedThisFrame 
+                    || keyboard.qKey.wasPressedThisFrame)
+                {
+                    CancelInvoke(nameof(CloseDialog));
+                    CloseDialog();
+                }
+                return;
+            }
+
             // ปุ่มลัด: กด E หรือ 1 เพื่อรับเควส
             if (keyboard.eKey.wasPressedThisFrame || keyboard.digit1Key.wasPressedThisFrame)
             {
-                if (!isShowingResponse)
-                {
-                    OnAcceptClicked();
-                }
+                OnAcceptClicked();
             }
             // ปุ่มลัด: กด Q หรือ 2 หรือ Escape เพื่อปฏิเสธเควส
             else if (keyboard.qKey.wasPressedThisFrame || keyboard.digit2Key.wasPressedThisFrame || keyboard.escapeKey.wasPressedThisFrame)
             {
-                if (!isShowingResponse)
-                {
-                    OnDeclineClicked();
-                }
+                OnDeclineClicked();
             }
         }
     }
@@ -164,7 +171,12 @@ public class QuestUIManager : MonoBehaviour
             if (questRewardText != null)
             {
                 questRewardText.text = $"รางวัลตอบแทน: <color=#00FF7F>{quest.rewardDescription}</color>";
+                questRewardText.gameObject.SetActive(true);
             }
+
+            // เปิดปุ่มกดยอมรับ/ปฏิเสธ
+            if (acceptButton != null) acceptButton.gameObject.SetActive(true);
+            if (declineButton != null) declineButton.gameObject.SetActive(true);
 
             if (npcPortraitImage != null)
             {
@@ -195,6 +207,16 @@ public class QuestUIManager : MonoBehaviour
             activeQuests.Add(currentQuest);
         }
 
+        // หากเป็นเควสมินิเกม (เช่น ท่องคาถา Rhythm Game) -> ปิด Dialog ทันทีเพื่อเริ่มเล่นมินิเกม
+        if (currentQuest.minigameType != MinigameType.None)
+        {
+            NPCController npc = currentNPC;
+            CloseDialog();
+            npc.OnQuestAccepted();
+            return;
+        }
+
+        // หากเป็นเควสส่งของทั่วไป -> แสดงข้อความตอบรับบน UI ก่อนปิด
         responseMessage = !string.IsNullOrEmpty(currentQuest.acceptDialogue) 
             ? currentQuest.acceptDialogue 
             : "ขอบคุณมากที่รับปากช่วยข้า!";
@@ -209,19 +231,53 @@ public class QuestUIManager : MonoBehaviour
 
         responseMessage = !string.IsNullOrEmpty(currentQuest.declineDialogue) 
             ? currentQuest.declineDialogue 
-            : "น่าเสียดายจัง... ไม่เป็นไรนะ";
+            : "น่าเสียดายจัง... ไม่เป็นไรนะ โอกาสหน้าข้าจะมาใหม่";
 
+        // แสดง UI ปฏิเสธเควสก่อนให้ผู้เล่นอ่าน — NPC จะยังไม่เดินจากไปจนกว่าหน้าต่างนี้จะปิด
         ShowResponseAndClose(false);
-        currentNPC.OnQuestDeclined();
     }
 
     private void ShowResponseAndClose(bool accepted)
     {
         isShowingResponse = true;
 
-        if (responsePanel != null && responseDialogueText != null)
+        // ซ่อนปุ่มเลือกเควส เพื่อให้เห็นเฉพาะข้อความตอบกลับของ NPC
+        if (acceptButton != null) acceptButton.gameObject.SetActive(false);
+        if (declineButton != null) declineButton.gameObject.SetActive(false);
+        if (questRequirementText != null) questRequirementText.gameObject.SetActive(false);
+        if (questRewardText != null) questRewardText.gameObject.SetActive(false);
+
+        // อัปเดตหัวข้อและคำพูดของ NPC บน Quest Dialog Panel ให้ชัดเจน
+        if (questTitleText != null)
         {
-            responseDialogueText.text = responseMessage;
+            questTitleText.text = accepted 
+                ? $"<color=#00FF7F>✅ รับเควสสำเร็จ</color> — {currentQuest.npcName}" 
+                : $"<color=#FF6347>❌ ปฏิเสธเควส</color> — {currentQuest.npcName}";
+        }
+
+        if (questDescriptionText != null)
+        {
+            string hint = accepted
+                ? "<size=85%><color=#A0E6FF>(บันทึกภารกิจลงสมุดเควสแล้ว...)</color></size>"
+                : "<size=85%><color=#FFAAAA>(NPC รับทราบและกำลังจะเดินออกจากตำหนัก...)</color></size>";
+
+            questDescriptionText.text = $"<b>{currentQuest.npcName}</b> กล่าวว่า:\n\n<size=115%><color=#FFD700>\"{responseMessage}\"</color></size>\n\n{hint}";
+        }
+
+        // จัดการ Response Panel (หากมีใน Canvas)
+        if (responsePanel != null)
+        {
+            RectTransform rt = responsePanel.GetComponent<RectTransform>();
+            if (rt != null && (rt.localScale.x < 0.5f || rt.anchoredPosition.sqrMagnitude > 10000f))
+            {
+                rt.localScale = Vector3.one;
+                rt.anchoredPosition = Vector2.zero;
+            }
+
+            if (responseDialogueText != null)
+            {
+                responseDialogueText.text = $"\"{responseMessage}\"";
+            }
             responsePanel.SetActive(true);
         }
 
@@ -231,7 +287,14 @@ public class QuestUIManager : MonoBehaviour
             InteractionUIManager.Instance.ShowNotification($"{statusTag} {currentQuest.npcName}: \"{responseMessage}\"", 3.0f);
         }
 
-        Invoke(nameof(CloseDialog), 1.2f);
+        // เล่นเสียงปฏิเสธทันที (ถ้าปฏิเสธ)
+        if (!accepted && currentNPC != null && currentNPC.declineSound != null)
+        {
+            AudioSource.PlayClipAtPoint(currentNPC.declineSound, currentNPC.transform.position);
+        }
+
+        CancelInvoke(nameof(CloseDialog));
+        Invoke(nameof(CloseDialog), 2.2f);
     }
 
     public void CompleteQuest(QuestData quest)
@@ -245,13 +308,28 @@ public class QuestUIManager : MonoBehaviour
 
     public void CloseDialog()
     {
+        CancelInvoke(nameof(CloseDialog));
+
+        bool wasDeclined = isShowingResponse && (currentQuest != null && !currentQuest.isAccepted);
+        NPCController departingNPC = currentNPC;
+
         isDialogActive = false;
         isShowingResponse = false;
 
         if (questDialogPanel != null) questDialogPanel.SetActive(false);
         if (responsePanel != null) responsePanel.SetActive(false);
 
+        // คืนค่าปุ่มให้กลับมาเปิดสำหรับครั้งถัดไป
+        if (acceptButton != null) acceptButton.gameObject.SetActive(true);
+        if (declineButton != null) declineButton.gameObject.SetActive(true);
+
         LockCursorAndUnfreezePlayer();
+
+        // หากเป็นการปฏิเสธเควส หลังจากหน้าต่าง UI ปิดลงแล้ว NPC จึงจะเริ่มเดินจากไป
+        if (wasDeclined && departingNPC != null)
+        {
+            departingNPC.OnQuestDeclined();
+        }
     }
 
     private void UnlockCursorAndFreezePlayer()
@@ -459,19 +537,43 @@ public class QuestUIManager : MonoBehaviour
         modalHeaderStyle.alignment = TextAnchor.UpperCenter;
         modalHeaderStyle.normal.textColor = new Color(1f, 0.85f, 0.2f);
 
-        string title = currentQuest != null ? $"📜 {currentQuest.questTitle} ({currentQuest.npcName})" : "เควส";
+        string title = currentQuest != null
+            ? $"📜 {currentQuest.questTitle} ({currentQuest.npcName})"
+            : "เควส";
         GUI.Label(new Rect(posX + 20, posY + 15, boxWidth - 40, 30), title, modalHeaderStyle);
 
         if (isShowingResponse)
         {
-            GUIStyle respStyle = new GUIStyle(GUI.skin.label);
-            respStyle.fontSize = 16;
-            respStyle.fontStyle = FontStyle.Italic;
-            respStyle.alignment = TextAnchor.MiddleCenter;
-            respStyle.wordWrap = true;
-            respStyle.normal.textColor = Color.cyan;
+            bool isAccepted = currentQuest != null && currentQuest.isAccepted;
+            GUIStyle respHeader = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 18,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.UpperCenter
+            };
+            respHeader.normal.textColor = isAccepted ? new Color(0.2f, 1f, 0.4f) : new Color(1f, 0.4f, 0.4f);
+            string header = isAccepted ? "✅ รับเควสสำเร็จ" : "❌ ปฏิเสธเควส";
+            GUI.Label(new Rect(posX + 20, posY + 15, boxWidth - 40, 28), $"{header} ({currentQuest?.npcName})", respHeader);
 
-            GUI.Label(new Rect(posX + 30, posY + 80, boxWidth - 60, 150), $"\"{responseMessage}\"", respStyle);
+            GUIStyle respStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 16,
+                fontStyle = FontStyle.Italic,
+                alignment = TextAnchor.MiddleCenter,
+                wordWrap = true
+            };
+            respStyle.normal.textColor = new Color(1f, 0.85f, 0.2f);
+
+            GUI.Label(new Rect(posX + 30, posY + 70, boxWidth - 60, 150), $"\"{responseMessage}\"", respStyle);
+
+            GUIStyle hintStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 12,
+                alignment = TextAnchor.LowerCenter
+            };
+            hintStyle.normal.textColor = Color.gray;
+            string hint = isAccepted ? "(กำลังเริ่มบันทึกภารกิจ... กด Esc หรือ Space เพื่อปิด)" : "(กำลังปิดหน้าต่างและ NPC จะเดินจากไป... กด Esc หรือ Space เพื่อปิด)";
+            GUI.Label(new Rect(posX + 20, posY + boxHeight - 40, boxWidth - 40, 25), hint, hintStyle);
             return;
         }
 
