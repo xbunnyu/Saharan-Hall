@@ -53,6 +53,7 @@ public class RhythmGameManager : MonoBehaviour
     private float gameDuration = 0f;
     private int totalNotesCount = 0;
     private bool isGameEnding = false;
+    private PlayerController playerController;
 
     // Visual feedback popups
     private string lastJudgmentText = "";
@@ -134,6 +135,9 @@ public class RhythmGameManager : MonoBehaviour
 
         // กำหนดความยาก และสร้าง Chart โน้ต
         GenerateChartForDifficulty(quest != null ? quest.difficulty : QuestDifficulty.Easy);
+
+        // ล็อคการควบคุมและการหันหน้าของผู้เล่น
+        LockPlayerControls(true);
 
         gameStartTime = Time.time;
         PlaySynthChime(440f, 0.3f); // เสียงระฆังเริ่มพิธี
@@ -427,7 +431,41 @@ public class RhythmGameManager : MonoBehaviour
         isPlaying = false;
         isGameEnding = false;
 
+        // ปลดล็อคคืนค่าการควบคุมให้ผู้เล่น
+        LockPlayerControls(false);
+
         onCompleteCallback?.Invoke(isPassed);
+    }
+
+    /// <summary>
+    /// หยุดการเคลื่อนที่และมุมกล้องของผู้เล่นระหว่างเล่นมินิเกม Rhythm
+    /// </summary>
+    private void LockPlayerControls(bool lockState)
+    {
+        if (playerController == null)
+        {
+            playerController = FindFirstObjectByType<PlayerController>();
+        }
+
+        if (playerController != null)
+        {
+            playerController.enabled = !lockState;
+        }
+
+        if (lockState)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else
+        {
+            if (GhostCurseManager.Instance != null && GhostCurseManager.Instance.isGameOver)
+            {
+                return;
+            }
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
     }
 
     // ==========================================

@@ -32,10 +32,10 @@ public class QTEInteractable : InteractableItem
 
     void Reset()
     {
-        itemName = "กลไก / เครื่องปั่นไฟ";
+        itemName = "ผ้ายันต์ / แท่นเขียนยันต์";
         canRead = true;
         canCollect = false;
-        customReadPromptText = "เริ่ม Minigame QTE";
+        customReadPromptText = "เขียนยันต์";
         readTitle = "";
         readDescription = "";
     }
@@ -49,7 +49,7 @@ public class QTEInteractable : InteractableItem
         {
             if (interactor != null)
             {
-                interactor.ShowNotification($"[{itemName}] ทำงานเสร็จสิ้นแล้ว!");
+                interactor.ShowNotification($"[{itemName}] ทำพิธีเขียนยันต์เสร็จสิ้นแล้ว!");
             }
             return;
         }
@@ -68,7 +68,7 @@ public class QTEInteractable : InteractableItem
             // เรียก Event OnRead เดิมก่อน (ถ้ามี)
             base.OnRead(interactor);
 
-            // เริ่ม Minigame QTE
+            // เริ่ม Minigame QTE เขียนยันต์
             QTEController.Instance.StartQTE(
                 minHits, 
                 maxHits, 
@@ -90,15 +90,15 @@ public class QTEInteractable : InteractableItem
             canRead = false;
         }
 
-        // หากมีเควสที่รับมาและเป็นเควสมินิเกม DeadByDaylightQTE ให้เปลี่ยนสถานะเควสเป็นทำภารกิจสำเร็จ
+        // หากมีเควสที่รับมาและเป็นเควสมินิเกมเขียนยันต์ ให้เปลี่ยนสถานะเควสเป็นทำภารกิจสำเร็จ
         if (QuestUIManager.Instance != null && QuestUIManager.Instance.activeQuests != null)
         {
             foreach (var q in QuestUIManager.Instance.activeQuests)
             {
-                if (q != null && q.minigameType == MinigameType.DeadByDaylightQTE && !q.isTaskCompleted)
+                if (q != null && (q.minigameType == MinigameType.DeadByDaylightQTE || q.minigameType == MinigameType.TalismanDrawing) && !q.isTaskCompleted)
                 {
                     q.isTaskCompleted = true;
-                    Debug.Log($"[QTEInteractable] 📜 อัปเดตเควส '{q.questTitle}' -> ภารกิจสำเร็จแล้ว!");
+                    Debug.Log($"[QTEInteractable] 📜 อัปเดตเควส '{q.questTitle}' -> ทำพิธีเขียนยันต์สำเร็จแล้ว!");
                 }
             }
         }
@@ -108,10 +108,10 @@ public class QTEInteractable : InteractableItem
         PlayerInteraction player = FindFirstObjectByType<PlayerInteraction>();
         if (player != null)
         {
-            player.ShowNotification($"ทำ Minigame [{itemName}] สำเร็จเรียบร้อย!");
+            player.ShowNotification($"ทำพิธีเขียนยันต์ [{itemName}] สำเร็จเรียบร้อย!");
         }
 
-        Debug.Log($"[QTEInteractable] 🎉 Minigame สำเร็จบนวัตถุ '{itemName}'");
+        Debug.Log($"[QTEInteractable] 🎉 พิธีเขียนยันต์สำเร็จบนวัตถุ '{itemName}'");
     }
 
     private void HandleFail()
@@ -121,9 +121,9 @@ public class QTEInteractable : InteractableItem
         PlayerInteraction player = FindFirstObjectByType<PlayerInteraction>();
         if (player != null)
         {
-            player.ShowNotification($"ทำ Minigame [{itemName}] พลาด! (ล้มเหลวเกิน 2 ครั้ง)");
+            player.ShowNotification($"ทำพิธีเขียนยันต์ [{itemName}] พลาด! (ล้มเหลวเกิน 2 ครั้ง)");
         }
 
-        Debug.Log($"[QTEInteractable] ❌ Minigame พลาดบนวัตถุ '{itemName}'");
+        Debug.Log($"[QTEInteractable] ❌ พิธีเขียนยันต์พลาดบนวัตถุ '{itemName}'");
     }
 }

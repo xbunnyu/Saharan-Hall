@@ -284,7 +284,7 @@ public class QTEController : MonoBehaviour
     {
         if (promptText != null)
         {
-            promptText.text = $"<color=#FFD700>⚙️ GENERATOR REPAIR ⚡</color>\nกด <color=#00FFFF>[ SPACEBAR ]</color> ให้หยุดตรงหลอดขาว!";
+            promptText.text = $"<color=#FFD700>📜 พิธีเขียนยันต์ (YANTRA RITUAL) ✨</color>\nกด <color=#00FFFF>[ SPACEBAR ]</color> ให้หยุดตรงหลอดสว่าง!";
         }
 
         if (progressText != null)

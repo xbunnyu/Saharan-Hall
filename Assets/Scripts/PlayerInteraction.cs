@@ -93,7 +93,7 @@ public class PlayerInteraction : MonoBehaviour
         }
 
         // 2.7 หากกำลังเล่นมินิเกมอยู่ (เช่น Rhythm Game ท่องคาถา) ให้ข้ามการโต้ตอบอื่น
-        if (MinigameManager.Instance != null && MinigameManager.Instance.IsPlaying())
+        if ((MinigameManager.Instance != null && MinigameManager.Instance.IsPlaying()) || (RhythmGameManager.Instance != null && RhythmGameManager.Instance.isPlaying))
         {
             if (InteractionUIManager.Instance != null)
             {

@@ -96,6 +96,7 @@ public class MinigameManager : MonoBehaviour
                 break;
 
             case MinigameType.DeadByDaylightQTE:
+            case MinigameType.TalismanDrawing:
                 if (qteController == null)
                 {
                     qteController = QTEController.Instance;
