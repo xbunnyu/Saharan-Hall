@@ -26,6 +26,12 @@ public class PlayerController : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
 
+        // โหลดความไวเมาส์จากการตั้งค่าใน Main Menu
+        if (PlayerPrefs.HasKey("MouseSensitivity"))
+        {
+            mouseSensitivity = PlayerPrefs.GetFloat("MouseSensitivity", mouseSensitivity);
+        }
+
         // หากยังไม่ได้กำหนดกล้อง ให้หากล้องที่เป็น Child หรือ Main Camera
         if (playerCamera == null)
         {
