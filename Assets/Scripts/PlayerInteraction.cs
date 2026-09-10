@@ -102,8 +102,9 @@ public class PlayerInteraction : MonoBehaviour
             return;
         }
 
-        // 2.8 หากกำลังเล่น QTE Minigame อยู่ (Skill check Dead by Daylight) ให้ข้ามการโต้ตอบอื่น
-        if (QTEController.Instance != null && QTEController.Instance.IsQTEActive())
+        // 2.8 หากกำลังเล่น QTE Minigame อยู่ (Skill check / Timing Bar) ให้ข้ามการโต้ตอบอื่น
+        if ((QTEController.Instance != null && QTEController.Instance.IsQTEActive()) ||
+            (TimingBarController.Instance != null && TimingBarController.Instance.IsActive()))
         {
             if (InteractionUIManager.Instance != null)
             {
@@ -207,11 +208,18 @@ public class PlayerInteraction : MonoBehaviour
             isInteractPressed = pressE;
         }
 
-        // กด [E] หรือ [T] พูดคุย / อ่าน / สลับสวิตช์ / อัพเกรด
+        // กด [E] หรือ [T] พูดคุย / อ่าน / สลับสลับมินิเกม / อัพเกรด
         if (isInteractPressed && currentTarget.canRead)
         {
             bool isNPC = currentTarget.GetComponent<NPCController>() != null || currentTarget.GetComponentInParent<NPCController>() != null;
-            bool isDirectAction = currentTarget is HallTrigger || currentTarget is BuddhistAltarManager || string.IsNullOrEmpty(currentTarget.readDescription) || isNPC;
+            bool isDirectAction = currentTarget is HallTrigger 
+                               || currentTarget is BuddhistAltarManager 
+                               || currentTarget is QTEInteractable 
+                               || currentTarget is RhythmInteractable 
+                               || currentTarget is SlashInteractable
+                               || currentTarget is TimingBarInteractable
+                               || string.IsNullOrEmpty(currentTarget.readDescription) 
+                               || isNPC;
 
             if (isDirectAction)
             {

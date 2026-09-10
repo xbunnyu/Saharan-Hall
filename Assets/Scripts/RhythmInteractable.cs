@@ -54,6 +54,16 @@ public class RhythmInteractable : InteractableItem
             return;
         }
 
+        QuestData activeQuest = GetActiveQuestForMinigame();
+        if (activeQuest == null)
+        {
+            if (interactor != null)
+            {
+                interactor.ShowNotification("🔒 พิธีท่องคาถาไม่ได้อยู่ในขั้นตอนของเควสปัจจุบัน!", 3.0f);
+            }
+            return;
+        }
+
         // ค้นหาหรือสร้าง RhythmGameManager
         if (RhythmGameManager.Instance == null)
         {
@@ -88,6 +98,21 @@ public class RhythmInteractable : InteractableItem
         }
     }
 
+    private QuestData GetActiveQuestForMinigame()
+    {
+        if (QuestUIManager.Instance != null && QuestUIManager.Instance.activeQuests != null)
+        {
+            foreach (var q in QuestUIManager.Instance.activeQuests)
+            {
+                if (q != null && q.IsMinigameRequired(MinigameType.RhythmChantWASD))
+                {
+                    return q;
+                }
+            }
+        }
+        return null;
+    }
+
     private void HandleSuccess()
     {
         isCompletedSuccessfully = true;
@@ -97,27 +122,29 @@ public class RhythmInteractable : InteractableItem
             canRead = false;
         }
 
-        // หากมีเควสที่รับมาและเป็นเควสมินิเกม RhythmChantWASD ให้เปลี่ยนสถานะเควสเป็นทำภารกิจสำเร็จ
-        if (QuestUIManager.Instance != null && QuestUIManager.Instance.activeQuests != null)
+        QuestData q = GetActiveQuestForMinigame();
+        if (q != null)
         {
-            foreach (var q in QuestUIManager.Instance.activeQuests)
+            bool allDone = q.MarkMinigameCompleted(MinigameType.RhythmChantWASD);
+            string progressText = $"({q.completedMinigameSequence.Count}/{q.requiredMinigameSequence.Count})";
+
+            PlayerInteraction player = FindFirstObjectByType<PlayerInteraction>();
+            if (player != null)
             {
-                if (q != null && q.minigameType == MinigameType.RhythmChantWASD && !q.isTaskCompleted)
+                if (allDone)
                 {
-                    q.isTaskCompleted = true;
-                    Debug.Log($"[RhythmInteractable] 📜 อัปเดตเควส '{q.questTitle}' -> ทำพิธีท่องคาถาสำเร็จแล้ว!");
+                    player.ShowNotification($"🎉 <color=#00FF7F>[ทำพิธีครบทุกขั้นตอนแล้ว {progressText}]</color> กลับไปรายงาน {q.npcName} ได้เลย!", 4.0f);
+                }
+                else
+                {
+                    MinigameType nextGame = q.requiredMinigameSequence[q.completedMinigameSequence.Count];
+                    string nextThai = QuestData.GetMinigameNameThai(nextGame);
+                    player.ShowNotification($"✨ <color=#00FF7F>[ท่องคาถาสำเร็จ {progressText}]</color> ขั้นต่อไปทำ: <color=#FFD700>{nextThai}</color>", 4.0f);
                 }
             }
         }
 
         onRhythmSuccess?.Invoke();
-
-        PlayerInteraction player = FindFirstObjectByType<PlayerInteraction>();
-        if (player != null)
-        {
-            player.ShowNotification($"ทำพิธีท่องคาถา [{itemName}] สำเร็จเรียบร้อย!");
-        }
-
         Debug.Log($"[RhythmInteractable] 🎉 พิธีท่องคาถาสำเร็จบนวัตถุ '{itemName}'");
     }
 

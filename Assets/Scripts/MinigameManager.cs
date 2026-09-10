@@ -15,6 +15,8 @@ public class MinigameManager : MonoBehaviour
     [Header("Minigame Runners")]
     public RhythmGameManager rhythmGameManager;
     public QTEController qteController;
+    public SequentialSlashController sequentialSlashController;
+    public TimingBarController timingBarController;
 
     [Header("Runtime State")]
     public bool isMinigameActive = false;
@@ -58,6 +60,24 @@ public class MinigameManager : MonoBehaviour
                 qteController = FindFirstObjectByType<QTEController>();
             }
         }
+
+        if (sequentialSlashController == null)
+        {
+            sequentialSlashController = SequentialSlashController.Instance;
+            if (sequentialSlashController == null)
+            {
+                sequentialSlashController = FindFirstObjectByType<SequentialSlashController>();
+            }
+        }
+
+        if (timingBarController == null)
+        {
+            timingBarController = TimingBarController.Instance;
+            if (timingBarController == null)
+            {
+                timingBarController = FindFirstObjectByType<TimingBarController>();
+            }
+        }
     }
 
     /// <summary>
@@ -83,6 +103,7 @@ public class MinigameManager : MonoBehaviour
 
         switch (currentMinigameType)
         {
+            // 1. มินิเกมท่องคาถา (Rhythm Game W A S D)
             case MinigameType.RhythmChantWASD:
                 if (rhythmGameManager != null)
                 {
@@ -95,6 +116,7 @@ public class MinigameManager : MonoBehaviour
                 }
                 break;
 
+            // 2. มินิเกมเขียนยันต์ / Skill Check QTE (กด Spacebar หยุดเข็มในวงล้อ)
             case MinigameType.DeadByDaylightQTE:
             case MinigameType.TalismanDrawing:
                 if (qteController == null)
@@ -112,15 +134,17 @@ public class MinigameManager : MonoBehaviour
                     int minHits = quest != null && quest.customNoteCount > 0 ? quest.customNoteCount : 3;
                     int maxHits = quest != null && quest.customNoteCount > 0 ? quest.customNoteCount : 5;
                     float baseSpeed = quest != null && quest.customNoteSpeed > 0 ? quest.customNoteSpeed : 180f;
+                    string title = "📜 พิธีเขียนยันต์มหาเวทย์ (YANTRA DRAWING) ✨";
 
                     qteController.StartQTE(
                         minHits,
                         maxHits,
                         baseSpeed,
                         speedInc: 40f,
-                        maxFails: 2,
+                        maxFails: 3,
                         onSuccess: () => OnMinigameFinished(true),
-                        onFail: () => OnMinigameFinished(false)
+                        onFail: () => OnMinigameFinished(false),
+                        title: title
                     );
                 }
                 else
@@ -130,8 +154,73 @@ public class MinigameManager : MonoBehaviour
                 }
                 break;
 
+            case MinigameType.SequentialSlashQTE:
+                if (sequentialSlashController == null)
+                {
+                    sequentialSlashController = SequentialSlashController.Instance;
+                    if (sequentialSlashController == null)
+                    {
+                        GameObject slashObj = new GameObject("SequentialSlashController");
+                        sequentialSlashController = slashObj.AddComponent<SequentialSlashController>();
+                    }
+                }
+
+                if (sequentialSlashController != null)
+                {
+                    int minHits = quest != null && quest.customNoteCount > 0 ? quest.customNoteCount : 3;
+                    int maxHits = quest != null && quest.customNoteCount > 0 ? quest.customNoteCount : 5;
+
+                    sequentialSlashController.StartSlashGame(
+                        minHits,
+                        maxHits,
+                        onSuccess: () => OnMinigameFinished(true),
+                        onFail: () => OnMinigameFinished(false)
+                    );
+                }
+                else
+                {
+                    Debug.LogError("[MinigameManager] ❌ ไม่พบ SequentialSlashController!");
+                    OnMinigameFinished(false);
+                }
+                break;
+
+            case MinigameType.TimingBarQTE:
+                if (timingBarController == null)
+                {
+                    timingBarController = TimingBarController.Instance;
+                    if (timingBarController == null)
+                    {
+                        GameObject barObj = new GameObject("TimingBarController");
+                        timingBarController = barObj.AddComponent<TimingBarController>();
+                    }
+                }
+
+                if (timingBarController != null)
+                {
+                    int minHits = quest != null && quest.customNoteCount > 0 ? quest.customNoteCount : 4;
+                    int maxHits = quest != null && quest.customNoteCount > 0 ? quest.customNoteCount : 6;
+                    float baseSpeed = quest != null && quest.customNoteSpeed > 0 ? quest.customNoteSpeed : 1.2f;
+
+                    timingBarController.StartTimingBarGame(
+                        minHits,
+                        maxHits,
+                        baseSpeed,
+                        speedInc: 0.35f,
+                        maxFails: 3,
+                        onSuccess: () => OnMinigameFinished(true),
+                        onFail: () => OnMinigameFinished(false),
+                        title: "🌾 พิธีโปรยข้าวสารไล่ผี (EXORCISM RICE TOSSING) 👻"
+                    );
+                }
+                else
+                {
+                    Debug.LogError("[MinigameManager] ❌ ไม่พบ TimingBarController!");
+                    OnMinigameFinished(false);
+                }
+                break;
+
             default:
-                // เควสทั่วไปที่ไม่มีมินิเกม หรือมินิเกมประเภทอื่น
+                // เควสทั่วไปที่ไม่มีมินิเกม
                 Debug.Log("[MinigameManager] ไม่มีมินิเกมสำหรับเควสนี้ ผ่านเควสทันที");
                 OnMinigameFinished(true);
                 break;

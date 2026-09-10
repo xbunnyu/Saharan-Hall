@@ -34,13 +34,14 @@ public class QTEController : MonoBehaviour
     private int requiredHits = 3;
     private int currentHits = 0;
     private int currentFailures = 0;
-    private int maxFailures = 2;
+    private int maxFailures = 3;
     private float currentSpeed = 180f;
     private float speedIncrement = 40f;
     
     private float needleAngle = 0f; // มุมเข็ม (0-360 องศา)
     private float targetCenterAngle = 0f;
     private float targetWidthAngle = 35f;
+    private string customTitleText = "";
 
     private Action onSuccessCallback;
     private Action onFailCallback;
@@ -99,7 +100,21 @@ public class QTEController : MonoBehaviour
             needleTransform.localEulerAngles = new Vector3(0f, 0f, -needleAngle);
         }
 
-        // 2. รับค่า Input กด Spacebar
+        // 2. ระบบ Auto-Catch จากบารมีโต๊ะหมู่บูชา Level 4
+        if (BuddhistAltarManager.Instance != null && BuddhistAltarManager.Instance.ActiveAutoCatch)
+        {
+            float halfWidth = targetWidthAngle / 2f;
+            float startAngle = NormalizeAngle(targetCenterAngle - halfWidth);
+            float endAngle = NormalizeAngle(targetCenterAngle + halfWidth);
+
+            if (IsAngleInZone(needleAngle, startAngle, endAngle))
+            {
+                EvaluateHit();
+                return;
+            }
+        }
+
+        // 3. รับค่า Input กด Spacebar หรือ Gamepad
         var keyboard = Keyboard.current;
         bool pressed = false;
 
@@ -107,7 +122,7 @@ public class QTEController : MonoBehaviour
         {
             pressed = true;
         }
-        else if (Gamepad.current != null && Gamepad.current.buttonSouth.wasPressedThisFrame)
+        else if (Gamepad.current != null && (Gamepad.current.buttonSouth.wasPressedThisFrame || Gamepad.current.buttonEast.wasPressedThisFrame))
         {
             pressed = true;
         }
@@ -119,9 +134,9 @@ public class QTEController : MonoBehaviour
     }
 
     /// <summary>
-    /// เริ่มมินิเกม QTE แบบ Dead by Daylight
+    /// เริ่มมินิเกม QTE แบบ Dead by Daylight / พิธีกรรม
     /// </summary>
-    public void StartQTE(int minHits, int maxHits, float baseSpeed, float speedInc, int maxFails, Action onSuccess, Action onFail)
+    public void StartQTE(int minHits, int maxHits, float baseSpeed, float speedInc, int maxFails, Action onSuccess, Action onFail, string title = "")
     {
         if (isQTEActive) return;
 
@@ -136,10 +151,25 @@ public class QTEController : MonoBehaviour
         this.currentHits = 0;
         this.currentFailures = 0;
         this.maxFailures = maxFails;
-        this.currentSpeed = baseSpeed;
         this.speedIncrement = speedInc;
         this.onSuccessCallback = onSuccess;
         this.onFailCallback = onFail;
+        this.customTitleText = title;
+
+        // ดึงบัฟช่วยเหลือจากโต๊ะหมู่บูชา (BuddhistAltarManager)
+        if (BuddhistAltarManager.Instance != null)
+        {
+            float windowMult = BuddhistAltarManager.Instance.ActiveQteWindow / 0.25f; // L1=1.0, L2=1.6, L3=2.2, L4=3.2
+            this.targetWidthAngle = Mathf.Clamp(35f * windowMult, 35f, 115f);
+
+            float speedMult = BuddhistAltarManager.Instance.ActiveQteSpeed / 1.8f; // L1=1.0, L2=0.77, L3=0.55, L4=0.39
+            this.currentSpeed = baseSpeed * speedMult;
+        }
+        else
+        {
+            this.targetWidthAngle = 35f;
+            this.currentSpeed = baseSpeed;
+        }
 
         this.needleAngle = 0f;
         GenerateNewTargetZone();
@@ -148,6 +178,10 @@ public class QTEController : MonoBehaviour
         LockPlayerControls(true);
 
         isQTEActive = true;
+        if (qteCanvas != null)
+        {
+            qteCanvas.SetActive(true);
+        }
         if (qtePanel != null)
         {
             qtePanel.SetActive(true);
@@ -178,7 +212,7 @@ public class QTEController : MonoBehaviour
             currentHits++;
             currentSpeed += speedIncrement;
 
-            PlaySound(hitSuccessSound);
+            PlaySound(hitSuccessSound, 587.33f, 0.15f);
 
             if (currentHits >= requiredHits)
             {
@@ -196,7 +230,7 @@ public class QTEController : MonoBehaviour
         {
             // กดพลาดนอกหลอดขาว (Miss/Failure)
             currentFailures++;
-            PlaySound(hitMissSound);
+            PlaySound(hitMissSound, 180f, 0.25f);
 
             if (currentFailures > maxFailures)
             {
@@ -221,7 +255,7 @@ public class QTEController : MonoBehaviour
             statusText.text = success ? "<color=#00FF7F>สำเร็จ!</color>" : "<color=#FF4500>ล้มเหลว!</color>";
         }
 
-        PlaySound(success ? qteWinSound : qteFailSound);
+        PlaySound(success ? qteWinSound : qteFailSound, success ? 880f : 130f, success ? 0.4f : 0.5f);
 
         yield return new WaitForSeconds(0.6f);
 
@@ -252,6 +286,16 @@ public class QTEController : MonoBehaviour
             float fill = targetWidthAngle / 360f;
             targetZoneImage.fillAmount = fill;
 
+            // ปรับสีหากมี Visual Aid จากโต๊ะหมู่บูชา
+            if (BuddhistAltarManager.Instance != null && BuddhistAltarManager.Instance.ActiveVisualAid)
+            {
+                targetZoneImage.color = new Color(1f, 0.85f, 0.2f, 0.98f); // Golden glow aid
+            }
+            else
+            {
+                targetZoneImage.color = new Color(1f, 0.95f, 0.85f, 0.98f);
+            }
+
             // หมุนภาพหลอดขาวไปยังมุมเริ่มต้นของโซน
             float startAngle = targetCenterAngle - (targetWidthAngle / 2f);
             targetZoneImage.rectTransform.localEulerAngles = new Vector3(0f, 0f, -startAngle);
@@ -280,21 +324,41 @@ public class QTEController : MonoBehaviour
         return angle;
     }
 
+    // รายการอักขระยันต์ศักดิ์สิทธิ์สำหรับสุ่มแสดงตรงกลางวงแหวนเขียนยันต์
+    private readonly string[] sacredYantraRunes = { "นะ", "โม", "พุธ", "ธา", "ยะ", "ฤ", "ฤา", "ฦ", "ฦา", "อะ", "อุ", "มะ" };
+    private TextMeshProUGUI centerRuneText;
+
     private void UpdateUI()
     {
         if (promptText != null)
         {
-            promptText.text = $"<color=#FFD700>📜 พิธีเขียนยันต์ (YANTRA RITUAL) ✨</color>\nกด <color=#00FFFF>[ SPACEBAR ]</color> ให้หยุดตรงหลอดสว่าง!";
+            string header = !string.IsNullOrEmpty(customTitleText) 
+                ? customTitleText 
+                : "📜 พิธีเขียนยันต์มหาเวทย์ (YANTRA DRAWING) ✨";
+
+            string altarAidTag = "";
+            if (BuddhistAltarManager.Instance != null && BuddhistAltarManager.Instance.currentLevel > 1)
+            {
+                altarAidTag = $"\n<size=80%><color=#FFD700>⛩️ บารมีโต๊ะหมู่บูชา Lv.{BuddhistAltarManager.Instance.currentLevel}: {BuddhistAltarManager.GetLevelBenefitText(BuddhistAltarManager.Instance.currentLevel)}</color></size>";
+            }
+
+            promptText.text = $"<color=#FFD700>{header}</color>\nกด <color=#00FFFF>[ SPACEBAR / BUTTON ]</color> ตวัดพู่กันหยุดตรงช่วงอักขระสว่าง!{altarAidTag}";
         }
 
         if (progressText != null)
         {
-            progressText.text = $"<color=#00FF88>SUCCESS: {currentHits}/{requiredHits}</color>  |  <color=#FF3555>MISS: {currentFailures}/{maxFailures}</color>";
+            progressText.text = $"<color=#00FF88>ลงยันต์สำเร็จ: {currentHits}/{requiredHits}</color>  |  <color=#FF3555>หลุดจังหวะ: {currentFailures}/{maxFailures}</color>";
         }
 
         if (statusText != null)
         {
             statusText.text = "";
+        }
+
+        if (centerRuneText != null && currentHits < sacredYantraRunes.Length)
+        {
+            int index = Mathf.Clamp(currentHits, 0, sacredYantraRunes.Length - 1);
+            centerRuneText.text = sacredYantraRunes[index];
         }
     }
 
@@ -317,12 +381,61 @@ public class QTEController : MonoBehaviour
         }
     }
 
-    private void PlaySound(AudioClip clip)
+    private void PlaySound(AudioClip clip, float synthFreq = 520f, float duration = 0.2f)
     {
         if (clip != null && audioSource != null)
         {
             audioSource.PlayOneShot(clip);
+            return;
         }
+
+        if (audioSource != null)
+        {
+            PlaySynthBeep(synthFreq, duration);
+        }
+    }
+
+    private void PlaySynthBeep(float frequency, float duration)
+    {
+        int sampleRate = 44100;
+        int sampleCount = Mathf.RoundToInt(sampleRate * duration);
+        float[] samples = new float[sampleCount];
+
+        for (int i = 0; i < sampleCount; i++)
+        {
+            float t = (float)i / sampleRate;
+            float envelope = 1.0f - (t / duration);
+            samples[i] = Mathf.Sin(2 * Mathf.PI * frequency * t) * envelope * 0.4f;
+        }
+
+        AudioClip clip = AudioClip.Create("QTESynthBeep", sampleCount, 1, sampleRate, false);
+        clip.SetData(samples, 0);
+        audioSource.PlayOneShot(clip, 0.5f);
+    }
+
+    private Texture2D guiCircleTex;
+    private Texture2D GetGuiCircleTex()
+    {
+        if (guiCircleTex == null)
+        {
+            int size = 128;
+            guiCircleTex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            Color[] colors = new Color[size * size];
+            float center = size / 2f;
+            float radius = size / 2f - 1f;
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dist = Vector2.Distance(new Vector2(x, y), new Vector2(center, center));
+                    float alpha = Mathf.Clamp01(radius - dist + 1f);
+                    colors[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+            guiCircleTex.SetPixels(colors);
+            guiCircleTex.Apply();
+        }
+        return guiCircleTex;
     }
 
     /// <summary>
@@ -355,7 +468,7 @@ public class QTEController : MonoBehaviour
     /// </summary>
     private void EnsureUIExists()
     {
-        if (qtePanel != null && qteCanvas != null) return;
+        if (qtePanel != null && qteCanvas != null && targetZoneImage != null && needleTransform != null && centerRuneText != null) return;
 
         // ค้นหา Canvas เดิมก่อน
         qteCanvas = GameObject.Find("QTE_Canvas");
@@ -364,16 +477,30 @@ public class QTEController : MonoBehaviour
             qteCanvas = new GameObject("QTE_Canvas");
             Canvas canvas = qteCanvas.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 99;
+            canvas.sortingOrder = 999;
 
             CanvasScaler scaler = qteCanvas.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
 
             qteCanvas.AddComponent<GraphicRaycaster>();
+            DontDestroyOnLoad(qteCanvas);
+        }
+        else
+        {
+            Canvas canvas = qteCanvas.GetComponent<Canvas>();
+            if (canvas != null) canvas.sortingOrder = 999;
         }
 
         qtePanel = qteCanvas.transform.Find("QTEPanel")?.gameObject;
+        
+        // หาก qtePanel มีอยู่เดิมแต่ขาด Component วงกลม/เข็มสำคัญ ให้ทำลายและสร้างใหม่เพื่อให้แสดงผลเป็นวงกลมสมบูรณ์
+        if (qtePanel != null && (targetZoneImage == null || needleTransform == null || centerRuneText == null))
+        {
+            DestroyImmediate(qtePanel);
+            qtePanel = null;
+        }
+
         if (qtePanel == null)
         {
             Sprite circleSprite = CreateCircleSprite(256);
@@ -386,11 +513,11 @@ public class QTEController : MonoBehaviour
             panelRect.anchorMax = new Vector2(0.5f, 0.5f);
             panelRect.sizeDelta = new Vector2(500, 500);
 
-            // 0. Dark Glass Overlay Background Card
+            // 0. Dark Glass Overlay Background Card (Circular)
             GameObject bgCardObj = new GameObject("GlassBG");
             bgCardObj.transform.SetParent(qtePanel.transform, false);
             Image bgCard = bgCardObj.AddComponent<Image>();
-            bgCard.color = new Color(0.04f, 0.05f, 0.08f, 0.75f);
+            bgCard.color = new Color(0.04f, 0.05f, 0.08f, 0.85f);
             bgCard.rectTransform.sizeDelta = new Vector2(440, 440);
             bgCard.sprite = circleSprite;
 
@@ -459,13 +586,23 @@ public class QTEController : MonoBehaviour
             tipImage.rectTransform.sizeDelta = new Vector2(12, 12);
             tipImage.rectTransform.anchoredPosition = new Vector2(0, 120);
 
-            // 8. จุดยึดตรงกลางเข็ม (Center Cap Hub)
+            // 8. จุดยึดตรงกลางเข็ม และอักขระยันต์ศักดิ์สิทธิ์ (Center Cap Hub & Yantra Rune)
             GameObject capObj = new GameObject("CenterCap");
             capObj.transform.SetParent(ringObj.transform, false);
             Image capImage = capObj.AddComponent<Image>();
             capImage.sprite = circleSprite;
             capImage.color = new Color(0.85f, 0.15f, 0.25f, 1f);
             capImage.rectTransform.sizeDelta = new Vector2(28, 28);
+
+            GameObject runeObj = new GameObject("CenterRuneText");
+            runeObj.transform.SetParent(ringObj.transform, false);
+            centerRuneText = runeObj.AddComponent<TextMeshProUGUI>();
+            centerRuneText.fontSize = 46;
+            centerRuneText.alignment = TextAlignmentOptions.Center;
+            centerRuneText.fontStyle = FontStyles.Bold;
+            centerRuneText.color = new Color(1f, 0.85f, 0.2f, 0.9f); // Golden glow rune
+            centerRuneText.rectTransform.anchoredPosition = new Vector2(0, 48);
+            centerRuneText.rectTransform.sizeDelta = new Vector2(100, 60);
 
             // 9. ข้อความคำแนะนำ (Prompt Badge Text)
             GameObject promptObj = new GameObject("PromptText");
@@ -498,5 +635,99 @@ public class QTEController : MonoBehaviour
             statusText.rectTransform.anchoredPosition = new Vector2(0, 0);
             statusText.rectTransform.sizeDelta = new Vector2(180, 60);
         }
+    }
+
+    // ==========================================
+    // OnGUI Rendering Fallback (สำรองการวาดหาก UI Canvas ถูกซ่อน)
+    // ==========================================
+    void OnGUI()
+    {
+        if (!isQTEActive) return;
+
+        // หาก UI Canvas ทำงานและแสดงผลอยู่แล้ว ให้ข้าม OnGUI Fallback
+        if (qtePanel != null && qtePanel.activeInHierarchy && qteCanvas != null && qteCanvas.activeInHierarchy && targetZoneImage != null && needleTransform != null)
+        {
+            return;
+        }
+
+        float centerX = Screen.width / 2f;
+        float centerY = Screen.height / 2f;
+
+        // 1. กรอบพื้นหลังการ์ดกระจกดำทรงวงกลม (Dark Glass Overlay)
+        GUI.color = new Color(0.04f, 0.05f, 0.08f, 0.85f);
+        GUI.DrawTexture(new Rect(centerX - 220f, centerY - 220f, 440f, 440f), GetGuiCircleTex());
+
+        // 2. หัวข้อและคำแนะนำ
+        GUIStyle titleStyle = new GUIStyle(GUI.skin.label)
+        {
+            fontSize = 20,
+            fontStyle = FontStyle.Bold,
+            alignment = TextAnchor.MiddleCenter
+        };
+        titleStyle.normal.textColor = new Color(1f, 0.85f, 0.2f);
+        string header = !string.IsNullOrEmpty(customTitleText) ? customTitleText : "📜 พิธีเขียนยันต์มหาเวทย์ (YANTRA DRAWING) ✨";
+        GUI.Label(new Rect(centerX - 220f, centerY - 180f, 440f, 32f), header, titleStyle);
+
+        GUIStyle promptStyle = new GUIStyle(GUI.skin.label)
+        {
+            fontSize = 14,
+            alignment = TextAnchor.MiddleCenter
+        };
+        promptStyle.normal.textColor = Color.white;
+        GUI.Label(new Rect(centerX - 220f, centerY - 145f, 440f, 25f), "กด [ SPACEBAR / BUTTON ] ตวัดพู่กันหยุดตรงช่วงอักขระสว่าง!", promptStyle);
+
+        // 3. วาดวงกลมรางล้อเป้าหมาย QTE (Outer Ring Track Frame)
+        GUI.color = new Color(0.2f, 0.25f, 0.35f, 0.95f);
+        GUI.DrawTexture(new Rect(centerX - 130f, centerY - 130f, 260f, 260f), GetGuiCircleTex());
+
+        // 4. วาดแถบขาว Target Zone บนรางล้อ (White Target Zone Arc)
+        Matrix4x4 savedMatrix = GUI.matrix;
+        GUIUtility.RotateAroundPivot(targetCenterAngle, new Vector2(centerX, centerY));
+        GUI.color = (BuddhistAltarManager.Instance != null && BuddhistAltarManager.Instance.ActiveVisualAid)
+            ? new Color(1f, 0.85f, 0.2f, 0.95f)
+            : new Color(1f, 0.95f, 0.85f, 0.98f);
+        float widthPx = Mathf.Clamp(targetWidthAngle * 1.6f, 35f, 160f);
+        GUI.DrawTexture(new Rect(centerX - (widthPx / 2f), centerY - 132f, widthPx, 38f), GetGuiCircleTex());
+        GUI.matrix = savedMatrix;
+
+        // 5. วงกลมรางล้อใน (Inner Ring Mask)
+        GUI.color = new Color(0.06f, 0.07f, 0.1f, 0.98f);
+        GUI.DrawTexture(new Rect(centerX - 95f, centerY - 95f, 190f, 190f), GetGuiCircleTex());
+
+        // 6. วาดเข็มหมุนสีแดง (Rotating Neon Red Needle Line & Pointer Tip)
+        savedMatrix = GUI.matrix;
+        GUIUtility.RotateAroundPivot(needleAngle, new Vector2(centerX, centerY));
+        GUI.color = new Color(1f, 0.15f, 0.25f, 1f); // Neon Crimson Red Needle
+        GUI.DrawTexture(new Rect(centerX - 3f, centerY - 120f, 6f, 120f), Texture2D.whiteTexture);
+        GUI.color = new Color(1f, 0.4f, 0.4f, 1f); // Needle Tip Pointer
+        GUI.DrawTexture(new Rect(centerX - 6f, centerY - 124f, 12f, 12f), GetGuiCircleTex());
+        GUI.matrix = savedMatrix;
+
+        // 7. Center Cap Hub
+        GUI.color = new Color(0.85f, 0.15f, 0.25f, 1f);
+        GUI.DrawTexture(new Rect(centerX - 14f, centerY - 14f, 28f, 28f), GetGuiCircleTex());
+
+        // 8. แสดงอักขระยันต์ตรงกลาง
+        GUIStyle runeStyle = new GUIStyle(GUI.skin.label)
+        {
+            fontSize = 44,
+            fontStyle = FontStyle.Bold,
+            alignment = TextAnchor.MiddleCenter
+        };
+        runeStyle.normal.textColor = new Color(1f, 0.85f, 0.2f);
+        int runeIdx = Mathf.Clamp(currentHits, 0, sacredYantraRunes.Length - 1);
+        GUI.Label(new Rect(centerX - 60f, centerY - 30f, 120f, 60f), sacredYantraRunes[runeIdx], runeStyle);
+
+        // 9. แสดงนับจำนวนความสำเร็จ
+        GUIStyle progStyle = new GUIStyle(GUI.skin.label)
+        {
+            fontSize = 16,
+            fontStyle = FontStyle.Bold,
+            alignment = TextAnchor.MiddleCenter
+        };
+        progStyle.normal.textColor = Color.white;
+        GUI.Label(new Rect(centerX - 220f, centerY + 150f, 440f, 30f), $"ลงยันต์สำเร็จ: {currentHits}/{requiredHits}  |  หลุดจังหวะ: {currentFailures}/{maxFailures}", progStyle);
+
+        GUI.color = Color.white;
     }
 }

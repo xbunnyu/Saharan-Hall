@@ -229,12 +229,12 @@ public class RhythmGameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ตรวจสอบการกดปุ่มของผู้เล่น
+    /// ตรวจสอบการกดปุ่มของผู้เล่น (รองรับทั้ง Keyboard และ Gamepad)
     /// </summary>
     private void HandlePlayerInput(float elapsedTime)
     {
         var keyboard = Keyboard.current;
-        if (keyboard == null) return;
+        var gamepad = Gamepad.current;
 
         for (int lane = 0; lane < 4; lane++)
         {
@@ -243,10 +243,22 @@ public class RhythmGameManager : MonoBehaviour
             // ตรวจสอบผ่าน New Input System
             switch (lane)
             {
-                case 0: pressed = keyboard.wKey.wasPressedThisFrame || keyboard.upArrowKey.wasPressedThisFrame; break;
-                case 1: pressed = keyboard.aKey.wasPressedThisFrame || keyboard.leftArrowKey.wasPressedThisFrame; break;
-                case 2: pressed = keyboard.sKey.wasPressedThisFrame || keyboard.downArrowKey.wasPressedThisFrame; break;
-                case 3: pressed = keyboard.dKey.wasPressedThisFrame || keyboard.rightArrowKey.wasPressedThisFrame; break;
+                case 0: // W / Up
+                    pressed = (keyboard != null && (keyboard.wKey.wasPressedThisFrame || keyboard.upArrowKey.wasPressedThisFrame))
+                           || (gamepad != null && (gamepad.dpad.up.wasPressedThisFrame || gamepad.buttonNorth.wasPressedThisFrame));
+                    break;
+                case 1: // A / Left
+                    pressed = (keyboard != null && (keyboard.aKey.wasPressedThisFrame || keyboard.leftArrowKey.wasPressedThisFrame))
+                           || (gamepad != null && (gamepad.dpad.left.wasPressedThisFrame || gamepad.buttonWest.wasPressedThisFrame));
+                    break;
+                case 2: // S / Down
+                    pressed = (keyboard != null && (keyboard.sKey.wasPressedThisFrame || keyboard.downArrowKey.wasPressedThisFrame))
+                           || (gamepad != null && (gamepad.dpad.down.wasPressedThisFrame || gamepad.buttonSouth.wasPressedThisFrame));
+                    break;
+                case 3: // D / Right
+                    pressed = (keyboard != null && (keyboard.dKey.wasPressedThisFrame || keyboard.rightArrowKey.wasPressedThisFrame))
+                           || (gamepad != null && (gamepad.dpad.right.wasPressedThisFrame || gamepad.buttonEast.wasPressedThisFrame));
+                    break;
             }
 
             if (pressed)

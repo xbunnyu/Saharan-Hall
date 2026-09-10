@@ -191,7 +191,44 @@ public class InteractionUIManager : MonoBehaviour
                 {
                     string keyText = !string.IsNullOrEmpty(item.interactionKeyText) ? item.interactionKeyText.ToUpper() : "E";
                     string promptLabel = !string.IsNullOrEmpty(item.customReadPromptText) ? item.customReadPromptText : "อ่านข้อมูล";
-                    actionText += $"<color=#FFD700>[{keyText}]</color> {promptLabel}";
+
+                    // ตรวจสอบว่าวัตถุนี้เป็นมินิเกมหรือไม่
+                    MinigameType mgType = MinigameType.None;
+                    if (item is QTEInteractable) mgType = MinigameType.TalismanDrawing;
+                    else if (item is RhythmInteractable) mgType = MinigameType.RhythmChantWASD;
+                    else if (item is SlashInteractable) mgType = MinigameType.SequentialSlashQTE;
+                    else if (item is TimingBarInteractable) mgType = MinigameType.TimingBarQTE;
+
+                    if (mgType != MinigameType.None)
+                    {
+                        QuestData reqQuest = null;
+                        if (QuestUIManager.Instance != null && QuestUIManager.Instance.activeQuests != null)
+                        {
+                            foreach (var q in QuestUIManager.Instance.activeQuests)
+                            {
+                                if (q != null && q.IsMinigameRequired(mgType))
+                                {
+                                    reqQuest = q;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (reqQuest != null)
+                        {
+                            int stepNum = reqQuest.completedMinigameSequence.Count + 1;
+                            int totalSteps = reqQuest.requiredMinigameSequence.Count;
+                            actionText += $"<color=#FFD700>[{keyText}]</color> {promptLabel} <color=#00FF7F>(ขั้นตอนที่ {stepNum}/{totalSteps})</color>";
+                        }
+                        else
+                        {
+                            actionText += $"<color=#888888>🔒 [ไม่ได้อยู่ในขั้นตอนพิธีของเควสนี้]</color>";
+                        }
+                    }
+                    else
+                    {
+                        actionText += $"<color=#FFD700>[{keyText}]</color> {promptLabel}";
+                    }
                 }
                 if (item.canCollect)
                 {

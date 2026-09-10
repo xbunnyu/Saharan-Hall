@@ -162,6 +162,16 @@ public class QuestUIManager : MonoBehaviour
                     questRequirementText.text = $"สิ่งที่ต้องการ: <color=#FFD700>{quest.requiredItemName} x{quest.requiredQuantity}</color>";
                     questRequirementText.gameObject.SetActive(true);
                 }
+                else if (quest.requiredMinigameSequence != null && quest.requiredMinigameSequence.Count > 0)
+                {
+                    string reqStr = $"พิธีกรรมที่ต้องทำ ({quest.requiredMinigameSequence.Count} พิธี):";
+                    for (int k = 0; k < quest.requiredMinigameSequence.Count; k++)
+                    {
+                        reqStr += $"\n  • {k + 1}. {QuestData.GetMinigameNameThai(quest.requiredMinigameSequence[k])}";
+                    }
+                    questRequirementText.text = $"<color=#FFD700>{reqStr}</color>";
+                    questRequirementText.gameObject.SetActive(true);
+                }
                 else
                 {
                     questRequirementText.gameObject.SetActive(false);
@@ -394,6 +404,32 @@ public class QuestUIManager : MonoBehaviour
                     string statusTag = isReady ? " <color=#00FF7F>[พร้อมส่ง]</color>" : "";
 
                     trackerText += $"   - หา: {q.requiredItemName} (<color={countColor}>{currentCount}/{q.requiredQuantity}</color>){statusTag}\n";
+                }
+                else if (q.requiredMinigameSequence != null && q.requiredMinigameSequence.Count > 0)
+                {
+                    int compCount = q.completedMinigameSequence != null ? q.completedMinigameSequence.Count : 0;
+                    int totalCount = q.requiredMinigameSequence.Count;
+                    bool isReady = q.isTaskCompleted;
+                    string statusTag = isReady ? " <color=#00FF7F>[ทำครบแล้ว! พร้อมส่ง]</color>" : $" ({compCount}/{totalCount})";
+
+                    trackerText += $"   - ลำดับพิธีกรรม{statusTag}:\n";
+                    for (int j = 0; j < totalCount; j++)
+                    {
+                        var mType = q.requiredMinigameSequence[j];
+                        string mName = QuestData.GetMinigameNameThai(mType);
+                        if (j < compCount)
+                        {
+                            trackerText += $"     <color=#00FF7F>✓ {j + 1}. {mName} (สำเร็จ)</color>\n";
+                        }
+                        else if (j == compCount)
+                        {
+                            trackerText += $"     <color=#FFD700>👉 {j + 1}. {mName} (กำลังทำ)</color>\n";
+                        }
+                        else
+                        {
+                            trackerText += $"     <color=#778899>🔒 {j + 1}. {mName}</color>\n";
+                        }
+                    }
                 }
                 else
                 {

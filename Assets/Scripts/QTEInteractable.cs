@@ -18,8 +18,8 @@ public class QTEInteractable : InteractableItem
     [Tooltip("ความเร็วที่เพิ่มขึ้นทุกครั้งที่กดสำเร็จ (องศา/วินาที)")]
     public float speedIncrement = 40f;
 
-    [Tooltip("จำนวนครั้งสูงสุดที่อนุญาตให้ล้มเหลว (พลาดได้ไม่เกิน 2 ครั้ง)")]
-    public int maxAllowedFailures = 2;
+    [Tooltip("จำนวนครั้งสูงสุดที่อนุญาตให้ล้มเหลว (พลาดได้ไม่เกิน 3 ครั้ง)")]
+    public int maxAllowedFailures = 3;
 
     [Tooltip("เมื่อทำสำเร็จแล้ว ให้ปิดการโต้ตอบกับวัตถุนี้หรือไม่")]
     public bool disableAfterSuccess = false;
@@ -54,6 +54,16 @@ public class QTEInteractable : InteractableItem
             return;
         }
 
+        QuestData activeQuest = GetActiveQuestForMinigame();
+        if (activeQuest == null)
+        {
+            if (interactor != null)
+            {
+                interactor.ShowNotification("🔒 พิธีเขียนยันต์ไม่ได้อยู่ในขั้นตอนของเควสปัจจุบัน!", 3.0f);
+            }
+            return;
+        }
+
         // หากยังไม่มี QTEController ในฉาก ให้สร้างให้อัตโนมัติ
         if (QTEController.Instance == null)
         {
@@ -81,6 +91,21 @@ public class QTEInteractable : InteractableItem
         }
     }
 
+    private QuestData GetActiveQuestForMinigame()
+    {
+        if (QuestUIManager.Instance != null && QuestUIManager.Instance.activeQuests != null)
+        {
+            foreach (var q in QuestUIManager.Instance.activeQuests)
+            {
+                if (q != null && q.IsMinigameRequired(MinigameType.TalismanDrawing))
+                {
+                    return q;
+                }
+            }
+        }
+        return null;
+    }
+
     private void HandleSuccess()
     {
         isCompletedSuccessfully = true;
@@ -90,27 +115,37 @@ public class QTEInteractable : InteractableItem
             canRead = false;
         }
 
-        // หากมีเควสที่รับมาและเป็นเควสมินิเกมเขียนยันต์ ให้เปลี่ยนสถานะเควสเป็นทำภารกิจสำเร็จ
-        if (QuestUIManager.Instance != null && QuestUIManager.Instance.activeQuests != null)
+        QuestData q = GetActiveQuestForMinigame();
+        if (q != null)
         {
-            foreach (var q in QuestUIManager.Instance.activeQuests)
+            bool allDone = q.MarkMinigameCompleted(MinigameType.TalismanDrawing);
+            string progressText = $"({q.completedMinigameSequence.Count}/{q.requiredMinigameSequence.Count})";
+
+            PlayerInteraction player = FindFirstObjectByType<PlayerInteraction>();
+            if (player != null)
             {
-                if (q != null && (q.minigameType == MinigameType.DeadByDaylightQTE || q.minigameType == MinigameType.TalismanDrawing) && !q.isTaskCompleted)
+                if (allDone)
                 {
-                    q.isTaskCompleted = true;
-                    Debug.Log($"[QTEInteractable] 📜 อัปเดตเควส '{q.questTitle}' -> ทำพิธีเขียนยันต์สำเร็จแล้ว!");
+                    player.ShowNotification($"🎉 <color=#00FF7F>[ทำพิธีครบทุกขั้นตอนแล้ว {progressText}]</color> กลับไปรายงาน {q.npcName} ได้เลย!", 4.0f);
                 }
+                else
+                {
+                    MinigameType nextGame = q.requiredMinigameSequence[q.completedMinigameSequence.Count];
+                    string nextThai = QuestData.GetMinigameNameThai(nextGame);
+                    player.ShowNotification($"✨ <color=#00FF7F>[เขียนยันต์สำเร็จ {progressText}]</color> ขั้นต่อไปทำ: <color=#FFD700>{nextThai}</color>", 4.0f);
+                }
+            }
+        }
+        else
+        {
+            PlayerInteraction player = FindFirstObjectByType<PlayerInteraction>();
+            if (player != null)
+            {
+                player.ShowNotification($"ทำพิธี [{itemName}] สำเร็จเรียบร้อย!");
             }
         }
 
         onQTESuccess?.Invoke();
-
-        PlayerInteraction player = FindFirstObjectByType<PlayerInteraction>();
-        if (player != null)
-        {
-            player.ShowNotification($"ทำพิธีเขียนยันต์ [{itemName}] สำเร็จเรียบร้อย!");
-        }
-
         Debug.Log($"[QTEInteractable] 🎉 พิธีเขียนยันต์สำเร็จบนวัตถุ '{itemName}'");
     }
 

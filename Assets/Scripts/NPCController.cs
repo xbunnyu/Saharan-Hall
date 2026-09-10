@@ -48,6 +48,11 @@ public class NPCController : MonoBehaviour
     public void Initialize(QuestData data, Transform reception, Transform exit, Transform player, HallManager manager)
     {
         this.questData = data != null ? data.Clone() : new QuestData();
+        if (this.questData.requiredMinigameSequence == null || this.questData.requiredMinigameSequence.Count == 0)
+        {
+            this.questData.GenerateRandomMinigameSequence(2, 4);
+        }
+
         this.targetReceptionPoint = reception;
         this.targetExitPoint = exit;
         this.playerTransform = player;
@@ -378,37 +383,14 @@ public class NPCController : MonoBehaviour
     }
 
     /// <summary>
-    /// ผู้เล่นกดรับเควส
+    /// ผู้เล่นกดรับเควส ➔ NPC จะยืนรออยู่ที่เดิม เพื่อให้ผู้เล่นเดินไปโต้ตอบกดทำพิธีที่วัตถุในฉากด้วยตัวเอง
     /// </summary>
     public void OnQuestAccepted()
     {
         questData.isAccepted = true;
         SetAnimationTalking(false);
 
-        // 1. กรณีเควสมีมินิเกม (เช่น Rhythm Game ท่องคาถา W A S D)
-        if (questData.minigameType != MinigameType.None)
-        {
-            currentState = NPCState.WaitingForDelivery;
-
-            if (MinigameManager.Instance != null)
-            {
-                MinigameManager.Instance.StartMinigame(questData, this, OnMinigameResult);
-            }
-            else
-            {
-                // Fallback: ค้นหาหรือสร้าง MinigameManager
-                MinigameManager mgr = FindFirstObjectByType<MinigameManager>();
-                if (mgr == null)
-                {
-                    GameObject mgrObj = new GameObject("MinigameManager");
-                    mgr = mgrObj.AddComponent<MinigameManager>();
-                }
-                mgr.StartMinigame(questData, this, OnMinigameResult);
-            }
-            return;
-        }
-
-        // 2. กรณีเควสทั่วไป/ส่งของ (NPC จะยืนรอรับของ)
+        // NPC เปลี่ยนสถานะเป็นยืนรอผู้เล่นทำภารกิจและนำผลลัพธ์มาส่งมอบ
         currentState = NPCState.WaitingForDelivery;
 
         if (acceptSound != null)
@@ -416,7 +398,18 @@ public class NPCController : MonoBehaviour
             AudioSource.PlayClipAtPoint(acceptSound, transform.position);
         }
 
-        Debug.Log($"[NPCController] ✅ ผู้เล่นรับเควส: '{questData.questTitle}' (NPC จะยืนรอส่งมอบอยู่ที่เดิม)");
+        string hint = questData.minigameType != MinigameType.None 
+            ? $" (โปรดเดินไปกด [E] ทำพิธีมินิเกมที่วัตถุ/แท่นพิธีในตำหนัก แล้วกลับมารายงาน {questData.npcName})"
+            : "";
+
+        if (InteractionUIManager.Instance != null)
+        {
+            string msg = !string.IsNullOrEmpty(questData.acceptDialogue) ? questData.acceptDialogue : "ขอบพระคุณมาก!";
+            InteractionUIManager.Instance.ShowNotification(
+                $"<color=#00FF7F>[รับเควสสำเร็จ]</color> {questData.npcName}: \"{msg}\"{hint}", 4.0f);
+        }
+
+        Debug.Log($"[NPCController] ✅ ผู้เล่นรับเควส: '{questData.questTitle}' (NPC ยืนรอที่เดิม โปรดเดินไปกด [E] ทำพิธีที่วัตถุในฉาก)");
     }
 
     /// <summary>
