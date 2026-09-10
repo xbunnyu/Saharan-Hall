@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
 using TMPro;
 
 /// <summary>
@@ -124,8 +125,8 @@ public class MainMenuManager : MonoBehaviour
 
     private void Update()
     {
-        // จัดการคีย์ลัด Escape
-        if (Input.GetKeyDown(KeyCode.Escape))
+        // จัดการคีย์ลัด Escape (New Input System)
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             if (isSettingsOpen)
             {
@@ -182,6 +183,28 @@ public class MainMenuManager : MonoBehaviour
             resolutionDropdown.onValueChanged.AddListener(SetResolution);
     }
     #endregion
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // PUBLIC SHORTHAND METHODS — ใช้ลากใส่ปุ่ม OnClick() ใน Inspector ได้โดยตรง
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>เรียกจาก OnClick() ของปุ่ม "เริ่มเกม" ใน Inspector</summary>
+    public void PlayGame() => OnPlayButtonClicked();
+
+    /// <summary>เรียกจาก OnClick() ของปุ่ม "ตั้งค่า" ใน Inspector</summary>
+    public void ShowSettings() => OpenSettings();
+
+    /// <summary>เรียกจาก OnClick() ของปุ่ม "ออก" ใน Inspector</summary>
+    public void QuitGame() => OpenQuitConfirm();
+
+    /// <summary>เรียกจาก OnClick() ของปุ่ม "ปิดตั้งค่า" ใน Inspector</summary>
+    public void HideSettings() => CloseSettings();
+
+    /// <summary>เรียกจาก OnClick() ของปุ่ม "ยืนยันออก" ใน Inspector</summary>
+    public void ConfirmQuit() => ConfirmQuitGame();
+
+    /// <summary>เรียกจาก OnClick() ของปุ่ม "ยกเลิกออก" ใน Inspector</summary>
+    public void CancelQuit() => CloseQuitConfirm();
 
     #region Play / Scene Loading
     public void OnPlayButtonClicked()
