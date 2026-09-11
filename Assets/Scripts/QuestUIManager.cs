@@ -162,18 +162,9 @@ public class QuestUIManager : MonoBehaviour
                     questRequirementText.text = $"สิ่งที่ต้องการ: <color=#FFD700>{quest.requiredItemName} x{quest.requiredQuantity}</color>";
                     questRequirementText.gameObject.SetActive(true);
                 }
-                else if (quest.requiredMinigameSequence != null && quest.requiredMinigameSequence.Count > 0)
-                {
-                    string reqStr = $"พิธีกรรมที่ต้องทำ ({quest.requiredMinigameSequence.Count} พิธี):";
-                    for (int k = 0; k < quest.requiredMinigameSequence.Count; k++)
-                    {
-                        reqStr += $"\n  • {k + 1}. {QuestData.GetMinigameNameThai(quest.requiredMinigameSequence[k])}";
-                    }
-                    questRequirementText.text = $"<color=#FFD700>{reqStr}</color>";
-                    questRequirementText.gameObject.SetActive(true);
-                }
                 else
                 {
+                    // ไม่แสดงรายการมินิเกมล่วงหน้าในหน้าต่าง Dialog เพื่อเน้นให้เป็นคำพูดของ NPC
                     questRequirementText.gameObject.SetActive(false);
                 }
             }
@@ -217,8 +208,8 @@ public class QuestUIManager : MonoBehaviour
             activeQuests.Add(currentQuest);
         }
 
-        // หากเป็นเควสมินิเกม (เช่น ท่องคาถา Rhythm Game) -> ปิด Dialog ทันทีเพื่อเริ่มเล่นมินิเกม
-        if (currentQuest.minigameType != MinigameType.None)
+        // หากเป็นเควสมินิเกม -> ปิด Dialog ทันทีเพื่อเริ่มเล่นมินิเกม
+        if (currentQuest.requiredMinigameSequence != null && currentQuest.requiredMinigameSequence.Count > 0)
         {
             NPCController npc = currentNPC;
             CloseDialog();
@@ -227,8 +218,8 @@ public class QuestUIManager : MonoBehaviour
         }
 
         // หากเป็นเควสส่งของทั่วไป -> แสดงข้อความตอบรับบน UI ก่อนปิด
-        responseMessage = !string.IsNullOrEmpty(currentQuest.acceptDialogue) 
-            ? currentQuest.acceptDialogue 
+        responseMessage = !string.IsNullOrEmpty(currentQuest.waitingDialogue) 
+            ? currentQuest.waitingDialogue 
             : "ขอบคุณมากที่รับปากช่วยข้า!";
 
         ShowResponseAndClose(true);
@@ -394,7 +385,8 @@ public class QuestUIManager : MonoBehaviour
             for (int i = 0; i < activeQuests.Count; i++)
             {
                 var q = activeQuests[i];
-                trackerText += $"<b><color=#FFD700>• {q.questTitle}</color></b> ({q.npcName})\n";
+                string titleText = !string.IsNullOrEmpty(q.problemType) ? q.problemType : q.questTitle;
+                trackerText += $"<b><color=#FFD700>• ปัญหา: {titleText}</color></b> ({q.npcName})\n";
 
                 if (!string.IsNullOrEmpty(q.requiredItemName))
                 {
@@ -533,7 +525,8 @@ public class QuestUIManager : MonoBehaviour
                 var q = activeQuests[i];
 
                 // ชื่องาน และผู้มอบหมาย
-                GUI.Label(new Rect(trackerX + 12, currentY, trackerW - 24, 18), $"• {q.questTitle} ({q.npcName})", taskTitleStyle);
+                string titleText = !string.IsNullOrEmpty(q.problemType) ? q.problemType : q.questTitle;
+                GUI.Label(new Rect(trackerX + 12, currentY, trackerW - 24, 18), $"• ปัญหา: {titleText} ({q.npcName})", taskTitleStyle);
 
                 // สิ่งที่ต้องทำ และจำนวนไอเทม
                 string detailStr = "";
@@ -543,6 +536,23 @@ public class QuestUIManager : MonoBehaviour
                     bool ready = count >= q.requiredQuantity;
                     string readyTag = ready ? " <color=#00FF7F>[พร้อมส่ง]</color>" : "";
                     detailStr = $"   - หา: {q.requiredItemName} ({count}/{q.requiredQuantity}){readyTag}";
+                }
+                else if (q.requiredMinigameSequence != null && q.requiredMinigameSequence.Count > 0)
+                {
+                    int compCount = q.completedMinigameSequence != null ? q.completedMinigameSequence.Count : 0;
+                    int totalCount = q.requiredMinigameSequence.Count;
+                    bool isReady = q.isTaskCompleted;
+                    string statusTag = isReady ? " <color=#00FF7F>[พร้อมส่ง]</color>" : $" ({compCount}/{totalCount})";
+                    
+                    detailStr = $"   - พิธี{statusTag}: ";
+                    for (int j = 0; j < totalCount; j++)
+                    {
+                        var mType = q.requiredMinigameSequence[j];
+                        string mName = QuestData.GetMinigameNameThai(mType);
+                        if (j < compCount) detailStr += $"<color=#00FF7F>✓{mName}</color> ";
+                        else if (j == compCount) detailStr += $"<color=#FFD700>👉{mName}</color> ";
+                        else detailStr += $"<color=#778899>🔒{mName}</color> ";
+                    }
                 }
                 else
                 {

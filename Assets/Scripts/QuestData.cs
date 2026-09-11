@@ -28,6 +28,8 @@ public class QuestData
 {
     [Header("Quest Info (ข้อมูลเควส)")]
     public string questId = "quest_01";
+    [Tooltip("ประเภทปัญหาของ NPC (เช่น ผีอำ, โดนทำของ, ดวงตก)")]
+    public string problemType = "ดวงตก";
     public string questTitle = "ขอความช่วยเหลือ";
     [TextArea(3, 6)]
     public string questDescription = "ท่านผู้ดูแลตำหนัก ช่วยท่องคาถาทำพิธีสะเดาะเคราะห์ให้ข้าหน่อยได้หรือไม่?";
@@ -37,8 +39,6 @@ public class QuestData
     public QuestDifficulty difficulty = QuestDifficulty.Easy;
 
     [Header("Minigame Settings (การตั้งค่ามินิเกม)")]
-    [Tooltip("ประเภทมินิเกมที่ต้องเล่นเมื่อรับเควสนี้")]
-    public MinigameType minigameType = MinigameType.RhythmChantWASD;
     [Tooltip("ความเร็วในการเลื่อนของโน้ต (0 = คำนวณอัตโนมัติตามความยาก)")]
     public float customNoteSpeed = 0f;
     [Tooltip("จำนวนโน้ตทั้งหมดในรอบ (0 = คำนวณอัตโนมัติตามความยาก)")]
@@ -55,11 +55,10 @@ public class QuestData
     [TextArea(2, 4)]
     public string greetingDialogue = "สวัสดีท่านผู้ดูแลตำหนัก ข้ามีเรื่องเดือดร้อนใจ อยากให้ท่านช่วยท่องคาถาทำพิธีให้...";
     [TextArea(2, 4)]
-    public string acceptDialogue = "ขอบพระคุณท่านมาก! ข้าขอฝากความหวังไว้กับพิธีกรรมของท่านนะ";
+    [UnityEngine.Serialization.FormerlySerializedAs("acceptDialogue")]
+    public string waitingDialogue = "ขอบพระคุณท่านมาก! ข้าขอฝากความหวังไว้กับพิธีกรรมของท่านนะ";
     [TextArea(2, 4)]
     public string completeDialogue = "ยอดเยี่ยมมาก! พิธีสำเร็จลุล่วงด้วยดี ขอบพระคุณท่านจริง ๆ ข้าขอตัวลาก่อน";
-    [TextArea(2, 4)]
-    public string failDialogue = "อ๊ากก! ทำไมมีสิ่งชั่วร้ายเข้าครอบงำ... พิธีล้มเหลวแล้ว!";
     [TextArea(2, 4)]
     public string declineDialogue = "งั้นหรือ... น่าเสียดายจัง ไม่เป็นไร โอกาสหน้าข้าจะมาใหม่";
 
@@ -71,7 +70,7 @@ public class QuestData
     [Tooltip("สำหรับเควสที่ไม่ใช่การส่งของ (เช่น ทำพิธีกรรม/มินิเกม) กำหนดว่าทำภารกิจสำเร็จแล้วหรือไม่")]
     public bool isTaskCompleted = false;
 
-    [Header("Reward (รางวัลตอบแทน)")]
+    [Header("Reward (รางวัล)")]
     public string rewardDescription = "เงินรางวัล 150 เหรียญ";
     public int rewardMoney = 150;
     public string rewardItemName = "";
@@ -91,51 +90,11 @@ public class QuestData
     public bool isCompleted = false;
 
     /// <summary>
-    /// สุ่มชุดมินิเกมที่ต้องทำ 2 ถึง 4 มินิเกมสำหรับเควสนี้
-    /// </summary>
-    public void GenerateRandomMinigameSequence(int minCount = 2, int maxCount = 4)
-    {
-        requiredMinigameSequence.Clear();
-        completedMinigameSequence.Clear();
-
-        MinigameType[] pool = new MinigameType[]
-        {
-            MinigameType.RhythmChantWASD,
-            MinigameType.TalismanDrawing,
-            MinigameType.SequentialSlashQTE,
-            MinigameType.TimingBarQTE
-        };
-
-        // สับเปลี่ยนรายการมินิเกมที่มี (Fisher-Yates Shuffle)
-        for (int i = pool.Length - 1; i > 0; i--)
-        {
-            int rnd = UnityEngine.Random.Range(0, i + 1);
-            var temp = pool[i];
-            pool[i] = pool[rnd];
-            pool[rnd] = temp;
-        }
-
-        int count = UnityEngine.Random.Range(minCount, maxCount + 1);
-        for (int i = 0; i < count && i < pool.Length; i++)
-        {
-            requiredMinigameSequence.Add(pool[i]);
-        }
-
-        if (requiredMinigameSequence.Count > 0)
-        {
-            minigameType = requiredMinigameSequence[0];
-        }
-    }
-
-    /// <summary>
     /// ตรวจสอบว่ามินิเกมประเภทนี้จำเป็นต้องเล่นในขั้นตอนปัจจุบันของเควสหรือไม่
     /// </summary>
     public bool IsMinigameRequired(MinigameType type)
     {
-        if (requiredMinigameSequence == null || requiredMinigameSequence.Count == 0)
-        {
-            return (type == minigameType || (type == MinigameType.DeadByDaylightQTE && minigameType == MinigameType.TalismanDrawing) || (type == MinigameType.TalismanDrawing && minigameType == MinigameType.DeadByDaylightQTE)) && !isTaskCompleted;
-        }
+        if (requiredMinigameSequence == null || requiredMinigameSequence.Count == 0) return false;
 
         if (completedMinigameSequence.Count >= requiredMinigameSequence.Count) return false;
 
@@ -146,6 +105,16 @@ public class QuestData
                      (type == MinigameType.TalismanDrawing && currentRequired == MinigameType.DeadByDaylightQTE);
 
         return match;
+    }
+
+    /// <summary>
+    /// ดึงมินิเกมลำดับปัจจุบันที่ต้องเล่น
+    /// </summary>
+    public MinigameType GetCurrentMinigameType()
+    {
+        if (requiredMinigameSequence == null || completedMinigameSequence.Count >= requiredMinigameSequence.Count)
+            return MinigameType.None;
+        return requiredMinigameSequence[completedMinigameSequence.Count];
     }
 
     /// <summary>
@@ -180,12 +149,12 @@ public class QuestData
     {
         switch (type)
         {
-            case MinigameType.RhythmChantWASD: return "🥁 ท่องคาถา (WASD)";
+            case MinigameType.RhythmChantWASD: return "ท่องคาถา";
             case MinigameType.DeadByDaylightQTE:
-            case MinigameType.TalismanDrawing: return "📜 เขียนยันต์มหาเวทย์";
-            case MinigameType.SequentialSlashQTE: return "⚔️ ตวัดดาบฟันยันต์";
-            case MinigameType.TimingBarQTE: return "🌾 โปรยข้าวสารไล่ผี";
-            default: return "พิธีกรรม";
+            case MinigameType.TalismanDrawing: return "เขียนยันต์";
+            case MinigameType.SequentialSlashQTE: return "ตวัดดาบ";
+            case MinigameType.TimingBarQTE: return "โปรยข้าวสาร";
+            default: return "ทำพิธี";
         }
     }
 

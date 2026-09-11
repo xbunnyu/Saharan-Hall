@@ -86,7 +86,7 @@ public class RhythmInteractable : InteractableItem
                 customNoteCount = customNoteCount,
                 customNoteSpeed = customNoteSpeed,
                 passPercentage = passPercentage,
-                minigameType = MinigameType.RhythmChantWASD
+                requiredMinigameSequence = new System.Collections.Generic.List<MinigameType> { MinigameType.RhythmChantWASD }
             };
 
             // เริ่ม Minigame ท่องคาถา Rhythm

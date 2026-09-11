@@ -94,7 +94,7 @@ public class MinigameManager : MonoBehaviour
         activeQuestData = quest;
         currentCallback = onComplete;
         isMinigameActive = true;
-        currentMinigameType = quest != null ? quest.minigameType : MinigameType.RhythmChantWASD;
+        currentMinigameType = quest != null ? quest.GetCurrentMinigameType() : MinigameType.RhythmChantWASD;
 
         // ล็อคการควบคุมผู้เล่น และปลดล็อคเมาส์
         FreezePlayer();

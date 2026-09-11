@@ -9,8 +9,8 @@ public class HallManager : MonoBehaviour
     [Header("1. สถานะตำหนัก (Hall Status)")]
     [Tooltip("ตำหนักกำลังเปิดรับผู้คนอยู่หรือไม่")]
     public bool isHallOpen = false;
-    [Tooltip("เริ่มเปิดตำหนักทันทีเมื่อเริ่มเกมหรือไม่")]
-    public bool openOnStart = false;
+    [Tooltip("เริ่มเปิดตำหนักทันทีเมื่อเริ่มเกม (ตำหนักจะเปิดรับลูกค้าโดยอัตโนมัติ)")]
+    public bool openOnStart = true;
 
     [Header("2. จุดตำแหน่งสำคัญ (Waypoints)")]
     [Tooltip("จุดเกิดของ NPC (สามารถใส่ได้หลายจุดเพื่อสุ่ม)")]
@@ -141,15 +141,15 @@ public class HallManager : MonoBehaviour
             questList.Add(new QuestData
             {
                 questId          = "quest_easy_chant",
+                problemType      = "ดวงตก / เคราะห์ร้าย",
                 difficulty       = QuestDifficulty.Easy,
-                minigameType     = MinigameType.RhythmChantWASD,
+                requiredMinigameSequence = new List<MinigameType> { MinigameType.RhythmChantWASD },
                 questTitle       = "สวดมนต์สะเดาะเคราะห์",
                 npcName          = "ลุงสมชาย (ชาวบ้าน)",
                 greetingDialogue = "สวัสดีจ้ะพ่อหนุ่ม... ช่วงนี้ข้ารู้สึกดวงตกเหลือเกิน รบกวนช่วยท่องคาถาสะเดาะเคราะห์ให้ข้าทีเถิด",
                 questDescription = "ช่วยทำพิธีท่องคาถาสะเดาะเคราะห์ (Rhythm Game W A S D) เพื่อปัดเป่าเคราะห์ร้าย",
-                acceptDialogue   = "ขอบใจมากนะพ่อหนุ่ม! ข้าจะตั้งจิตร่วมพิธีเดี๋ยวนี้เลย",
+                waitingDialogue  = "ขอบใจมากนะพ่อหนุ่ม! ข้าจะตั้งจิตร่วมพิธีเดี๋ยวนี้เลย",
                 completeDialogue = "สาธุ! ข้ารู้สึกโล่งใจและดวงเปิดขึ้นทันที ขอบคุณท่านผู้ดูแลตำหนักมาก!",
-                failDialogue     = "อ๊าก! ข้ารู้สึกหนาวสั่นแปลกๆ มีเงาดำลอยเข้ามา... พิธีล้มเหลวเสียแล้ว!",
                 declineDialogue  = "เฮ้อ... ไม่เป็นไร เดี๋ยวข้าลองไปวัดอื่นดู",
                 rewardDescription= "เงิน 150 เหรียญ",
                 rewardMoney      = 150,
@@ -160,15 +160,15 @@ public class HallManager : MonoBehaviour
             questList.Add(new QuestData
             {
                 questId          = "quest_medium_chant",
+                problemType      = "โดนทำของ / คุณไสย",
                 difficulty       = QuestDifficulty.Medium,
-                minigameType     = MinigameType.RhythmChantWASD,
+                requiredMinigameSequence = new List<MinigameType> { MinigameType.RhythmChantWASD },
                 questTitle       = "สวดพระปริตรแก้คุณไสย",
                 npcName          = "ป้าสมศรี (แม่ค้า)",
                 greetingDialogue = "ท่านผู้ดูแลตำหนัก ช่วยข้าด้วยเถิด! มีคนทำคุณไสยใส่ร้านค้าของข้าจนขายของไม่ได้เลย",
                 questDescription = "ช่วยทำพิธีท่องคาถาพระปริตรคุ้มครอง (Rhythm Game W A S D) ขับไล่คุณไสย",
-                acceptDialogue   = "สาธุ ขอให้บารมีคุ้มครองร้านของข้าด้วยเถิด ข้าฝากด้วยนะ!",
+                waitingDialogue  = "สาธุ ขอให้บารมีคุ้มครองร้านของข้าด้วยเถิด ข้าฝากด้วยนะ!",
                 completeDialogue = "ยอดเยี่ยมมาก! กลิ่นอายมืดดำสลายไปหมดแล้ว ขอบพระคุณท่านจากใจจริง!",
-                failDialogue     = "ว้ายย! ลมกรรโชกแรงมาก สิ่งชั่วร้ายสะท้อนกลับมาแล้ว... หนีเร็ว!",
                 declineDialogue  = "โธ่... ข้าคงต้องทนรับเคราะห์ต่อไป",
                 rewardDescription= "เงิน 350 เหรียญ",
                 rewardMoney      = 350,
@@ -179,15 +179,15 @@ public class HallManager : MonoBehaviour
             questList.Add(new QuestData
             {
                 questId          = "quest_hard_chant",
+                problemType      = "โดนวิญญาณอาฆาตตามรังควาน",
                 difficulty       = QuestDifficulty.Hard,
-                minigameType     = MinigameType.RhythmChantWASD,
+                requiredMinigameSequence = new List<MinigameType> { MinigameType.RhythmChantWASD },
                 questTitle       = "ท่องมหาเวทปราบสัมภเวสี",
                 npcName          = "ทิดมั่น (คนทรง)",
                 greetingDialogue = "ท่านผู้ดูแล... มีวิญญาณสัมภเวสีอาฆาตตามรังควานข้าไม่ยอมปล่อย ต้องใช้คาถามหาเวทขับไล่!",
                 questDescription = "ทำพิธีท่องมหาเวทปราบผีร้าย (Rhythm Game W A S D จังหวะเร็ว) เพื่อสะกดวิญญาณ",
-                acceptDialogue   = "เตรียมสมาธิให้ดี จังหวะคาถานี้รวดเร็วและอันตรายมาก!",
+                waitingDialogue  = "เตรียมสมาธิให้ดี จังหวะคาถานี้รวดเร็วและอันตรายมาก!",
                 completeDialogue = "สำเร็จแล้ว! วิญญาณร้ายถูกสะกดลงหม้อดินเรียบร้อย ฝีมือท่านยอดเยี่ยมสมคำร่ำลือ",
-                failDialogue     = "แย่แล้ว! จิตของท่านหลุด จังหวะคาถาแตก... ผีร้ายตามติดตัวท่านไปแล้ว!",
                 declineDialogue  = "ถ้าท่านไม่กล้าเสี่ยง ข้าก็คงต้องหนีต่อไป...",
                 rewardDescription= "เงิน 800 เหรียญ",
                 rewardMoney      = 800,
@@ -198,15 +198,15 @@ public class HallManager : MonoBehaviour
             questList.Add(new QuestData
             {
                 questId          = "quest_veryhard_chant",
+                problemType      = "พญามารเข้าครอบงำ",
                 difficulty       = QuestDifficulty.VeryHard,
-                minigameType     = MinigameType.RhythmChantWASD,
+                requiredMinigameSequence = new List<MinigameType> { MinigameType.RhythmChantWASD },
                 questTitle       = "สวดพระมหาคาถาปราบพญามาร",
                 npcName          = "หลวงพ่อสงัด (พระอาจารย์)",
                 greetingDialogue = "เจริญพรท่านผู้ดูแลตำหนัก... พญามารตนใหญ่กำลังเข้าครอบงำตำหนัก ต้องใช้สมาธิขั้นสูงสวดพระมหาคาถา!",
                 questDescription = "สวดพระมหาคาถาปราบพญามารขั้นสูงสุด (Rhythm Game W A S D ระดับยากมาก) ต้องกดให้แม่นยำเพื่อป้องกันอาถรรพ์",
-                acceptDialogue   = "ขอตั้งมั่นในคุณพระรัตนตรัย เริ่มสวดพระคาถาได้!",
+                waitingDialogue  = "ขอตั้งมั่นในคุณพระรัตนตรัย เริ่มสวดพระคาถาได้!",
                 completeDialogue = "สาธุ สาธุ! มารร้ายสูญสลาย ตำหนักนี้กลับมาบริสุทธิ์ผุดผ่องอีกครั้ง ท่านคือยอดคนแห่งยุค!",
-                failDialogue     = "อนิจจา... พลังมารร้ายกลืนกินพิธีจนสิ้น อาถรรพ์พญามารได้เกาะกุมวิญญาณท่านแล้ว!",
                 declineDialogue  = "เป็นเรื่องน่าเสียดายยิ่ง... พลังมารยังคงวนเวียนอยู่",
                 rewardDescription= "เงิน 2,000 เหรียญ",
                 rewardMoney      = 2000,
@@ -433,44 +433,5 @@ public class HallManager : MonoBehaviour
         return npc;
     }
 
-    // ==========================================
-    // OnGUI Fallback Controls
-    // ==========================================
-    void OnGUI()
-    {
-        // แถบปุ่มควบคุมเปิด/ปิดตำหนักมุมบนซ้ายของหน้าจอ (สำหรับทดสอบสะดวก)
-        float btnWidth = 180f;
-        float btnHeight = 40f;
-        float posX = 20f;
-        float posY = 20f;
-
-        GUIStyle style = new GUIStyle(GUI.skin.button);
-        style.fontSize = 13;
-        style.fontStyle = FontStyle.Bold;
-
-        if (isHallOpen)
-        {
-            GUI.backgroundColor = new Color(1f, 0.35f, 0.35f);
-            if (GUI.Button(new Rect(posX, posY, btnWidth, btnHeight), "⛩️ [เปิดอยู่] กดเพื่อปิดตำหนัก", style))
-            {
-                CloseHall();
-            }
-
-            GUI.backgroundColor = Color.white;
-            GUIStyle statusStyle = new GUIStyle(GUI.skin.label);
-            statusStyle.fontSize = 12;
-            statusStyle.normal.textColor = Color.yellow;
-            string npcStatus = currentActiveNPC != null ? $"สถานะ: กำลังต้อนรับ {currentActiveNPC.questData.npcName}" : "สถานะ: กำลังรอคิวถัดไป...";
-            GUI.Label(new Rect(posX, posY + 45f, 300f, 25f), npcStatus, statusStyle);
-        }
-        else
-        {
-            GUI.backgroundColor = new Color(0.2f, 0.8f, 0.4f);
-            if (GUI.Button(new Rect(posX, posY, btnWidth, btnHeight), "⛩️ กดเริ่มเปิดตำหนัก", style))
-            {
-                OpenHall();
-            }
-            GUI.backgroundColor = Color.white;
-        }
-    }
 }
+

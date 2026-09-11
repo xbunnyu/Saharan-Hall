@@ -48,10 +48,6 @@ public class NPCController : MonoBehaviour
     public void Initialize(QuestData data, Transform reception, Transform exit, Transform player, HallManager manager)
     {
         this.questData = data != null ? data.Clone() : new QuestData();
-        if (this.questData.requiredMinigameSequence == null || this.questData.requiredMinigameSequence.Count == 0)
-        {
-            this.questData.GenerateRandomMinigameSequence(2, 4);
-        }
 
         this.targetReceptionPoint = reception;
         this.targetExitPoint = exit;
@@ -261,7 +257,7 @@ public class NPCController : MonoBehaviour
             else
             {
                 // ผู้เล่นยังไม่มีของ หรือยังทำภารกิจไม่เสร็จ -> แจ้งเตือนข้อความเตือนความจำ และห้ามส่งเควส
-                string waitMsg = "ข้ากำลังรอของจากท่านอยู่นะ...";
+                string waitMsg = !string.IsNullOrEmpty(questData.waitingDialogue) ? questData.waitingDialogue : "ข้ากำลังรอผลการทำพิธีอยู่นะ...";
 
                 string reqText = !string.IsNullOrEmpty(questData.requiredItemName)
                     ? $" (ต้องการ: {questData.requiredItemName} x{questData.requiredQuantity})"
@@ -398,13 +394,13 @@ public class NPCController : MonoBehaviour
             AudioSource.PlayClipAtPoint(acceptSound, transform.position);
         }
 
-        string hint = questData.minigameType != MinigameType.None 
+        string hint = (questData.requiredMinigameSequence != null && questData.requiredMinigameSequence.Count > 0)
             ? $" (โปรดเดินไปกด [E] ทำพิธีมินิเกมที่วัตถุ/แท่นพิธีในตำหนัก แล้วกลับมารายงาน {questData.npcName})"
             : "";
 
         if (InteractionUIManager.Instance != null)
         {
-            string msg = !string.IsNullOrEmpty(questData.acceptDialogue) ? questData.acceptDialogue : "ขอบพระคุณมาก!";
+            string msg = !string.IsNullOrEmpty(questData.waitingDialogue) ? questData.waitingDialogue : "ขอบพระคุณมาก!";
             InteractionUIManager.Instance.ShowNotification(
                 $"<color=#00FF7F>[รับเควสสำเร็จ]</color> {questData.npcName}: \"{msg}\"{hint}", 4.0f);
         }
@@ -434,9 +430,7 @@ public class NPCController : MonoBehaviour
                 GhostCurseManager.Instance.AttachGhost($"ท่องคาถาให้ {questData.npcName} ล้มเหลว");
             }
 
-            string failMsg = !string.IsNullOrEmpty(questData.failDialogue)
-                ? questData.failDialogue
-                : "อ๊ากก! มีสิ่งชั่วร้ายเข้าครอบงำ... พิธีล้มเหลวแล้ว!";
+            string failMsg = "อ๊ากก! มีสิ่งชั่วร้ายเข้าครอบงำ... พิธีล้มเหลวแล้ว!";
 
             if (InteractionUIManager.Instance != null)
             {
