@@ -12,6 +12,10 @@ public class MoneyDisplay : MonoBehaviour
     void Start()
     {
         label = GetComponent<TextMeshProUGUI>();
+        if (label == null)
+        {
+            label = GetComponentInChildren<TextMeshProUGUI>();
+        }
 
         if (PlayerWalletManager.Instance != null)
         {
@@ -22,7 +26,7 @@ public class MoneyDisplay : MonoBehaviour
         }
         else
         {
-            label.text = "฿ 0 บาท";
+            if (label != null) label.text = "฿ 0 บาท";
             Debug.LogWarning("[MoneyDisplay] ไม่พบ PlayerWalletManager ในฉาก");
         }
     }
@@ -38,6 +42,9 @@ public class MoneyDisplay : MonoBehaviour
 
     private void UpdateUI(int amount)
     {
-        label.text = $"฿ {amount:N0} บาท";
+        if (label != null)
+        {
+            label.text = $"฿ {amount:N0} บาท";
+        }
     }
 }

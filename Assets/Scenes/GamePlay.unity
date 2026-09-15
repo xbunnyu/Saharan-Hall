@@ -2963,7 +2963,7 @@ MonoBehaviour:
     rewardMoney: 120
     rewardItemName: 
     karmaReward: 0
-    requiredMinigameSequence: 01000000
+    requiredMinigameSequence: 01000000030000000400000005000000
     completedMinigameSequence: 
     isAccepted: 0
     isCompleted: 0

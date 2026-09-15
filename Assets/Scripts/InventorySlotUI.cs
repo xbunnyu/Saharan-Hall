@@ -21,6 +21,11 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
         currentItem = item;
         onSelectCallback = onSelect;
 
+        if (itemNameText == null)
+        {
+            itemNameText = GetComponentInChildren<TextMeshProUGUI>();
+        }
+
         if (itemNameText != null)
         {
             itemNameText.text = item != null ? item.itemName : "ไม่มีชื่อ";
