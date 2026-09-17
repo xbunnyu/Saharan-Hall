@@ -6,6 +6,12 @@ using UnityEngine;
 /// </summary>
 public class ShopInteractable : InteractableItem
 {
+    private void Awake()
+    {
+        readDescription = "";
+        readTitle = "";
+    }
+
     private void Reset()
     {
         itemName = "ร้านค้าวัตถุมงคล";
@@ -13,11 +19,13 @@ public class ShopInteractable : InteractableItem
         canCollect = false;
         interactionKeyText = "E";
         customReadPromptText = "เปิดร้านค้า";
+        readDescription = "";
+        readTitle = "";
     }
 
     public override void OnRead(PlayerInteraction interactor)
     {
-        base.OnRead(interactor);
+        // ไม่เรียก base.OnRead(interactor) เพื่อไม่ให้หน้าต่างอ่านข้อมูล (Reading Dialog) เด้งขึ้นมาซ้อนหลังร้านค้า
 
         ShopController shop = ShopController.Instance;
         if (shop == null)

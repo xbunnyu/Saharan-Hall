@@ -22,7 +22,7 @@ public class ShopItemData
 /// ตัวจัดการระบบร้านค้า (Shop System Manager)
 /// - จัดการสินค้า 6 รายการ พร้อมราคาเรียงลำดับ
 /// - ซื้อขายหักเงินผ่าน PlayerWalletManager และเพิ่มของเข้ากระเป๋าผู้เล่น
-/// - มีระบบวาด UI อัตโนมัติ (Canvas UI + Fallback OnGUI)
+/// - มีระบบ UI สวยงาม ไม่ซ้อนทับ และสามารถใช้เมาส์คลิกซื้อได้อย่างอิสระ
 /// </summary>
 public class ShopController : MonoBehaviour
 {
@@ -39,10 +39,6 @@ public class ShopController : MonoBehaviour
         new ShopItemData("ไอเทม 6", 3000, "ไอเทมระดับตำนาน ทรงพลังที่สุด")
     };
 
-    [Header("เสียงประกอบ")]
-    public AudioClip buySuccessSound;
-    public AudioClip buyFailSound;
-
     [Header("Runtime State")]
     public bool isShopOpen = false;
 
@@ -50,11 +46,12 @@ public class ShopController : MonoBehaviour
     private PlayerController playerController;
     private AudioSource audioSource;
 
-    // UI References
+    // uGUI Canvas References
     private GameObject shopCanvas;
     private GameObject shopPanel;
     private TextMeshProUGUI walletText;
-    private List<TextMeshProUGUI> itemPriceTexts = new List<TextMeshProUGUI>();
+    private List<Button> itemBuyButtons = new List<Button>();
+    private List<TextMeshProUGUI> itemBuyButtonTexts = new List<TextMeshProUGUI>();
 
     void Awake()
     {
@@ -101,14 +98,19 @@ public class ShopController : MonoBehaviour
         activePlayer = player != null ? player : FindFirstObjectByType<PlayerInteraction>();
         isShopOpen = true;
 
-        LockPlayerControls(true);
+        if (InteractionUIManager.Instance != null)
+        {
+            InteractionUIManager.Instance.HideReadingDialog();
+        }
+
         EnsureUIExists();
+        LockPlayerControls(true);
 
         if (shopPanel != null) shopPanel.SetActive(true);
         if (shopCanvas != null) shopCanvas.SetActive(true);
 
         RefreshUI();
-        Debug.Log("[ShopController] 🛒 เปิดหน้าต่างร้านค้าแล้ว");
+        Debug.Log("[ShopController] 🛒 เปิดหน้าต่างร้านค้าแล้ว (ปลดล็อคเมาส์อิสระ)");
     }
 
     /// <summary>
@@ -132,7 +134,7 @@ public class ShopController : MonoBehaviour
     /// </summary>
     public void BuyItem(int index)
     {
-        if (index < 0 || index >= shopItems.Count) return;
+        if (!isShopOpen || index < 0 || index >= shopItems.Count) return;
 
         ShopItemData item = shopItems[index];
 
@@ -182,15 +184,39 @@ public class ShopController : MonoBehaviour
 
     private void RefreshUI()
     {
-        if (walletText != null && PlayerWalletManager.Instance != null)
+        int curMoney = PlayerWalletManager.Instance != null ? PlayerWalletManager.Instance.money : 0;
+
+        if (walletText != null)
         {
-            walletText.text = $"💰 เงินของคุณ: <color=#FFD700>{PlayerWalletManager.Instance.money:N0} บาท</color>";
+            walletText.text = $"💰 เงินของคุณ: <color=#FFD700>{curMoney:N0} บาท</color>";
+        }
+
+        for (int i = 0; i < itemBuyButtons.Count && i < shopItems.Count; i++)
+        {
+            bool canAfford = curMoney >= shopItems[i].price;
+            if (itemBuyButtons[i] != null)
+            {
+                itemBuyButtons[i].interactable = canAfford;
+            }
+            if (itemBuyButtonTexts[i] != null)
+            {
+                itemBuyButtonTexts[i].text = canAfford ? $"ซื้อ  [กด {i + 1}]" : "เงินไม่พอ";
+                itemBuyButtonTexts[i].color = canAfford ? Color.white : new Color(0.7f, 0.7f, 0.7f);
+            }
         }
     }
 
     private void LockPlayerControls(bool lockState)
     {
-        if (playerController != null) playerController.enabled = !lockState;
+        if (playerController == null)
+        {
+            playerController = FindFirstObjectByType<PlayerController>();
+        }
+
+        if (playerController != null)
+        {
+            playerController.enabled = !lockState;
+        }
 
         if (lockState)
         {
@@ -221,8 +247,18 @@ public class ShopController : MonoBehaviour
         audioSource.PlayOneShot(clip);
     }
 
+    private Sprite CreateRoundedRectSprite(int width = 64, int height = 64)
+    {
+        Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+        Color[] colors = new Color[width * height];
+        for (int i = 0; i < colors.Length; i++) colors[i] = Color.white;
+        tex.SetPixels(colors);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, width, height), new Vector2(0.5f, 0.5f));
+    }
+
     // ==========================================
-    // Dynamic Canvas UI Creation
+    // Dynamic Canvas UI Creation (uGUI Sharp Vector)
     // ==========================================
     private void EnsureUIExists()
     {
@@ -246,67 +282,161 @@ public class ShopController : MonoBehaviour
         shopPanel = shopCanvas.transform.Find("ShopPanel")?.gameObject;
         if (shopPanel == null)
         {
+            Sprite boxSprite = CreateRoundedRectSprite(64, 64);
+
             shopPanel = new GameObject("ShopPanel");
             shopPanel.transform.SetParent(shopCanvas.transform, false);
 
             RectTransform panelRect = shopPanel.AddComponent<RectTransform>();
             panelRect.anchorMin = new Vector2(0.5f, 0.5f);
             panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-            panelRect.sizeDelta = new Vector2(800, 560);
+            panelRect.sizeDelta = new Vector2(860, 600);
 
-            // BG Card
+            // BG Card Panel
             Image bg = shopPanel.AddComponent<Image>();
-            bg.color = new Color(0.06f, 0.08f, 0.12f, 0.92f);
+            bg.sprite = boxSprite;
+            bg.color = new Color(0.08f, 0.10f, 0.14f, 0.95f);
 
-            // Title
+            // Close Button (Top Right X)
+            GameObject closeBtnObj = new GameObject("CloseButton");
+            closeBtnObj.transform.SetParent(shopPanel.transform, false);
+            RectTransform closeRect = closeBtnObj.AddComponent<RectTransform>();
+            closeRect.anchorMin = new Vector2(1f, 1f);
+            closeRect.anchorMax = new Vector2(1f, 1f);
+            closeRect.anchoredPosition = new Vector2(-25, -25);
+            closeRect.sizeDelta = new Vector2(36, 36);
+
+            Image closeImg = closeBtnObj.AddComponent<Image>();
+            closeImg.sprite = boxSprite;
+            closeImg.color = new Color(0.85f, 0.2f, 0.2f, 0.9f);
+
+            Button closeBtn = closeBtnObj.AddComponent<Button>();
+            closeBtn.onClick.AddListener(CloseShop);
+
+            GameObject closeTxtObj = new GameObject("Text");
+            closeTxtObj.transform.SetParent(closeBtnObj.transform, false);
+            TextMeshProUGUI closeTMP = closeTxtObj.AddComponent<TextMeshProUGUI>();
+            closeTMP.text = "✕";
+            closeTMP.fontSize = 20;
+            closeTMP.alignment = TextAlignmentOptions.Center;
+            closeTMP.rectTransform.anchoredPosition = Vector2.zero;
+            closeTMP.rectTransform.sizeDelta = new Vector2(36, 36);
+
+            // Header Title
             GameObject titleObj = new GameObject("TitleText");
             titleObj.transform.SetParent(shopPanel.transform, false);
             TextMeshProUGUI titleTMP = titleObj.AddComponent<TextMeshProUGUI>();
             titleTMP.text = "<color=#FFD700>🏪 ร้านค้าวัตถุมงคล (SHOP)</color>";
-            titleTMP.fontSize = 26;
+            titleTMP.fontSize = 28;
             titleTMP.fontStyle = FontStyles.Bold;
             titleTMP.alignment = TextAlignmentOptions.Center;
-            titleTMP.rectTransform.anchoredPosition = new Vector2(0, 230);
-            titleTMP.rectTransform.sizeDelta = new Vector2(760, 50);
+            titleTMP.rectTransform.anchoredPosition = new Vector2(0, 250);
+            titleTMP.rectTransform.sizeDelta = new Vector2(800, 50);
 
             // Wallet Display
             GameObject walletObj = new GameObject("WalletText");
             walletObj.transform.SetParent(shopPanel.transform, false);
             walletText = walletObj.AddComponent<TextMeshProUGUI>();
-            walletText.fontSize = 20;
+            walletText.fontSize = 22;
             walletText.alignment = TextAlignmentOptions.Center;
-            walletText.rectTransform.anchoredPosition = new Vector2(0, 185);
-            walletText.rectTransform.sizeDelta = new Vector2(760, 40);
+            walletText.rectTransform.anchoredPosition = new Vector2(0, 205);
+            walletText.rectTransform.sizeDelta = new Vector2(800, 40);
 
-            // Close Guide
+            // Item Cards Grid (2 Columns x 3 Rows)
+            itemBuyButtons.Clear();
+            itemBuyButtonTexts.Clear();
+
+            float cardW = 380f;
+            float cardH = 115f;
+            float startX = -200f;
+            float startY = 110f;
+            float spacingX = 400f;
+            float spacingY = 130f;
+
+            for (int i = 0; i < 6 && i < shopItems.Count; i++)
+            {
+                int col = i % 2;
+                int row = i / 2;
+                int itemIdx = i;
+                ShopItemData item = shopItems[i];
+
+                GameObject cardObj = new GameObject($"ItemCard_{i}");
+                cardObj.transform.SetParent(shopPanel.transform, false);
+                RectTransform cardRect = cardObj.AddComponent<RectTransform>();
+                cardRect.anchoredPosition = new Vector2(startX + col * spacingX, startY - row * spacingY);
+                cardRect.sizeDelta = new Vector2(cardW, cardH);
+
+                Image cardBg = cardObj.AddComponent<Image>();
+                cardBg.sprite = boxSprite;
+                cardBg.color = new Color(0.14f, 0.17f, 0.23f, 0.9f);
+
+                // Name & Price Text
+                GameObject infoObj = new GameObject("InfoText");
+                infoObj.transform.SetParent(cardObj.transform, false);
+                TextMeshProUGUI infoTMP = infoObj.AddComponent<TextMeshProUGUI>();
+                infoTMP.text = $"<b><color=#00E5FF>[{i + 1}] {item.itemName}</color></b>\nราคา: <color=#FFD700>{item.price:N0} บาท</color>";
+                infoTMP.fontSize = 18;
+                infoTMP.alignment = TextAlignmentOptions.Left;
+                infoTMP.rectTransform.anchoredPosition = new Vector2(-60, 20);
+                infoTMP.rectTransform.sizeDelta = new Vector2(230, 55);
+
+                // Buy Button
+                GameObject buyBtnObj = new GameObject("BuyButton");
+                buyBtnObj.transform.SetParent(cardObj.transform, false);
+                RectTransform buyBtnRect = buyBtnObj.AddComponent<RectTransform>();
+                buyBtnRect.anchoredPosition = new Vector2(0, -25);
+                buyBtnRect.sizeDelta = new Vector2(340, 38);
+
+                Image buyBtnImg = buyBtnObj.AddComponent<Image>();
+                buyBtnImg.sprite = boxSprite;
+                buyBtnImg.color = new Color(0.18f, 0.55f, 0.35f, 1f);
+
+                Button buyBtn = buyBtnObj.AddComponent<Button>();
+                buyBtn.onClick.AddListener(() => BuyItem(itemIdx));
+                itemBuyButtons.Add(buyBtn);
+
+                GameObject buyTxtObj = new GameObject("Text");
+                buyTxtObj.transform.SetParent(buyBtnObj.transform, false);
+                TextMeshProUGUI buyTMP = buyTxtObj.AddComponent<TextMeshProUGUI>();
+                buyTMP.text = $"ซื้อ  [กด {i + 1}]";
+                buyTMP.fontSize = 18;
+                buyTMP.fontStyle = FontStyles.Bold;
+                buyTMP.alignment = TextAlignmentOptions.Center;
+                buyTMP.rectTransform.anchoredPosition = Vector2.zero;
+                buyTMP.rectTransform.sizeDelta = new Vector2(340, 38);
+                itemBuyButtonTexts.Add(buyTMP);
+            }
+
+            // Footer Guidance
             GameObject guideObj = new GameObject("GuideText");
             guideObj.transform.SetParent(shopPanel.transform, false);
             TextMeshProUGUI guideTMP = guideObj.AddComponent<TextMeshProUGUI>();
-            guideTMP.text = "กด <color=#00FF7F>[1 - 6]</color> หรือคลิกปุ่มเพื่อซื้อ  |  กด <color=#FF6347>[E / Esc]</color> เพื่อปิด";
+            guideTMP.text = "กด <color=#00FF7F>[1 - 6]</color> หรือคลิกปุ่มเพื่อซื้อ  |  กด <color=#FF6347>[E / Esc]</color> เพื่อปิดร้านค้า";
             guideTMP.fontSize = 16;
             guideTMP.alignment = TextAlignmentOptions.Center;
-            guideTMP.rectTransform.anchoredPosition = new Vector2(0, -240);
-            guideTMP.rectTransform.sizeDelta = new Vector2(760, 30);
+            guideTMP.rectTransform.anchoredPosition = new Vector2(0, -265);
+            guideTMP.rectTransform.sizeDelta = new Vector2(800, 30);
         }
     }
 
     // ==========================================
-    // OnGUI Fallback Rendering (การันตีการวาด 100%)
+    // OnGUI Fallback Rendering (เฉพาะกรณีไม่มี uGUI Canvas เท่านั้น)
     // ==========================================
     void OnGUI()
     {
         if (!isShopOpen) return;
+
+        // หากมี uGUI Panel ทำงานอยู่แล้ว ให้ข้ามการวาดด้วย OnGUI เพื่อไม่ให้ UI ซ้อนทับกัน
+        if (shopPanel != null && shopPanel.activeSelf) return;
 
         float w = 720f;
         float h = 500f;
         float x = (Screen.width - w) / 2f;
         float y = (Screen.height - h) / 2f;
 
-        // Background Window Box
         GUI.Box(new Rect(x, y, w, h), "");
         GUI.Box(new Rect(x + 5, y + 5, w - 10, h - 10), "");
 
-        // Header Title
         GUIStyle titleStyle = new GUIStyle(GUI.skin.label)
         {
             fontSize = 22,
@@ -316,7 +446,6 @@ public class ShopController : MonoBehaviour
         titleStyle.normal.textColor = new Color(1f, 0.85f, 0.2f);
         GUI.Label(new Rect(x, y + 15, w, 32), "🏪 ร้านค้าวัตถุมงคล (SHOP)", titleStyle);
 
-        // Wallet Balance
         int curMoney = PlayerWalletManager.Instance != null ? PlayerWalletManager.Instance.money : 0;
         GUIStyle walletStyle = new GUIStyle(GUI.skin.label)
         {
@@ -326,7 +455,6 @@ public class ShopController : MonoBehaviour
         walletStyle.normal.textColor = Color.white;
         GUI.Label(new Rect(x, y + 50, w, 28), $"💰 เงินของคุณ: {curMoney:N0} บาท", walletStyle);
 
-        // Render 6 Items Grid (2 Columns x 3 Rows)
         float itemW = 330f;
         float itemH = 105f;
         float startX = x + 20f;
@@ -352,12 +480,9 @@ public class ShopController : MonoBehaviour
 
             GUI.Box(new Rect(itemX, itemY, itemW, itemH), "");
 
-            // Item Name & Key
             GUI.Label(new Rect(itemX + 12, itemY + 8, itemW - 24, 25), $"[{i + 1}] {item.itemName}", itemTitleStyle);
-            // Price
             GUI.Label(new Rect(itemX + 12, itemY + 33, itemW - 24, 25), $"ราคา: {item.price:N0} บาท", priceStyle);
 
-            // Buy Button
             string btnLabel = canAfford ? $"ซื้อ  [กด {i + 1}]" : "เงินไม่พอ";
             GUI.enabled = canAfford;
             if (GUI.Button(new Rect(itemX + 12, itemY + 62, itemW - 24, 32), btnLabel))
@@ -367,7 +492,6 @@ public class ShopController : MonoBehaviour
             GUI.enabled = true;
         }
 
-        // Footer Guidance
         GUIStyle footerStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, alignment = TextAnchor.MiddleCenter };
         footerStyle.normal.textColor = new Color(0.8f, 0.8f, 0.8f);
         GUI.Label(new Rect(x, y + h - 35, w, 25), "กด [1 - 6] หรือคลิกปุ่มเพื่อซื้อ  |  กด [E / Esc] เพื่อปิดร้านค้า", footerStyle);

@@ -1,12 +1,14 @@
 using System;
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// ผู้จัดการระบบมินิเกมส่วนกลาง (Modular Minigame Manager)
 /// - ควบคุมการเปิด-ปิดมินิเกม
 /// - ควบคุมการหยุดการเคลื่อนที่ของผู้เล่นชั่วคราว
 /// - รับส่งผลลัพธ์ (Win/Loss) กลับไปยัง NPC และระบบเควส
-/// - รองรับการเชื่อมต่อมินิเกมประเภทอื่นๆ ในอนาคต
+/// - นับจำนวนมินิเกมที่แพ้สะสม (totalFailedMinigames) แสดงผลบน UI "Fail : X"
 /// </summary>
 public class MinigameManager : MonoBehaviour
 {
@@ -22,9 +24,18 @@ public class MinigameManager : MonoBehaviour
     public bool isMinigameActive = false;
     public MinigameType currentMinigameType = MinigameType.None;
 
+    [Header("Fail Tracker System")]
+    [Tooltip("จำนวนมินิเกมที่เล่นแพ้สะสมทั้งหมด")]
+    public int totalFailedMinigames = 0;
+
     private PlayerController playerController;
     private Action<bool> currentCallback;
     private QuestData activeQuestData;
+
+    // Fail Tracker UI References
+    private GameObject failCanvas;
+    private GameObject failPanel;
+    private TextMeshProUGUI failCounterText;
 
     void Awake()
     {
@@ -78,6 +89,9 @@ public class MinigameManager : MonoBehaviour
                 timingBarController = FindFirstObjectByType<TimingBarController>();
             }
         }
+
+        EnsureFailUIExists();
+        UpdateFailCounterUI();
     }
 
     /// <summary>
@@ -237,11 +251,47 @@ public class MinigameManager : MonoBehaviour
 
         UnfreezePlayer();
 
-        Debug.Log($"[MinigameManager] 🏁 มินิเกมสิ้นสุดลง ผลลัพธ์: {(isSuccess ? "สำเร็จ (SUCCESS)" : "ล้มเหลว (FAILED)")}");
+        // เพิ่มตัวนับเมื่อแพ้มินิเกม
+        if (!isSuccess)
+        {
+            RegisterMinigameFailed();
+        }
+
+        Debug.Log($"[MinigameManager] 🏁 มินิเกมสิ้นสุดลง ผลลัพธ์: {(isSuccess ? "สำเร็จ (SUCCESS)" : "ล้มเหลว (FAILED)")} | รวมแพ้สะสม: {totalFailedMinigames} ครั้ง");
 
         // ส่งผลลัพธ์กลับไปยัง NPC / เควส
         currentCallback?.Invoke(isSuccess);
         currentCallback = null;
+    }
+
+    /// <summary>
+    /// บันทึกการแพ้มินิเกมและเพิ่มตัวนับ Fail +1
+    /// </summary>
+    public void RegisterMinigameFailed()
+    {
+        totalFailedMinigames++;
+        UpdateFailCounterUI();
+        Debug.Log($"[MinigameManager] ❌ แพ้มินิเกม! รวมแพ้สะสม: {totalFailedMinigames} ครั้ง");
+    }
+
+    /// <summary>
+    /// อัปเดตข้อความจำนวนครั้งที่แพ้บน UI
+    /// </summary>
+    public void UpdateFailCounterUI()
+    {
+        if (failCounterText != null)
+        {
+            failCounterText.text = $"<color=#FF4500><b>Fail :</b></color> <color=#FFFFFF>{totalFailedMinigames}</color>";
+        }
+    }
+
+    /// <summary>
+    /// รีเซ็ตตัวนับการแพ้สะสมเป็น 0
+    /// </summary>
+    public void ResetFailCounter()
+    {
+        totalFailedMinigames = 0;
+        UpdateFailCounterUI();
     }
 
     /// <summary>
@@ -284,4 +334,92 @@ public class MinigameManager : MonoBehaviour
     }
 
     public bool IsPlaying() => isMinigameActive;
+
+    private Sprite CreateBoxSprite(int width = 64, int height = 64)
+    {
+        Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+        Color[] colors = new Color[width * height];
+        for (int i = 0; i < colors.Length; i++) colors[i] = Color.white;
+        tex.SetPixels(colors);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, width, height), new Vector2(0.5f, 0.5f));
+    }
+
+    // ==========================================
+    // Fail Counter UI Creation (uGUI Badge Top-Left)
+    // ==========================================
+    private void EnsureFailUIExists()
+    {
+        if (failPanel != null && failCanvas != null) return;
+
+        failCanvas = GameObject.Find("FailCounter_Canvas");
+        if (failCanvas == null)
+        {
+            failCanvas = new GameObject("FailCounter_Canvas");
+            Canvas canvas = failCanvas.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 990;
+
+            CanvasScaler scaler = failCanvas.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080);
+        }
+
+        failPanel = failCanvas.transform.Find("FailPanel")?.gameObject;
+        if (failPanel == null)
+        {
+            Sprite boxSprite = CreateBoxSprite(64, 64);
+
+            failPanel = new GameObject("FailPanel");
+            failPanel.transform.SetParent(failCanvas.transform, false);
+
+            RectTransform panelRect = failPanel.AddComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0f, 1f); // มุมซ้ายบน
+            panelRect.anchorMax = new Vector2(0f, 1f);
+            panelRect.anchoredPosition = new Vector2(100, -45); // พิกัดมุมซ้ายบน
+            panelRect.sizeDelta = new Vector2(160, 44);
+
+            // BG Card Panel
+            Image bg = failPanel.AddComponent<Image>();
+            bg.sprite = boxSprite;
+            bg.color = new Color(0.08f, 0.10f, 0.14f, 0.85f);
+
+            // Fail Counter Text
+            GameObject textObj = new GameObject("FailCounterText");
+            textObj.transform.SetParent(failPanel.transform, false);
+            failCounterText = textObj.AddComponent<TextMeshProUGUI>();
+            failCounterText.text = $"<color=#FF4500><b>Fail :</b></color> <color=#FFFFFF>{totalFailedMinigames}</color>";
+            failCounterText.fontSize = 20;
+            failCounterText.fontStyle = FontStyles.Bold;
+            failCounterText.alignment = TextAlignmentOptions.Center;
+            failCounterText.rectTransform.anchoredPosition = Vector2.zero;
+            failCounterText.rectTransform.sizeDelta = new Vector2(160, 44);
+        }
+    }
+
+    // ==========================================
+    // OnGUI Fallback Rendering (การันตีการวาด 100%)
+    // ==========================================
+    void OnGUI()
+    {
+        // หากมี uGUI Panel ทำงานอยู่แล้ว ให้ข้ามการวาดด้วย OnGUI
+        if (failPanel != null && failPanel.activeSelf) return;
+
+        float boxW = 150f;
+        float boxH = 40f;
+        float x = 20f;
+        float y = 25f;
+
+        GUI.Box(new Rect(x, y, boxW, boxH), "");
+
+        GUIStyle style = new GUIStyle(GUI.skin.label)
+        {
+            fontSize = 18,
+            fontStyle = FontStyle.Bold,
+            alignment = TextAnchor.MiddleCenter
+        };
+        style.normal.textColor = new Color(1f, 0.25f, 0.25f);
+
+        GUI.Label(new Rect(x, y, boxW, boxH), $"Fail : {totalFailedMinigames}", style);
+    }
 }

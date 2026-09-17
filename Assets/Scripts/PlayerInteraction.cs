@@ -218,6 +218,8 @@ public class PlayerInteraction : MonoBehaviour
                                || currentTarget is RhythmInteractable 
                                || currentTarget is SlashInteractable
                                || currentTarget is TimingBarInteractable
+                               || currentTarget is ShopInteractable
+                               || currentTarget is KumanThongInteractable
                                || string.IsNullOrEmpty(currentTarget.readDescription) 
                                || isNPC;
 

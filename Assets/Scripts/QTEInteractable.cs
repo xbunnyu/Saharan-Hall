@@ -153,6 +153,11 @@ public class QTEInteractable : InteractableItem
     {
         onQTEFailed?.Invoke();
 
+        if (MinigameManager.Instance != null)
+        {
+            MinigameManager.Instance.RegisterMinigameFailed();
+        }
+
         PlayerInteraction player = FindFirstObjectByType<PlayerInteraction>();
         if (player != null)
         {

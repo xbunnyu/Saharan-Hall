@@ -130,6 +130,11 @@ public class SlashInteractable : InteractableItem
     {
         onSlashFailed?.Invoke();
 
+        if (MinigameManager.Instance != null)
+        {
+            MinigameManager.Instance.RegisterMinigameFailed();
+        }
+
         PlayerInteraction player = FindFirstObjectByType<PlayerInteraction>();
         if (player != null)
         {

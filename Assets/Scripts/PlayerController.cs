@@ -106,6 +106,11 @@ public class PlayerController : MonoBehaviour
         }
         else if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && Cursor.lockState != CursorLockMode.Locked)
         {
+            // หากร้านค้า มินิเกม หรือศาลกุมารทองเปิดอยู่ ห้ามล็อคเมาส์กลับ เพื่อให้ผู้เล่นขยับและคลิกเมาส์ได้อย่างอิสระ
+            if (ShopController.Instance != null && ShopController.Instance.isShopOpen) return;
+            if (MinigameManager.Instance != null && MinigameManager.Instance.isMinigameActive) return;
+            if (KumanThongUIController.Instance != null && KumanThongUIController.Instance.isUIOpen) return;
+
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
