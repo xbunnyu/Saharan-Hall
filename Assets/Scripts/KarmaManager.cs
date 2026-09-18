@@ -47,6 +47,36 @@ public class KarmaManager : MonoBehaviour
         karma += amount;
         string sign = amount > 0 ? "+" : "";
         Debug.Log($"[Karma] {sign}{amount} จาก '{questTitle}'  → รวม {karma}  ({GetKarmaLabel()})");
+
+        // ตรวจสอบเงื่อนไขการจบเกม (ถ้าต้องการให้จบเกมทันทีเมื่อถึงเกณฑ์ สามารถเปิดคอมเมนต์บรรทัดล่างได้)
+        // EvaluateKarmaEnding();
+    }
+
+    /// <summary>
+    /// ตรวจสอบและเรียกฉากจบตามค่า Karma ปัจจุบัน
+    /// (สามารถเรียกใช้จากตอนจบเควสสุดท้าย หรือเรียกผ่าน ApplyKarma ก็ได้)
+    /// </summary>
+    public void EvaluateKarmaEnding()
+    {
+        if (GameEndingManager.Instance == null)
+        {
+            Debug.LogError("[KarmaManager] ไม่พบ GameEndingManager ในฉาก!");
+            return;
+        }
+
+        if (karma >= 80)
+        {
+            GameEndingManager.Instance.TriggerEnding(GameEndingType.GoodEnding);
+        }
+        else if (karma <= 20)
+        {
+            GameEndingManager.Instance.TriggerEnding(GameEndingType.BadEnding);
+        }
+        else
+        {
+            Debug.Log($"[KarmaManager] Karma อยู่ที่ {karma} ยังไม่ถึงเกณฑ์ฉากจบ (Good: >= 80, Bad: <= 20)");
+            // หากมี Neutral Ending สามารถเพิ่มเงื่อนไขได้ที่นี่
+        }
     }
 
     /// <summary>ระดับ Karma ปัจจุบัน (ใช้ภายใน)</summary>

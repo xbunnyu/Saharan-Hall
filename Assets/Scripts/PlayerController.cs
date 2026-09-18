@@ -98,18 +98,14 @@ public class PlayerController : MonoBehaviour
             playerCamera.localRotation = Quaternion.Euler(verticalRotation, 0f, 0f);
         }
 
-        // กด Escape เพื่อปลดล็อคเมาส์ (กรณีต้องการปรับของใน Editor) และคลิกเพื่อล็อคเมาส์กลับมา
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        // ล็อคเมาส์กลับมาเมื่อคลิก (กรณีหลุดออกมา)
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && Cursor.lockState != CursorLockMode.Locked)
         {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
-        else if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && Cursor.lockState != CursorLockMode.Locked)
-        {
-            // หากร้านค้า มินิเกม หรือศาลกุมารทองเปิดอยู่ ห้ามล็อคเมาส์กลับ เพื่อให้ผู้เล่นขยับและคลิกเมาส์ได้อย่างอิสระ
+            // หากร้านค้า มินิเกม ศาลกุมารทอง หรือ Pause Menu เปิดอยู่ ห้ามล็อคเมาส์กลับ
             if (ShopController.Instance != null && ShopController.Instance.isShopOpen) return;
             if (MinigameManager.Instance != null && MinigameManager.Instance.isMinigameActive) return;
             if (KumanThongUIController.Instance != null && KumanThongUIController.Instance.isUIOpen) return;
+            if (PauseMenuManager.Instance != null && PauseMenuManager.Instance.isPaused) return;
 
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;

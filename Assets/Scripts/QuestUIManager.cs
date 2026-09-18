@@ -307,6 +307,59 @@ public class QuestUIManager : MonoBehaviour
         Debug.Log($"[QuestUIManager] 🏆 ส่งมอบเควส '{quest.questTitle}' สำเร็จ!");
     }
 
+    public void RegisterMinigameFailForQuest(QuestData quest)
+    {
+        if (quest == null) return;
+        quest.currentMinigameFails++;
+
+        if (quest.currentMinigameFails >= 2)
+        {
+            // ล้มเหลวครบ 2 ครั้ง -> เฟลเควสทันที
+            FailQuest(quest);
+        }
+        else
+        {
+            if (InteractionUIManager.Instance != null)
+            {
+                InteractionUIManager.Instance.ShowNotification(
+                    $"<color=#FF9900>⚠️ พลาด! (เหลือโอกาสอีก {2 - quest.currentMinigameFails} ครั้ง)</color>", 3.0f);
+            }
+        }
+    }
+
+    public void FailQuest(QuestData quest)
+    {
+        if (quest == null) return;
+        
+        quest.isCompleted = false;
+        activeQuests.Remove(quest);
+        UpdateQuestTrackerCanvas();
+
+        Debug.Log($"[QuestUIManager] ❌ เควส '{quest.questTitle}' ล้มเหลวจากการทำมินิเกมพลาดเกินกำหนด!");
+
+        if (GhostCurseManager.Instance != null)
+        {
+            GhostCurseManager.Instance.AttachGhost($"ทำเควส {quest.npcName} ล้มเหลว");
+        }
+
+        if (InteractionUIManager.Instance != null)
+        {
+            InteractionUIManager.Instance.ShowNotification(
+                $"<color=#FF3333>[เควสล้มเหลว]</color> ทำพิธีให้ {quest.npcName} ไม่สำเร็จ!", 4.0f);
+        }
+
+        // ค้นหา NPC แล้วสั่งให้กลับบ้าน
+        NPCController[] npcs = FindObjectsByType<NPCController>(FindObjectsSortMode.None);
+        foreach(var npc in npcs)
+        {
+            if (npc.questData != null && npc.questData.questId == quest.questId)
+            {
+                npc.StartLeaving();
+                break;
+            }
+        }
+    }
+
     public void CloseDialog()
     {
         CancelInvoke(nameof(CloseDialog));
