@@ -135,10 +135,18 @@ public class SlashInteractable : InteractableItem
             MinigameManager.Instance.RegisterMinigameFailed();
         }
 
-        PlayerInteraction player = FindFirstObjectByType<PlayerInteraction>();
-        if (player != null)
+        QuestData q = GetActiveQuestForMinigame();
+        if (q != null && QuestUIManager.Instance != null)
         {
-            player.ShowNotification($"ทำพิธีตวัดดาบ [{itemName}] พลาด!");
+            QuestUIManager.Instance.RegisterMinigameFailForQuest(q);
+        }
+        else
+        {
+            PlayerInteraction player = FindFirstObjectByType<PlayerInteraction>();
+            if (player != null)
+            {
+                player.ShowNotification($"ทำพิธีตวัดดาบ [{itemName}] พลาด!");
+            }
         }
     }
 }

@@ -88,6 +88,8 @@ public class QuestData
     public bool isAccepted = false;
     [HideInInspector]
     public bool isCompleted = false;
+    [HideInInspector]
+    public int currentMinigameFails = 0;
 
     /// <summary>
     /// ตรวจสอบว่ามินิเกมประเภทนี้จำเป็นต้องเล่นในขั้นตอนปัจจุบันของเควสหรือไม่
@@ -163,6 +165,7 @@ public class QuestData
         QuestData clone = (QuestData)this.MemberwiseClone();
         clone.requiredMinigameSequence = new List<MinigameType>(this.requiredMinigameSequence);
         clone.completedMinigameSequence = new List<MinigameType>(this.completedMinigameSequence);
+        clone.currentMinigameFails = this.currentMinigameFails;
         return clone;
     }
 }

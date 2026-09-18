@@ -174,9 +174,6 @@ public class GhostCurseManager : MonoBehaviour
         screenShakeIntensity = intensity;
     }
 
-    /// <summary>
-    /// สั่งจบเกมเมื่อผีเกาะครบ 3 ตัว
-    /// </summary>
     private void TriggerGameOver()
     {
         if (isGameOver) return;
@@ -189,14 +186,18 @@ public class GhostCurseManager : MonoBehaviour
             AudioSource.PlayClipAtPoint(gameOverSound, Camera.main != null ? Camera.main.transform.position : transform.position);
         }
 
-        // ปิดการควบคุมผู้เล่น และปลดล็อคเมาส์
-        if (playerController != null)
+        if (GameEndingManager.Instance != null)
         {
-            playerController.enabled = false;
+            GameEndingManager.Instance.TriggerEnding(GameEndingType.GhostGameOver);
         }
-
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        else
+        {
+            Debug.LogError("ไม่พบ GameEndingManager ในฉาก!");
+            // ปิดการควบคุมผู้เล่น และปลดล็อคเมาส์ เผื่อไม่มี GameManager
+            if (playerController != null) playerController.enabled = false;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
     }
 
     /// <summary>
@@ -237,12 +238,8 @@ public class GhostCurseManager : MonoBehaviour
         DrawGhostIndicatorBadge();
 
         // ----------------------------------------------------
-        // 3. หน้าต่าง GAME OVER เมื่อผีครบ 3 ตัว
+        // 3. หน้าต่าง GAME OVER ถูกย้ายไปที่ GameEndingManager แล้ว
         // ----------------------------------------------------
-        if (isGameOver)
-        {
-            DrawGameOverModal();
-        }
     }
 
     /// <summary>
@@ -288,62 +285,5 @@ public class GhostCurseManager : MonoBehaviour
         GUI.Label(new Rect(posX - 40f, posY + badgeSize + 2f, badgeSize + 80f, 20f), label, labelStyle);
     }
 
-    /// <summary>
-    /// หน้าต่าง Game Over เมื่อโดนผีเกาะครบ 3 ตัว
-    /// </summary>
-    private void DrawGameOverModal()
-    {
-        // แผ่นหลังมืดทึบทั้งจอ
-        GUI.color = new Color(0f, 0f, 0f, 0.92f);
-        GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), blackTex != null ? blackTex : Texture2D.whiteTexture);
-        GUI.color = Color.white;
-
-        float boxW = Mathf.Min(560f, Screen.width * 0.9f);
-        float boxH = 340f;
-        float boxX = (Screen.width - boxW) / 2f;
-        float boxY = (Screen.height - boxH) / 2f;
-
-        // กรอบข้อความ
-        GUI.color = new Color(0.15f, 0.02f, 0.02f, 0.9f);
-        GUI.Box(new Rect(boxX, boxY, boxW, boxH), GUIContent.none);
-        GUI.color = Color.white;
-
-        // หัวข้อ GAME OVER
-        GUIStyle titleStyle = new GUIStyle(GUI.skin.label);
-        titleStyle.fontSize = 36;
-        titleStyle.fontStyle = FontStyle.Bold;
-        titleStyle.alignment = TextAnchor.UpperCenter;
-        titleStyle.normal.textColor = new Color(1f, 0.15f, 0.15f);
-        GUI.Label(new Rect(boxX, boxY + 25, boxW, 50), "💀 วิญญาณแตกดับ 💀", titleStyle);
-
-        // เนื้อหา Game Over
-        GUIStyle descStyle = new GUIStyle(GUI.skin.label);
-        descStyle.fontSize = 16;
-        descStyle.alignment = TextAnchor.MiddleCenter;
-        descStyle.wordWrap = true;
-        descStyle.normal.textColor = new Color(0.9f, 0.85f, 0.85f);
-
-        string msg = "คุณท่องคาถาผิดพลาดจนภูตผีปีศาจเข้าครอบงำครบ 3 ตน\n" +
-                     "พลังชีวิตและวิญญาณของคุณถูกกลืนกินจนหมดสิ้น...\n\n" +
-                     "<color=#FF6666>เกมจบลงแล้ว</color>";
-
-        GUI.Label(new Rect(boxX + 30, boxY + 85, boxW - 60, 120), msg, descStyle);
-
-        // ปุ่มเริ่มเล่นใหม่
-        float btnW = 240f;
-        float btnH = 50f;
-        float btnX = boxX + (boxW - btnW) / 2f;
-        float btnY = boxY + boxH - 75f;
-
-        GUIStyle btnStyle = new GUIStyle(GUI.skin.button);
-        btnStyle.fontSize = 16;
-        btnStyle.fontStyle = FontStyle.Bold;
-
-        GUI.backgroundColor = new Color(0.85f, 0.2f, 0.2f);
-        if (GUI.Button(new Rect(btnX, btnY, btnW, btnH), "🔄 เริ่มเล่นใหม่ (Restart)", btnStyle))
-        {
-            RestartGame();
-        }
-        GUI.backgroundColor = Color.white;
-    }
+    // DrawGameOverModal was removed.
 }

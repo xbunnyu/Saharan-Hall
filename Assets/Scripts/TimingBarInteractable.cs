@@ -21,8 +21,8 @@ public class TimingBarInteractable : InteractableItem
     [Tooltip("ความเร็วที่เพิ่มขึ้นทุกครั้งที่กดสำเร็จ (รอบ/วินาที)")]
     public float speedIncrement = 0.35f;
 
-    [Tooltip("จำนวนครั้งสูงสุดที่อนุญาตให้ล้มเหลว (พลาดได้ไม่เกิน 3 ครั้ง)")]
-    public int maxAllowedFailures = 3;
+    [Tooltip("จำนวนครั้งสูงสุดที่อนุญาตให้ล้มเหลว (พลาดได้ไม่เกิน 2 ครั้ง)")]
+    public int maxAllowedFailures = 2;
 
     [Tooltip("เมื่อทำสำเร็จแล้ว ให้ปิดการโต้ตอบกับวัตถุนี้หรือไม่")]
     public bool disableAfterSuccess = false;
@@ -150,10 +150,18 @@ public class TimingBarInteractable : InteractableItem
             MinigameManager.Instance.RegisterMinigameFailed();
         }
 
-        PlayerInteraction player = FindFirstObjectByType<PlayerInteraction>();
-        if (player != null)
+        QuestData q = GetActiveQuestForMinigame();
+        if (q != null && QuestUIManager.Instance != null)
         {
-            player.ShowNotification($"พิธี [{itemName}] หลุดจังหวะ ล้มเหลว! ลองใหม่อีกครั้ง");
+            QuestUIManager.Instance.RegisterMinigameFailForQuest(q);
+        }
+        else
+        {
+            PlayerInteraction player = FindFirstObjectByType<PlayerInteraction>();
+            if (player != null)
+            {
+                player.ShowNotification($"พิธี [{itemName}] หลุดจังหวะ ล้มเหลว! ลองใหม่อีกครั้ง");
+            }
         }
 
         Debug.Log($"[TimingBarInteractable] ❌ พิธีโปรยข้าวสารล้มเหลวบนวัตถุ '{itemName}'");
