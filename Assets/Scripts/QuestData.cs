@@ -61,6 +61,8 @@ public class QuestData
     public string completeDialogue = "ยอดเยี่ยมมาก! พิธีสำเร็จลุล่วงด้วยดี ขอบพระคุณท่านจริง ๆ ข้าขอตัวลาก่อน";
     [TextArea(2, 4)]
     public string declineDialogue = "งั้นหรือ... น่าเสียดายจัง ไม่เป็นไร โอกาสหน้าข้าจะมาใหม่";
+    [TextArea(2, 4)]
+    public string failDialogue = "ไม่เห็นเก่งเลยนี่หว่า... ข้าไปหาหมอธรรมคนอื่นดีกว่า!";
 
     [Header("Requirements (สิ่งที่ต้องการสำหรับส่งเควส - กรณีเควสส่งของ)")]
     [Tooltip("ชื่อไอเทมที่ต้องการ (หากเป็นเควสส่งของ)")]

@@ -158,17 +158,23 @@ public class RhythmInteractable : InteractableItem
         }
 
         QuestData q = GetActiveQuestForMinigame();
+        if (q == null && QuestUIManager.Instance != null && QuestUIManager.Instance.activeQuests.Count > 0)
+        {
+            q = QuestUIManager.Instance.activeQuests[0];
+        }
+
         if (q != null && QuestUIManager.Instance != null)
         {
-            QuestUIManager.Instance.RegisterMinigameFailForQuest(q);
+            QuestUIManager.Instance.FailQuest(q);
         }
-        else
+        else if (HallManager.Instance != null && HallManager.Instance.currentActiveNPC != null)
         {
-            PlayerInteraction player = FindFirstObjectByType<PlayerInteraction>();
-            if (player != null)
+            NPCController npc = HallManager.Instance.currentActiveNPC;
+            if (InteractionUIManager.Instance != null)
             {
-                player.ShowNotification($"ทำพิธีท่องคาถา [{itemName}] พลาด!");
+                InteractionUIManager.Instance.ShowNotification($"<color=#FF3333>[เควสล้มเหลว]</color> {npc.questData?.npcName ?? "NPC"}: \"ไม่เห็นเก่งเลยนี่หว่า... ข้าไปหาคนอื่นดีกว่า!\"", 4.5f);
             }
+            npc.StartLeaving();
         }
 
         Debug.Log($"[RhythmInteractable] ❌ พิธีท่องคาถาพลาดบนวัตถุ '{itemName}'");

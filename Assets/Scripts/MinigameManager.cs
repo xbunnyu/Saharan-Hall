@@ -251,10 +251,21 @@ public class MinigameManager : MonoBehaviour
 
         UnfreezePlayer();
 
-        // เพิ่มตัวนับเมื่อแพ้มินิเกม
+        // เพิ่มตัวนับและทำให้เควสล้มเหลวเมื่อแพ้มินิเกม
         if (!isSuccess)
         {
             RegisterMinigameFailed();
+
+            QuestData qToFail = activeQuestData;
+            if (qToFail == null && QuestUIManager.Instance != null && QuestUIManager.Instance.activeQuests.Count > 0)
+            {
+                qToFail = QuestUIManager.Instance.activeQuests[0];
+            }
+
+            if (qToFail != null && QuestUIManager.Instance != null)
+            {
+                QuestUIManager.Instance.FailQuest(qToFail);
+            }
         }
 
         Debug.Log($"[MinigameManager] 🏁 มินิเกมสิ้นสุดลง ผลลัพธ์: {(isSuccess ? "สำเร็จ (SUCCESS)" : "ล้มเหลว (FAILED)")} | รวมแพ้สะสม: {totalFailedMinigames} ครั้ง");

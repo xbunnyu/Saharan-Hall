@@ -422,29 +422,32 @@ public class NPCController : MonoBehaviour
         }
         else
         {
-            // ทำภารกิจไม่ผ่าน -> โดนผีร้ายตามติด!
+            // ทำภารกิจไม่ผ่าน -> เควสล้มเหลวและ NPC เดินออกจากตำหนักทันที
             Debug.LogWarning($"[NPCController] 💀 มินิเกมล้มเหลว! เควส '{questData.questTitle}'");
 
-            if (GhostCurseManager.Instance != null)
+            if (QuestUIManager.Instance != null && questData != null)
             {
-                GhostCurseManager.Instance.AttachGhost($"ท่องคาถาให้ {questData.npcName} ล้มเหลว");
+                QuestUIManager.Instance.FailQuest(questData);
             }
-
-            string failMsg = "อ๊ากก! มีสิ่งชั่วร้ายเข้าครอบงำ... พิธีล้มเหลวแล้ว!";
-
-            if (InteractionUIManager.Instance != null)
+            else
             {
-                InteractionUIManager.Instance.ShowNotification(
-                    $"<color=#FF3333>[พิธีล้มเหลว!]</color> {questData.npcName}: \"{failMsg}\"", 4.0f);
-            }
+                if (GhostCurseManager.Instance != null && questData != null)
+                {
+                    GhostCurseManager.Instance.AttachGhost($"ทำเควส {questData.npcName} ล้มเหลว");
+                }
 
-            // ลบเควสออกจาก Tracker
-            if (QuestUIManager.Instance != null)
-            {
-                QuestUIManager.Instance.activeQuests.Remove(questData);
-            }
+                string failMsg = (questData != null && !string.IsNullOrEmpty(questData.failDialogue))
+                    ? questData.failDialogue
+                    : "ไม่เห็นเก่งเลยนี่หว่า... ข้าไปหาคนอื่นดีกว่า!";
 
-            StartCoroutine(LeaveRoutine());
+                if (InteractionUIManager.Instance != null)
+                {
+                    InteractionUIManager.Instance.ShowNotification(
+                        $"<color=#FF3333>[เควสล้มเหลว!]</color> {(questData != null ? questData.npcName : "NPC")}: \"{failMsg}\"", 4.5f);
+                }
+
+                StartLeaving();
+            }
         }
     }
 
@@ -556,6 +559,11 @@ public class NPCController : MonoBehaviour
         SetAnimationWalking(false);
 
         // แจ้งเตือน HallManager ว่า NPC คนนี้ออกจากตำหนักแล้ว เพื่อส่งคนถัดไปเข้ามา
+        if (hallManager == null)
+        {
+            hallManager = HallManager.Instance;
+        }
+
         if (hallManager != null)
         {
             hallManager.OnNPCDeparted(this);

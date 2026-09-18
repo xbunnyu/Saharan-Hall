@@ -312,19 +312,8 @@ public class QuestUIManager : MonoBehaviour
         if (quest == null) return;
         quest.currentMinigameFails++;
 
-        if (quest.currentMinigameFails >= 2)
-        {
-            // ล้มเหลวครบ 2 ครั้ง -> เฟลเควสทันที
-            FailQuest(quest);
-        }
-        else
-        {
-            if (InteractionUIManager.Instance != null)
-            {
-                InteractionUIManager.Instance.ShowNotification(
-                    $"<color=#FF9900>⚠️ พลาด! (เหลือโอกาสอีก {2 - quest.currentMinigameFails} ครั้ง)</color>", 3.0f);
-            }
-        }
+        // ทำมินิเกมแพ้เพียงครั้งเดียว -> ล้มเหลวทั้งเควสทันที
+        FailQuest(quest);
     }
 
     public void FailQuest(QuestData quest)
@@ -332,31 +321,49 @@ public class QuestUIManager : MonoBehaviour
         if (quest == null) return;
         
         quest.isCompleted = false;
-        activeQuests.Remove(quest);
+        if (activeQuests.Contains(quest))
+        {
+            activeQuests.Remove(quest);
+        }
         UpdateQuestTrackerCanvas();
 
-        Debug.Log($"[QuestUIManager] ❌ เควส '{quest.questTitle}' ล้มเหลวจากการทำมินิเกมพลาดเกินกำหนด!");
+        Debug.Log($"[QuestUIManager] ❌ เควส '{quest.questTitle}' ล้มเหลวจากการทำมินิเกมพลาด!");
 
         if (GhostCurseManager.Instance != null)
         {
             GhostCurseManager.Instance.AttachGhost($"ทำเควส {quest.npcName} ล้มเหลว");
         }
 
+        string failDialogue = !string.IsNullOrEmpty(quest.failDialogue) 
+            ? quest.failDialogue 
+            : "ไม่เห็นเก่งเลยนี่หว่า... ข้าไปหาคนอื่นดีกว่า!";
+
         if (InteractionUIManager.Instance != null)
         {
             InteractionUIManager.Instance.ShowNotification(
-                $"<color=#FF3333>[เควสล้มเหลว]</color> ทำพิธีให้ {quest.npcName} ไม่สำเร็จ!", 4.0f);
+                $"<color=#FF3333>[เควสล้มเหลว]</color> {quest.npcName}: \"{failDialogue}\"", 4.5f);
         }
 
-        // ค้นหา NPC แล้วสั่งให้กลับบ้าน
+        // ค้นหา NPC แล้วสั่งให้เดินออกจากตำหนักทันที
+        NPCController targetNPC = null;
         NPCController[] npcs = FindObjectsByType<NPCController>(FindObjectsSortMode.None);
-        foreach(var npc in npcs)
+        foreach (var npc in npcs)
         {
-            if (npc.questData != null && npc.questData.questId == quest.questId)
+            if (npc != null && npc.questData != null && npc.questData.questId == quest.questId)
             {
-                npc.StartLeaving();
+                targetNPC = npc;
                 break;
             }
+        }
+
+        if (targetNPC == null && HallManager.Instance != null)
+        {
+            targetNPC = HallManager.Instance.currentActiveNPC;
+        }
+
+        if (targetNPC != null)
+        {
+            targetNPC.StartLeaving();
         }
     }
 
