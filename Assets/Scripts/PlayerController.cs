@@ -60,10 +60,18 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    [Header("State Flags")]
+    [Tooltip("หากเป็น true ตัวละครจะถูกล็อคไม่ให้เดิน/กระโดด แต่ยังสามารถหมุนกล้องและโต้ตอบ (Interact) ได้ (ใช้สำหรับนั่งเก้าอี้)")]
+    public bool isMovementLocked = false;
+
     void Update()
     {
         HandleLook();
-        HandleMovement();
+        
+        if (!isMovementLocked)
+        {
+            HandleMovement();
+        }
     }
 
     private void HandleLook()

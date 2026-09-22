@@ -26,12 +26,16 @@ public class HallTrigger : InteractableItem
     {
         if (HallManager.Instance != null)
         {
+            int target = HallManager.Instance.maxNpcPerSession > 0 ? HallManager.Instance.maxNpcPerSession : 3;
+            int current = HallManager.Instance.npcsServedThisSession;
+
             if (HallManager.Instance.isHallOpen)
             {
-                itemName = "แท่นควบคุมตำหนัก [เปิดอยู่]";
-                customReadPromptText = "กดเพื่อปิดตำหนัก";
-                readTitle = "สถานะตำหนัก: เปิดทำการ";
-                readDescription = closePromptText;
+                bool canClose = current >= target;
+                itemName = $"แท่นควบคุมตำหนัก [เปิดอยู่: {current}/{target} คน]";
+                customReadPromptText = canClose ? "กดเพื่อปิดตำหนัก" : $"ต้องรับแขกให้ครบ ({current}/{target} คน)";
+                readTitle = $"สถานะตำหนัก: เปิดทำการ ({current}/{target} คน)";
+                readDescription = canClose ? closePromptText : $"ยังปิดไม่ได้! ต้องให้บริการผู้มาเยือนให้ครบ {target} คนก่อน (ขณะนี้ {current}/{target})";
             }
             else
             {

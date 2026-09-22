@@ -40,8 +40,8 @@ public class HallManager : MonoBehaviour
     public float initialSpawnDelay = 1.5f;
     [Tooltip("ระยะเวลาหน่วงก่อนปล่อย NPC คนถัดไปหลังจากคนก่อนหน้าเดินออกไป (วินาที)")]
     public float delayBetweenNPCs = 2.0f;
-    [Tooltip("จำนวน NPC สูงสุดต่อรอบการเปิดตำหนัก (0 = ไม่จำกัด)")]
-    public int maxNpcPerSession = 0;
+    [Tooltip("จำนวน NPC สูงสุดต่อรอบการเปิดตำหนัก / ในแต่ละวัน (ต้องรับผู้มาเยือนครบก่อนจึงจะปิดตำหนักได้)")]
+    public int maxNpcPerSession = 3;
 
     [Header("5. สถานะปัจจุบัน (Runtime Info)")]
     public int currentQueueIndex = 0;
@@ -218,6 +218,9 @@ public class HallManager : MonoBehaviour
     /// <summary>
     /// สั่งเริ่มเปิดตำหนัก (NPC จะเริ่มทยอยเดินเข้ามาทีละคน)
     /// </summary>
+    /// <summary>
+    /// สั่งเริ่มเปิดตำหนัก (NPC จะเริ่มทยอยเดินเข้ามาทีละคน)
+    /// </summary>
     public void OpenHall()
     {
         if (isHallOpen)
@@ -230,11 +233,13 @@ public class HallManager : MonoBehaviour
         npcsServedThisSession = 0;
         currentQueueIndex = 0;
 
-        Debug.Log("[HallManager] [เปิดตำหนัก] เริ่มเปิดตำหนักเรียบร้อยแล้ว! กำลังส่ง NPC คนแรกเข้ามา...");
+        int target = maxNpcPerSession > 0 ? maxNpcPerSession : 3;
+
+        Debug.Log($"[HallManager] 🏮 [เปิดตำหนัก] เริ่มเปิดตำหนักเรียบร้อยแล้ว! กำหนดรับผู้มาเยือน {target} คน...");
         
         if (InteractionUIManager.Instance != null)
         {
-            InteractionUIManager.Instance.ShowNotification("เปิดตำหนักแล้ว! กำลังมีผู้มาเยือนเดินเข้ามา...", 3.0f);
+            InteractionUIManager.Instance.ShowNotification($"เปิดตำหนักแล้ว! กำหนดรับผู้มาเยือน <color=#FFD700>{target} คน</color>", 3.5f);
         }
 
         if (queueCoroutine != null) StopCoroutine(queueCoroutine);
@@ -243,10 +248,28 @@ public class HallManager : MonoBehaviour
 
     /// <summary>
     /// สั่งปิดตำหนัก (หยุดการปล่อย NPC)
+    /// - force = false: ตรวจสอบว่ารับ NPC ครบจำนวนแล้วหรือยัง หากยังไม่ครบจะไม่อนุญาตให้ปิด
+    /// - force = true: บังคับปิดตำหนัก (เช่น เมื่อรับครบตามระบบอัตโนมัติ)
     /// </summary>
-    public void CloseHall()
+    public bool CloseHall(bool force = false)
     {
-        if (!isHallOpen) return;
+        if (!isHallOpen) return false;
+
+        int target = maxNpcPerSession > 0 ? maxNpcPerSession : 3;
+
+        // หากยังให้บริการ NPC ไม่ครบตามจำนวน และไม่ได้สั่งบังคับปิด (force = true) -> ห้ามปิดตำหนัก
+        if (!force && npcsServedThisSession < target)
+        {
+            string warnMsg = $"<color=#FF4500>❌ ยังปิดตำหนักไม่ได้!</color>\nต้องรับผู้มาเยือนให้ครบก่อน (<color=#FFD700>{npcsServedThisSession}/{target} คน</color>)";
+            
+            if (InteractionUIManager.Instance != null)
+            {
+                InteractionUIManager.Instance.ShowNotification(warnMsg, 3.5f);
+            }
+
+            Debug.Log($"[HallManager] 🔒 ปิดตำหนักไม่ได้ เนื่องจากบริการไปเพียง {npcsServedThisSession}/{target} คน");
+            return false;
+        }
 
         isHallOpen = false;
         if (queueCoroutine != null)
@@ -255,20 +278,22 @@ public class HallManager : MonoBehaviour
             queueCoroutine = null;
         }
 
-        Debug.Log("[HallManager] ปิดตำหนักเรียบร้อยแล้ว");
+        Debug.Log("[HallManager] 🚪 ปิดตำหนักเรียบร้อยแล้ว");
         if (InteractionUIManager.Instance != null)
         {
-            InteractionUIManager.Instance.ShowNotification("ปิดตำหนักเรียบร้อยแล้ว (ไม่มีผู้มาเยือนใหม่)", 3.0f);
+            InteractionUIManager.Instance.ShowNotification($"<color=#00FF7F>🚪 ปิดตำหนักเรียบร้อยแล้ว!</color> (ให้บริการผู้มาเยือนครบ {npcsServedThisSession}/{target} คน)", 3.5f);
         }
+
+        return true;
     }
 
     /// <summary>
     /// สลับสถานะเปิด/ปิดตำหนัก
     /// </summary>
-    public void ToggleHall()
+    public bool ToggleHall()
     {
-        if (isHallOpen) CloseHall();
-        else OpenHall();
+        if (isHallOpen) return CloseHall(false);
+        else { OpenHall(); return true; }
     }
 
     private IEnumerator SpawnNextNPCRoutine(float delay)
@@ -277,12 +302,17 @@ public class HallManager : MonoBehaviour
 
         if (!isHallOpen) yield break;
 
+        int target = maxNpcPerSession > 0 ? maxNpcPerSession : 3;
+
         // ตรวจสอบลิมิตต่อรอบ
-        if (maxNpcPerSession > 0 && npcsServedThisSession >= maxNpcPerSession)
+        if (npcsServedThisSession >= target)
         {
-            Debug.Log("[HallManager] 🏁 ครบจำนวนผู้มาเยือนในรอบนี้แล้ว กำลังปิดตำหนักอัตโนมัติ");
-            CloseHall();
-            yield break;
+            if (currentActiveNPC == null)
+            {
+                Debug.Log($"[HallManager] 🏁 ครบจำนวนผู้มาเยือนในรอบนี้แล้ว ({npcsServedThisSession}/{target}) กำลังปิดตำหนักอัตโนมัติ");
+                CloseHall(true);
+                yield break;
+            }
         }
 
         SpawnSingleNPC();
