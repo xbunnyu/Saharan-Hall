@@ -45,7 +45,28 @@ public class NPCController : MonoBehaviour
     private bool isNavMeshActive = false;
     private UnityEngine.AI.NavMeshAgent navAgent;
 
-    public void Initialize(QuestData data, Transform reception, Transform exit, Transform player, HallManager manager)
+    [Header("Waypoint Path System (ทางเดินตามกำหนด)")]
+    public NPCWaypointPath approachPath;
+    public NPCWaypointPath exitPath;
+    private int currentApproachIndex = 0;
+    private int currentExitIndex = 0;
+
+    private float GetNpcHeightOffset()
+    {
+        CapsuleCollider capCol = GetComponent<CapsuleCollider>();
+        if (capCol != null)
+        {
+            return capCol.height * 0.5f * transform.localScale.y;
+        }
+        CharacterController charCol = GetComponent<CharacterController>();
+        if (charCol != null)
+        {
+            return charCol.height * 0.5f * transform.localScale.y;
+        }
+        return 0.9f; // ค่าตั้งต้นครึ่งความสูงของ Capsule 1.8 เมตร
+    }
+
+    public void Initialize(QuestData data, Transform reception, Transform exit, Transform player, HallManager manager, NPCWaypointPath approach = null, NPCWaypointPath exitP = null)
     {
         this.questData = data != null ? data.Clone() : new QuestData();
 
@@ -53,15 +74,21 @@ public class NPCController : MonoBehaviour
         this.targetExitPoint = exit;
         this.playerTransform = player;
         this.hallManager = manager;
+        this.approachPath = approach;
+        this.exitPath = exitP;
+        this.currentApproachIndex = 0;
+        this.currentExitIndex = 0;
 
-        // ปรับระดับพื้นตอนเกิด (ข้าม Collider ของตัวเอง)
+        float heightOffset = GetNpcHeightOffset();
+
+        // ปรับระดับพื้นตอนเกิด (ชดเชยความสูง ให้ยืนบนพื้นพอดี ไม่จมดิน!)
         RaycastHit[] initHits = Physics.RaycastAll(transform.position + Vector3.up * 2f, Vector3.down, 10f);
         System.Array.Sort(initHits, (a, b) => b.point.y.CompareTo(a.point.y));
         foreach (var h in initHits)
         {
             if (h.transform != transform && !h.transform.IsChildOf(transform) && !h.collider.isTrigger)
             {
-                transform.position = new Vector3(transform.position.x, h.point.y, transform.position.z);
+                transform.position = new Vector3(transform.position.x, h.point.y + heightOffset, transform.position.z);
                 break;
             }
         }
@@ -85,35 +112,60 @@ public class NPCController : MonoBehaviour
         interactItem.onRead.RemoveAllListeners();
         interactItem.onRead.AddListener(TriggerQuestDialogue);
 
-        // ตรวจสอบ NavMeshAgent ถ้ามีและอบ NavMesh ไว้
+        // มั่นใจว่าความเร็วเดินไม่เป็น 0
+        if (walkSpeed <= 0.1f) walkSpeed = 2.5f;
+        if (arrivalDistance <= 0.1f) arrivalDistance = 0.8f;
+
+        // ตรวจสอบ NavMeshAgent และพยายามเชื่อมต่อเข้ากับ NavMesh ในฉาก
         navAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
         if (navAgent != null)
         {
-            if (navAgent.isActiveAndEnabled && navAgent.isOnNavMesh)
+            UnityEngine.AI.NavMeshHit navHit;
+            if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out navHit, 3.5f, UnityEngine.AI.NavMesh.AllAreas))
             {
-                isNavMeshActive = true;
+                navAgent.enabled = true;
+                navAgent.baseOffset = heightOffset; // ยกโมเดลขึ้นเหนือ NavMesh ให้เท้าแตะพื้นพอดี!
+                navAgent.Warp(navHit.position);    // Snap ตัวละครลงบน NavMesh surface อย่างถูกต้อง
                 navAgent.speed = walkSpeed;
+                navAgent.stoppingDistance = 0.2f;
+                navAgent.isStopped = false;
+                isNavMeshActive = true;
+                Debug.Log($"[NPCController] 🟢 {questData.npcName} เชื่อมต่อกับ NavMesh ในฉากสำเร็จ! (BaseOffset: {heightOffset:F2}, Speed: {walkSpeed})");
             }
             else
             {
                 isNavMeshActive = false;
-                navAgent.enabled = false;
+                navAgent.enabled = false; // ปิดเพื่อไม่ให้ล็อกตำแหน่งตัวละคร
+                Debug.LogWarning($"[NPCController] ⚠️ ไม่พบ NavMesh ที่อบไว้ใต้ตัว {questData.npcName}! สลับไปใช้ระบบเดินตาม Waypoint แบบตรงอิสระ (MoveTowards)");
+            }
+        }
+        else
+        {
+            isNavMeshActive = false;
+            Debug.Log($"[NPCController] ℹ️ {questData.npcName} ไม่มี NavMeshAgent — ใช้ระบบเดินตาม Waypoint แบบตรงอิสระ (MoveTowards)");
+        }
+
+        // หากไม่ได้ใช้ NavMeshAgent ให้ตั้งค่า Collider เป็น Trigger และ Rigidbody เป็น Kinematic
+        // เพื่อป้องกันไม่ให้ NPC เดินติดขอบธรณีประตู ขอบไม้ หรือชนสิ่งกีดขวางแล้วค้าง
+        if (!isNavMeshActive)
+        {
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+            }
+
+            Collider col = GetComponent<Collider>();
+            if (col != null)
+            {
+                col.isTrigger = true;
             }
         }
 
         StartApproaching();
     }
 
-    void Start()
-    {
-        if (playerTransform == null)
-        {
-            PlayerInteraction player = FindFirstObjectByType<PlayerInteraction>();
-            if (player != null) playerTransform = player.transform;
-        }
-    }
-
-    void Update()
+    private void Update()
     {
         switch (currentState)
         {
@@ -126,9 +178,6 @@ public class NPCController : MonoBehaviour
             case NPCState.WaitingForDelivery:
                 HandleWaitingForDelivery();
                 break;
-            case NPCState.InDialogue:
-                FacePlayer();
-                break;
             case NPCState.Leaving:
                 HandleLeaving();
                 break;
@@ -138,20 +187,45 @@ public class NPCController : MonoBehaviour
     public void StartApproaching()
     {
         currentState = NPCState.Approaching;
+        currentApproachIndex = 0;
+
+        // หากจุดแรกใกล้อยู่แล้ว ให้ขยับเป้าหมายไปจุดถัดไป
+        if (approachPath != null && approachPath.PointCount > 1)
+        {
+            Vector3 p0 = approachPath.GetPointPosition(0);
+            if (Vector3.Distance(transform.position, p0) <= 0.8f)
+            {
+                currentApproachIndex = 1;
+            }
+        }
+
         SetAnimationWalking(true);
 
-        if (isNavMeshActive && navAgent != null && targetReceptionPoint != null)
+        Vector3 firstTarget = GetNextApproachTarget();
+        if (isNavMeshActive && navAgent != null && navAgent.enabled && firstTarget != Vector3.zero)
         {
-            navAgent.SetDestination(targetReceptionPoint.position);
+            navAgent.isStopped = false;
+            navAgent.SetDestination(firstTarget);
         }
+    }
+
+    private Vector3 GetNextApproachTarget()
+    {
+        if (approachPath != null && approachPath.PointCount > 0 && currentApproachIndex < approachPath.PointCount)
+        {
+            return approachPath.GetPointPosition(currentApproachIndex);
+        }
+        return targetReceptionPoint != null ? targetReceptionPoint.position : Vector3.zero;
     }
 
     private void HandleApproaching()
     {
-        if (targetReceptionPoint == null)
+        Vector3 currentTarget = GetNextApproachTarget();
+        if (currentTarget == Vector3.zero)
         {
             if (playerTransform != null)
             {
+                SetAnimationWalking(true);
                 MoveTowards(playerTransform.position + playerTransform.forward * 1.5f);
                 if (Vector3.Distance(transform.position, playerTransform.position) <= 2.2f)
                 {
@@ -161,24 +235,80 @@ public class NPCController : MonoBehaviour
             return;
         }
 
-        Vector3 targetPos = targetReceptionPoint.position;
-        float distance = Vector3.Distance(transform.position, targetPos);
+        SetAnimationWalking(true);
 
-        if (isNavMeshActive && navAgent != null)
+        // เช็คระยะห่างทางกายภาพจริง XZ
+        float distXZ = Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(currentTarget.x, currentTarget.z));
+        float checkDist = Mathf.Max(arrivalDistance, 1.0f);
+
+        if (isNavMeshActive && navAgent != null && navAgent.enabled)
         {
-            if (!navAgent.pathPending && navAgent.remainingDistance <= arrivalDistance)
+            if (!navAgent.pathPending)
             {
-                ArrivedAtReception();
+                // หาก NavMesh มีปัญหา หรือเส้นทางขาด ให้สลับเป็น MoveTowards
+                if (navAgent.pathStatus == NavMeshPathStatus.PathInvalid)
+                {
+                    isNavMeshActive = false;
+                    navAgent.enabled = false;
+
+                    Collider col = GetComponent<Collider>();
+                    if (col != null) col.isTrigger = true;
+                    Rigidbody rb = GetComponent<Rigidbody>();
+                    if (rb != null) rb.isKinematic = true;
+
+                    Debug.LogWarning($"[NPCController] ⚠️ NavMesh ขาดช่วงที่จุด {currentApproachIndex}! สลับใช้ระบบ MoveTowards อิสระ");
+                }
+                else if (distXZ <= checkDist || (navAgent.hasPath && navAgent.remainingDistance <= checkDist))
+                {
+                    AdvanceApproachWaypoint();
+                }
             }
         }
         else
         {
-            MoveTowards(targetPos);
-            if (distance <= arrivalDistance)
+            MoveTowards(currentTarget);
+            if (distXZ <= checkDist)
             {
-                ArrivedAtReception();
+                AdvanceApproachWaypoint();
             }
         }
+    }
+
+    private void AdvanceApproachWaypoint()
+    {
+        currentApproachIndex++;
+
+        // 1. ถ้ายังมีจุดถัดไปใน approachPath -> เดินไปยังจุดถัดไป
+        if (approachPath != null && currentApproachIndex < approachPath.PointCount)
+        {
+            Vector3 nextTarget = approachPath.GetPointPosition(currentApproachIndex);
+            if (isNavMeshActive && navAgent != null)
+            {
+                navAgent.isStopped = false;
+                navAgent.SetDestination(nextTarget);
+            }
+            return;
+        }
+
+        // 2. ถ้าเดินครบทุกจุดใน approachPath แล้ว แต่ยังไม่ถึง targetReceptionPoint -> เดินไปยังโต๊ะรับแขก
+        if (targetReceptionPoint != null)
+        {
+            Vector3 receptionPos = targetReceptionPoint.position;
+            float distToReception = Vector3.Distance(transform.position, receptionPos);
+            
+            if (distToReception > 1.2f)
+            {
+                if (isNavMeshActive && navAgent != null)
+                {
+                    navAgent.isStopped = false;
+                    navAgent.SetDestination(receptionPos);
+                }
+                return;
+            }
+        }
+
+        // 3. เมื่อถึงโต๊ะรับแขกเรียบร้อยแล้ว -> สั่ง ArrivedAtReception()
+        ArrivedAtReception();
     }
 
     private void ArrivedAtReception()
@@ -186,7 +316,7 @@ public class NPCController : MonoBehaviour
         currentState = NPCState.WaitingAtReception;
         SetAnimationWalking(false);
 
-        if (isNavMeshActive && navAgent != null)
+        if (isNavMeshActive && navAgent != null && navAgent.enabled)
         {
             navAgent.ResetPath();
         }
@@ -196,8 +326,18 @@ public class NPCController : MonoBehaviour
             AudioSource.PlayClipAtPoint(greetingSound, transform.position);
         }
 
-        // เริ่มแสดงหน้าต่างเสนอเควสต่อผู้เล่นทันทีเมื่อมาถึง
-        TriggerQuestDialogue();
+        if (interactItem != null)
+        {
+            interactItem.customReadPromptText = $"พูดคุย / รับเควส ({questData.npcName})";
+        }
+
+        // แสดงการแจ้งเตือนสั้นๆ ให้ผู้เล่นทราบว่าผู้มาเยือนเดินมาถึงแล้ว
+        if (InteractionUIManager.Instance != null)
+        {
+            InteractionUIManager.Instance.ShowNotification($"{questData.npcName} เดินมาถึงแล้ว (เดินเข้าไปกด [E] เพื่อพูดคุย)", 3.0f);
+        }
+
+        // ยืนรอที่โต๊ะรับแขก หันหน้าหาผู้เล่น จนกว่าผู้เล่นจะเดินมากด [E] คุยด้วยตัวเอง
     }
 
     private void HandleWaitingAtReception()
@@ -477,6 +617,7 @@ public class NPCController : MonoBehaviour
     public void StartLeaving()
     {
         currentState = NPCState.Leaving;
+        currentExitIndex = 0;
         SetAnimationWalking(true);
 
         // ปิดการ Interact ระหว่างกำลังเดินออก
@@ -485,42 +626,108 @@ public class NPCController : MonoBehaviour
             interactItem.enabled = false;
         }
 
-        // ตั้งเวลาลบ NPC ออกจากฉากแน่นอน (ภายใน 5 วินาที)
+        // ตั้งเวลาลบ NPC ออกจากฉากกรณีค้าง (ขยายเป็น 15 วินาทีเพื่อให้ครอบคลุมทางเดินหลายจุด)
         CancelInvoke(nameof(DespawnNPC));
-        Invoke(nameof(DespawnNPC), 5.0f);
+        Invoke(nameof(DespawnNPC), 15.0f);
 
-        if (isNavMeshActive && navAgent != null && targetExitPoint != null)
+        Vector3 firstExitTarget = GetNextExitTarget();
+        if (isNavMeshActive && navAgent != null && firstExitTarget != Vector3.zero)
         {
-            navAgent.SetDestination(targetExitPoint.position);
+            navAgent.isStopped = false;
+            navAgent.SetDestination(firstExitTarget);
         }
+    }
+
+    private Vector3 GetNextExitTarget()
+    {
+        if (exitPath != null && exitPath.PointCount > 0 && currentExitIndex < exitPath.PointCount)
+        {
+            return exitPath.GetPointPosition(currentExitIndex);
+        }
+        return targetExitPoint != null ? targetExitPoint.position : Vector3.zero;
     }
 
     private void HandleLeaving()
     {
-        if (targetExitPoint == null)
+        Vector3 currentTarget = GetNextExitTarget();
+        if (currentTarget == Vector3.zero)
         {
             DespawnNPC();
             return;
         }
 
-        Vector3 targetPos = targetExitPoint.position;
-        float distance = Vector3.Distance(transform.position, targetPos);
+        SetAnimationWalking(true);
 
-        if (isNavMeshActive && navAgent != null)
+        // เช็คระยะห่างทางกายภาพจริง XZ
+        float distXZ = Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(currentTarget.x, currentTarget.z));
+        float checkDist = Mathf.Max(arrivalDistance, 1.0f);
+
+        if (isNavMeshActive && navAgent != null && navAgent.enabled)
         {
-            if (!navAgent.pathPending && navAgent.remainingDistance <= arrivalDistance)
+            if (!navAgent.pathPending)
             {
-                DespawnNPC();
+                if (navAgent.pathStatus == NavMeshPathStatus.PathInvalid)
+                {
+                    isNavMeshActive = false;
+                    navAgent.enabled = false;
+
+                    Collider col = GetComponent<Collider>();
+                    if (col != null) col.isTrigger = true;
+                    Rigidbody rb = GetComponent<Rigidbody>();
+                    if (rb != null) rb.isKinematic = true;
+
+                    Debug.LogWarning($"[NPCController] ⚠️ NavMesh ขาดช่วงระหว่างขาออก! สลับใช้ระบบ MoveTowards อิสระ");
+                }
+                else if (distXZ <= checkDist || (navAgent.hasPath && navAgent.remainingDistance <= checkDist))
+                {
+                    AdvanceExitWaypoint();
+                }
             }
         }
         else
         {
-            MoveTowards(targetPos);
-            if (distance <= arrivalDistance)
+            MoveTowards(currentTarget);
+            if (distXZ <= checkDist)
             {
-                DespawnNPC();
+                AdvanceExitWaypoint();
             }
         }
+    }
+
+    private void AdvanceExitWaypoint()
+    {
+        currentExitIndex++;
+
+        // 1. ถ้ายังมีจุดถัดไปใน exitPath -> เดินไปยังจุดถัดไป
+        if (exitPath != null && currentExitIndex < exitPath.PointCount)
+        {
+            Vector3 nextTarget = exitPath.GetPointPosition(currentExitIndex);
+            if (isNavMeshActive && navAgent != null)
+            {
+                navAgent.isStopped = false;
+                navAgent.SetDestination(nextTarget);
+            }
+            return;
+        }
+
+        // 2. ถ้าเดินครบทุกจุดใน exitPath แล้ว แต่ยังไม่ถึง targetExitPoint -> เดินไปยังจุดออกจากฉาก
+        if (targetExitPoint != null)
+        {
+            Vector3 exitPos = targetExitPoint.position;
+            float distToExit = Vector3.Distance(transform.position, exitPos);
+            
+            if (distToExit > 1.2f)
+            {
+                if (isNavMeshActive && navAgent != null)
+                {
+                    navAgent.isStopped = false;
+                    navAgent.SetDestination(exitPos);
+                }
+                return;
+            }
+        }
+
+        DespawnNPC();
     }
 
     private void MoveTowards(Vector3 destination)
@@ -543,7 +750,7 @@ public class NPCController : MonoBehaviour
             {
                 if (hit.transform != transform && !hit.transform.IsChildOf(transform) && !hit.collider.isTrigger)
                 {
-                    transform.position = new Vector3(transform.position.x, hit.point.y, transform.position.z);
+                    transform.position = new Vector3(transform.position.x, hit.point.y + GetNpcHeightOffset(), transform.position.z);
                     break;
                 }
             }

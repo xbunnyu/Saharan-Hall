@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 821919973812288690}
   - component: {fileID: 3178237630425309803}
   - component: {fileID: 7402364127659675197}
+  - component: {fileID: -7155560636792859211}
   m_Layer: 0
   m_Name: NPC
   m_TagString: Untagged
@@ -29,7 +30,7 @@ Transform:
   m_GameObject: {fileID: 1808331191826508427}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -14.29782, y: 2.15, z: -12.15781}
+  m_LocalPosition: {x: -14.29782, y: 2.5, z: -12.15781}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -129,25 +130,41 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NPCController
   questData:
     questId: quest_01
+    problemType: "\u0E14\u0E27\u0E07\u0E15\u0E01"
     questTitle: "\u0E02\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E0A\u0E48\u0E27\u0E22\u0E40\u0E2B\u0E25\u0E37\u0E2D"
     questDescription: "\u0E17\u0E48\u0E32\u0E19\u0E1C\u0E39\u0E49\u0E14\u0E39\u0E41\u0E25\u0E15\u0E33\u0E2B\u0E19\u0E31\u0E01
       \u0E0A\u0E48\u0E27\u0E22\u0E2B\u0E32\u0E02\u0E2D\u0E07\u0E2A\u0E34\u0E48\u0E07\u0E19\u0E35\u0E49\u0E43\u0E2B\u0E49\u0E02\u0E49\u0E32\u0E2B\u0E19\u0E48\u0E2D\u0E22\u0E44\u0E14\u0E49\u0E2B\u0E23\u0E37\u0E2D\u0E44\u0E21\u0E48?"
+    difficulty: 0
+    customNoteSpeed: 0
+    customNoteCount: 0
+    passPercentage: 60
     npcName: "\u0E0A\u0E32\u0E27\u0E1A\u0E49\u0E32\u0E19"
     npcPortrait: {fileID: 0}
     greetingDialogue: "\u0E2A\u0E27\u0E31\u0E2A\u0E14\u0E35\u0E17\u0E48\u0E32\u0E19\u0E1C\u0E39\u0E49\u0E14\u0E39\u0E41\u0E25\u0E15\u0E33\u0E2B\u0E19\u0E31\u0E01
       \u0E02\u0E49\u0E32\u0E21\u0E35\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E40\u0E14\u0E37\u0E2D\u0E14\u0E23\u0E49\u0E2D\u0E19\u0E43\u0E08\u0E2D\u0E22\u0E32\u0E01\u0E43\u0E2B\u0E49\u0E17\u0E48\u0E32\u0E19\u0E0A\u0E48\u0E27\u0E22..."
-    acceptDialogue: "\u0E02\u0E2D\u0E1A\u0E1E\u0E23\u0E30\u0E04\u0E38\u0E13\u0E17\u0E48\u0E32\u0E19\u0E21\u0E32\u0E01!
+    waitingDialogue: "\u0E02\u0E2D\u0E1A\u0E1E\u0E23\u0E30\u0E04\u0E38\u0E13\u0E17\u0E48\u0E32\u0E19\u0E21\u0E32\u0E01!
       \u0E02\u0E49\u0E32\u0E08\u0E30\u0E23\u0E2D\u0E23\u0E31\u0E1A\u0E02\u0E48\u0E32\u0E27\u0E14\u0E35\u0E08\u0E32\u0E01\u0E17\u0E48\u0E32\u0E19\u0E19\u0E30"
+    completeDialogue: "\u0E22\u0E2D\u0E14\u0E40\u0E22\u0E35\u0E48\u0E22\u0E21\u0E21\u0E32\u0E01!
+      \u0E1E\u0E34\u0E18\u0E35\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08\u0E25\u0E38\u0E25\u0E48\u0E27\u0E07\u0E14\u0E49\u0E27\u0E22\u0E14\u0E35
+      \u0E02\u0E2D\u0E1A\u0E1E\u0E23\u0E30\u0E04\u0E38\u0E13\u0E17\u0E48\u0E32\u0E19\u0E08\u0E23\u0E34\u0E07
+      \u0E46 \u0E02\u0E49\u0E32\u0E02\u0E2D\u0E15\u0E31\u0E27\u0E25\u0E32\u0E01\u0E48\u0E2D\u0E19"
     declineDialogue: "\u0E07\u0E31\u0E49\u0E19\u0E2B\u0E23\u0E37\u0E2D... \u0E19\u0E48\u0E32\u0E40\u0E2A\u0E35\u0E22\u0E14\u0E32\u0E22\u0E08\u0E31\u0E07
       \u0E44\u0E21\u0E48\u0E40\u0E1B\u0E47\u0E19\u0E44\u0E23 \u0E42\u0E2D\u0E01\u0E32\u0E2A\u0E2B\u0E19\u0E49\u0E32\u0E02\u0E49\u0E32\u0E08\u0E30\u0E21\u0E32\u0E43\u0E2B\u0E21\u0E48"
+    failDialogue: "\u0E44\u0E21\u0E48\u0E40\u0E2B\u0E47\u0E19\u0E40\u0E01\u0E48\u0E07\u0E40\u0E25\u0E22\u0E19\u0E35\u0E48\u0E2B\u0E27\u0E48\u0E32...
+      \u0E02\u0E49\u0E32\u0E44\u0E1B\u0E2B\u0E32\u0E2B\u0E21\u0E2D\u0E18\u0E23\u0E23\u0E21\u0E04\u0E19\u0E2D\u0E37\u0E48\u0E19\u0E14\u0E35\u0E01\u0E27\u0E48\u0E32!"
     requiredItemName: 
     requiredQuantity: 1
+    isTaskCompleted: 0
     rewardDescription: "\u0E40\u0E07\u0E34\u0E19\u0E23\u0E32\u0E07\u0E27\u0E31\u0E25
       100 \u0E40\u0E2B\u0E23\u0E35\u0E22\u0E0D"
     rewardMoney: 100
     rewardItemName: 
+    karmaReward: 15
+    requiredMinigameSequence: 
+    completedMinigameSequence: 
     isAccepted: 0
     isCompleted: 0
+    currentMinigameFails: 0
   walkSpeed: 2.5
   rotationSpeed: 6
   arrivalDistance: 0.5
@@ -158,3 +175,27 @@ MonoBehaviour:
   acceptSound: {fileID: 0}
   declineSound: {fileID: 0}
   currentState: 0
+  approachPath: {fileID: 0}
+  exitPath: {fileID: 0}
+--- !u!195 &-7155560636792859211
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1808331191826508427}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 2
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 1
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4

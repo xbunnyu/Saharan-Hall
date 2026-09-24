@@ -22,6 +22,12 @@ public class HallManager : MonoBehaviour
     [Tooltip("ตำแหน่งของผู้เล่น (ถ้าเว้นว่างจะค้นหาให้อัตโนมัติ)")]
     public Transform playerTransform;
 
+    [Header("2.5 เส้นทางเดิน Waypoint (Optional Pathing)")]
+    [Tooltip("เส้นทางเดินขาเข้าสำหรับ NPC (ลากอ็อบเจกต์ที่มีสคริปต์ NPCWaypointPath มาใส่)")]
+    public NPCWaypointPath approachPath;
+    [Tooltip("เส้นทางเดินขาออกสำหรับ NPC (ลากอ็อบเจกต์ที่มีสคริปต์ NPCWaypointPath มาใส่)")]
+    public NPCWaypointPath exitPath;
+
     [Header("3. ข้อมูล NPC & เควส (NPC Prefabs & Quests)")]
     [Tooltip("Prefab ของตัวละคร NPC (ถ้ามี ให้ใส่ที่นี่ หากเว้นว่างไว้ระบบจะสร้างตัวละครจำลองอัตโนมัติ)")]
     public GameObject defaultNpcPrefab;
@@ -358,8 +364,8 @@ public class HallManager : MonoBehaviour
         currentActiveNPC = controller;
         npcsServedThisSession++;
 
-        // เริ่มต้นให้ NPC เดินเข้าหาจุดรับแขก
-        controller.Initialize(currentQuest, receptionPoint, exitPoint, playerTransform, this);
+        // เริ่มต้นให้ NPC เดินเข้าหาจุดรับแขกตามเส้นทาง Waypoint
+        controller.Initialize(currentQuest, receptionPoint, exitPoint, playerTransform, this, approachPath, exitPath);
 
         Debug.Log($"[HallManager] 👤 NPC '{currentQuest?.npcName}' เกิดที่ {spawnPoint.position} และกำลังเดินเข้ามาที่จุดรับแขก");
     }
