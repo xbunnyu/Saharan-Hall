@@ -60,7 +60,7 @@ public class BedroomDoorInteractable : InteractableItem
             && QuestUIManager.Instance.activeQuests.Count > 0)
         {
             interactor.ShowNotification(
-                "<color=#FF9900>⚠️ ยังมีภารกิจค้างอยู่ กรุณาทำให้เสร็จก่อนเข้านอน</color>", 3.0f);
+                "<color=#FF9900>⚠️ ยังมีภาระกิจค้างอยู่ กรุณาทำให้เสร็จก่อนเข้านอน</color>", 3.0f);
             return;
         }
 
@@ -77,7 +77,17 @@ public class BedroomDoorInteractable : InteractableItem
         }
 
         interactor.CloseReading();
-        StartCoroutine(FadeAndLoadScene());
+
+        // ขึ้นวันใหม่ — เรียก DayManager.AdvanceDay() พร้อมเอฟเฟคจอ
+        if (DayManager.Instance != null)
+        {
+            StartCoroutine(SleepAndAdvanceDay());
+        }
+        else
+        {
+            // Fallback: เปลี่ยนซีนถ้าไม่มี DayManager
+            StartCoroutine(FadeAndLoadScene());
+        }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -108,6 +118,52 @@ public class BedroomDoorInteractable : InteractableItem
         // โหลดซีน
         Time.timeScale = 1f;
         SceneManager.LoadScene(targetSceneName);
+    }
+
+    // เมื่อกดนอน: Fade ดำ, เรียก AdvanceDay, Fade กลับและปลด Lock
+    private IEnumerator SleepAndAdvanceDay()
+    {
+        isTransitioning = true;
+
+        // ล็อคการเคลื่อนที่ผู้เล่น
+        PlayerController pc = FindFirstObjectByType<PlayerController>();
+        if (pc != null) pc.enabled = false;
+
+        // Fade to Black
+        EnsureFadeCanvas();
+        fadeCanvasGO.SetActive(true);
+        float elapsed = 0f;
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.deltaTime;
+            if (fadeImage != null)
+                fadeImage.color = new Color(0f, 0f, 0f, Mathf.Clamp01(elapsed / fadeDuration));
+            yield return null;
+        }
+        if (fadeImage != null)
+            fadeImage.color = new Color(0f, 0f, 0f, 1f);
+
+        // Hold สั้นๆ และเรียก AdvanceDay (DayManager จะ Fade In overlay)
+        yield return new WaitForSeconds(0.3f);
+        DayManager.Instance.AdvanceDay();
+
+        // ปลด Lock ผู้เล่น
+        if (pc != null) pc.enabled = true;
+
+        // Fade Back from Black
+        elapsed = 0f;
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.deltaTime;
+            if (fadeImage != null)
+                fadeImage.color = new Color(0f, 0f, 0f, 1f - Mathf.Clamp01(elapsed / fadeDuration));
+            yield return null;
+        }
+        if (fadeImage != null)
+            fadeImage.color = new Color(0f, 0f, 0f, 0f);
+        fadeCanvasGO.SetActive(false);
+
+        isTransitioning = false;
     }
 
     // ══════════════════════════════════════════════════════════
