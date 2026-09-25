@@ -22,6 +22,10 @@ public class HallManager : MonoBehaviour
     [Tooltip("เธ•เธณเนเธซเธเนเธเธเธญเธเธเธนเนเน€เธฅเนเธ (เธ–เนเธฒเน€เธงเนเธเธงเนเธฒเธเธเธฐเธเนเธเธซเธฒเนเธซเนเธญเธฑเธ•เนเธเธกเธฑเธ•เธด)")]
     public Transform playerTransform;
 
+    [Header("Waypoint Paths (ทางเดิน NPC)")]
+    public NPCWaypointPath approachPath;
+    public NPCWaypointPath exitPath;
+
     [Header("3. เธเนเธญเธกเธนเธฅ NPC & เน€เธเธงเธช (NPC Prefabs & Quests)")]
     [Tooltip("Prefab เธเธญเธเธ•เธฑเธงเธฅเธฐเธเธฃ NPC (เธ–เนเธฒเธกเธต เนเธซเนเนเธชเนเธ—เธตเนเธเธตเน เธซเธฒเธเน€เธงเนเธเธงเนเธฒเธเนเธงเนเธฃเธฐเธเธเธเธฐเธชเธฃเนเธฒเธเธ•เธฑเธงเธฅเธฐเธเธฃเธเธณเธฅเธญเธเธญเธฑเธ•เนเธเธกเธฑเธ•เธด)")]
     public GameObject defaultNpcPrefab;
@@ -381,7 +385,7 @@ public class HallManager : MonoBehaviour
         npcsServedThisSession++;
 
         // เน€เธฃเธดเนเธกเธ•เนเธเนเธซเน NPC เน€เธ”เธดเธเน€เธเนเธฒเธซเธฒเธเธธเธ”เธฃเธฑเธเนเธเธ
-        controller.Initialize(currentQuest, receptionPoint, exitPoint, playerTransform, this);
+        controller.Initialize(currentQuest, receptionPoint, exitPoint, playerTransform, this, approachPath, exitPath);
 
         Debug.Log($"[HallManager] ๐‘ค NPC '{currentQuest?.npcName}' เน€เธเธดเธ”เธ—เธตเน {spawnPoint.position} เนเธฅเธฐเธเธณเธฅเธฑเธเน€เธ”เธดเธเน€เธเนเธฒเธกเธฒเธ—เธตเนเธเธธเธ”เธฃเธฑเธเนเธเธ");
     }
