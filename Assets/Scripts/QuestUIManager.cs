@@ -171,7 +171,21 @@ public class QuestUIManager : MonoBehaviour
 
             if (questRewardText != null)
             {
-                questRewardText.text = $"รางวัลตอบแทน: <color=#00FF7F>{quest.rewardDescription}</color>";
+                string rewardText = !string.IsNullOrEmpty(quest.rewardDescription) 
+                    ? quest.rewardDescription 
+                    : (quest.rewardMoney > 0 ? $"เงิน {quest.rewardMoney:N0} เหรียญ" : "");
+
+                if (!string.IsNullOrEmpty(quest.rewardItemName))
+                {
+                    rewardText += string.IsNullOrEmpty(rewardText) ? quest.rewardItemName : $" + {quest.rewardItemName}";
+                }
+
+                if (string.IsNullOrEmpty(rewardText))
+                {
+                    rewardText = quest.rewardMoney > 0 ? $"{quest.rewardMoney:N0} เหรียญ" : "-";
+                }
+
+                questRewardText.text = $"รางวัลตอบแทน: <color=#00FF7F>{rewardText}</color>";
                 questRewardText.gameObject.SetActive(true);
             }
 
