@@ -28,17 +28,22 @@ public class HallSeatInteractable : InteractableItem
     private void Awake()
     {
         if (Instance == null) Instance = this;
+        itemName = "เก้าอี้โต๊ะรับแขก";
+        canRead = true;
+        canCollect = false;
+        interactionKeyText = "E";
+        customReadPromptText = "นั่งโต๊ะรับแขก (เปิดตำหนัก)";
         readDescription = "";
         readTitle = "";
     }
 
     private void Reset()
     {
-        itemName = "เก้าอี้";
+        itemName = "เก้าอี้โต๊ะรับแขก";
         canRead = true;
         canCollect = false;
         interactionKeyText = "E";
-        customReadPromptText = "นั่งเก้าอี้";
+        customReadPromptText = "นั่งโต๊ะรับแขก (เปิดตำหนัก)";
         readDescription = "";
         readTitle = "";
     }
@@ -122,12 +127,20 @@ public class HallSeatInteractable : InteractableItem
 
         isSeated = true;
 
-        if (InteractionUIManager.Instance != null)
+        // สั่งเปิดตำหนักทันทีเมื่อผู้เล่นนั่งลงบนเก้าอี้
+        if (HallManager.Instance != null)
+        {
+            if (!HallManager.Instance.isHallOpen)
+            {
+                HallManager.Instance.OpenHall();
+            }
+        }
+        else if (InteractionUIManager.Instance != null)
         {
             InteractionUIManager.Instance.ShowNotification("<color=#FFD700>🪑 นั่งลงบนเก้าอี้เรียบร้อยแล้ว</color>", 2.5f);
         }
 
-        Debug.Log("[HallSeat] 🪑 ผู้เล่นนั่งลงบนเก้าอี้แล้ว (ล็อกการเดิน แต่ขยับเมาส์และ Interact ได้ปกติ)");
+        Debug.Log("[HallSeat] 🪑 ผู้เล่นนั่งลงบนเก้าอี้แล้ว และสั่งเปิดตำหนักรับผู้มาเยือน");
     }
 
     /// <summary>

@@ -9,8 +9,8 @@ public class HallManager : MonoBehaviour
     [Header("1. สถานะตำหนัก (Hall Status)")]
     [Tooltip("ตำหนักกำลังเปิดรับผู้คนอยู่หรือไม่")]
     public bool isHallOpen = false;
-    [Tooltip("เริ่มเปิดตำหนักทันทีเมื่อเริ่มเกม (ตำหนักจะเปิดรับลูกค้าโดยอัตโนมัติ)")]
-    public bool openOnStart = true;
+    [Tooltip("เริ่มเปิดตำหนักทันทีเมื่อเริ่มเกม (หากต้องการให้นั่งเก้าอี้ก่อนค่อยเปิด ให้ตั้งเป็น false)")]
+    public bool openOnStart = false;
 
     [Header("2. จุดตำแหน่งสำคัญ (Waypoints)")]
     [Tooltip("จุดเกิดของ NPC (สามารถใส่ได้หลายจุดเพื่อสุ่ม)")]
@@ -45,7 +45,7 @@ public class HallManager : MonoBehaviour
     [Tooltip("ระยะเวลาหน่วงก่อนปล่อย NPC คนถัดไปหลังจากคนก่อนหน้าเดินออกไป (วินาที)")]
     public float delayBetweenNPCs = 2.0f;
     [Tooltip("จำนวน NPC สูงสุดต่อรอบการเปิดตำหนัก / ในแต่ละวัน (ต้องรับผู้มาเยือนครบก่อนจึงจะปิดตำหนักได้)")]
-    public int maxNpcPerSession = 3;
+    public int maxNpcPerSession = 5;
 
     [Header("5. สถานะปัจจุบัน (Runtime Info)")]
     public int currentQueueIndex = 0;
@@ -230,17 +230,26 @@ public class HallManager : MonoBehaviour
             return;
         }
 
-        isHallOpen = true;
-        npcsServedThisSession = 0;
-        currentQueueIndex = 0;
+        int target = maxNpcPerSession > 0 ? maxNpcPerSession : 5;
 
-        int target = maxNpcPerSession > 0 ? maxNpcPerSession : 3;
+        // หากวันนี้รับผู้มาเยือนครบแล้ว
+        if (npcsServedThisSession >= target)
+        {
+            Debug.Log("[HallManager] ⚠️ วันนี้รับผู้มาเยือนครบแล้ว ต้องรอขึ้นวันใหม่ (นอนหลับ)");
+            if (InteractionUIManager.Instance != null)
+            {
+                InteractionUIManager.Instance.ShowNotification($"<color=#FFD700>🏮 วันนี้รับผู้มาเยือนครบ {target} คนแล้ว</color>\nโปรดไปนอนหลับเพื่อเริ่มวันถัดไป", 3.5f);
+            }
+            return;
+        }
+
+        isHallOpen = true;
 
         Debug.Log($"[HallManager] 🏮 [เปิดตำหนัก] เริ่มเปิดตำหนักเรียบร้อยแล้ว! กำหนดรับผู้มาเยือน {target} คน...");
         
         if (InteractionUIManager.Instance != null)
         {
-            InteractionUIManager.Instance.ShowNotification($"เปิดตำหนักแล้ว! กำหนดรับผู้มาเยือน <color=#FFD700>{target} คน</color>", 3.5f);
+            InteractionUIManager.Instance.ShowNotification($"🏮 เปิดตำหนักแล้ว! กำหนดรับผู้มาเยือน <color=#FFD700>{target} คน</color>", 3.5f);
         }
 
         if (queueCoroutine != null) StopCoroutine(queueCoroutine);
