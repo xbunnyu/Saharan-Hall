@@ -107,16 +107,17 @@ public class KumanThongUIController : MonoBehaviour
         // 1. เพิ่มค่าพึ่งพา (dependency) ขึ้น +10 หน่วย (ข้อมูลเบื้องหลัง)
         dependencyLevel += 10;
 
-        // 2. ลดค่า Fail ลง 1 หน่วย
-        bool hadFail = false;
-        if (MinigameManager.Instance != null)
+        // 2. ชำระล้างผีร้ายออกจากตัว 1 ตัว
+        bool hadGhost = false;
+        if (GhostCurseManager.Instance != null && GhostCurseManager.Instance.currentGhostCount > 0)
         {
-            if (MinigameManager.Instance.totalFailedMinigames > 0)
-            {
-                MinigameManager.Instance.totalFailedMinigames--;
-                MinigameManager.Instance.UpdateFailCounterUI();
-                hadFail = true;
-            }
+            GhostCurseManager.Instance.CleanseGhosts(1);
+            hadGhost = true;
+        }
+
+        if (MinigameManager.Instance != null && MinigameManager.Instance.totalFailedMinigames > 0)
+        {
+            MinigameManager.Instance.totalFailedMinigames--;
         }
 
         // 3. เล่นเสียงสังเคราะห์และแสดงผลแจ้งเตือน
@@ -124,10 +125,10 @@ public class KumanThongUIController : MonoBehaviour
 
         if (InteractionUIManager.Instance != null)
         {
-            if (hadFail)
+            if (hadGhost)
             {
-                int currentFail = MinigameManager.Instance != null ? MinigameManager.Instance.totalFailedMinigames : 0;
-                InteractionUIManager.Instance.ShowNotification($"<color=#00FF7F>✨ ถวายเครื่องเซ่นกุมารทองแล้ว!</color> (ลด Fail ลง 1 ➔ เหลือ {currentFail})", 3.5f);
+                int currentGhosts = GhostCurseManager.Instance != null ? GhostCurseManager.Instance.currentGhostCount : 0;
+                InteractionUIManager.Instance.ShowNotification($"<color=#00FF7F>✨ ถวายเครื่องเซ่นกุมารทองแล้ว!</color> (ชำระล้างผีร้าย 1 ตัว ➔ เหลือ {currentGhosts}/3 ตัว)", 3.5f);
             }
             else
             {
@@ -142,11 +143,11 @@ public class KumanThongUIController : MonoBehaviour
 
     private void RefreshUI()
     {
-        int currentFail = MinigameManager.Instance != null ? MinigameManager.Instance.totalFailedMinigames : 0;
+        int currentGhosts = GhostCurseManager.Instance != null ? GhostCurseManager.Instance.currentGhostCount : 0;
 
         if (failStatusText != null)
         {
-            failStatusText.text = $"⚠️ ค่า Fail สะสมปัจจุบัน: <color=#FF4500><b>{currentFail} ครั้ง</b></color>";
+            failStatusText.text = $"👻 วิญญาณผีร้ายตามติด: <color=#FF4500><b>{currentGhosts}/3 ตัว</b></color>";
         }
     }
 
@@ -362,14 +363,14 @@ public class KumanThongUIController : MonoBehaviour
         titleStyle.normal.textColor = new Color(1f, 0.85f, 0.2f);
         GUI.Label(new Rect(x, y + 15, w, 32), "👶 ศาลกุมารทอง (KUMAN THONG)", titleStyle);
 
-        int curFail = MinigameManager.Instance != null ? MinigameManager.Instance.totalFailedMinigames : 0;
+        int currentGhosts = GhostCurseManager.Instance != null ? GhostCurseManager.Instance.currentGhostCount : 0;
         GUIStyle statusStyle = new GUIStyle(GUI.skin.label)
         {
             fontSize = 16,
             alignment = TextAnchor.MiddleCenter
         };
         statusStyle.normal.textColor = Color.white;
-        GUI.Label(new Rect(x, y + 55, w, 28), $"⚠️ ค่า Fail สะสมปัจจุบัน: {curFail} ครั้ง", statusStyle);
+        GUI.Label(new Rect(x, y + 55, w, 28), $"👻 วิญญาณผีร้ายตามติด: {currentGhosts}/3 ตัว", statusStyle);
 
         GUIStyle infoStyle = new GUIStyle(GUI.skin.label)
         {
@@ -377,9 +378,9 @@ public class KumanThongUIController : MonoBehaviour
             alignment = TextAnchor.MiddleCenter
         };
         infoStyle.normal.textColor = new Color(0.85f, 0.88f, 0.95f);
-        GUI.Label(new Rect(x + 20, y + 90, w - 40, 45), "กุมารทองจะช่วยรับเคราะห์และชำระล้างค่า Fail ให้ 1 หน่วย\nทุกครั้งที่กราบไหว้ถวายเครื่องเซ่น", infoStyle);
+        GUI.Label(new Rect(x + 20, y + 90, w - 40, 45), "กุมารทองจะช่วยรับเคราะห์และชำระล้างผีร้ายให้ออกจากตัว 1 ตัว\nทุกครั้งที่กราบไหว้ถวายเครื่องเซ่น", infoStyle);
 
-        if (GUI.Button(new Rect(x + (w - 280f) / 2f, y + 150, 280f, 48f), "🙏 ถวายเครื่องเซ่น (ลด Fail -1)"))
+        if (GUI.Button(new Rect(x + (w - 280f) / 2f, y + 150, 280f, 48f), "🙏 ถวายเครื่องเซ่น (ชำระล้างผีร้าย -1)"))
         {
             MakeOffering();
         }
