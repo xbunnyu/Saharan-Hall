@@ -52,6 +52,26 @@ public class HallManager : MonoBehaviour
     public int npcsServedThisSession = 0;
     public NPCController currentActiveNPC;
 
+    [Header("6. พ่อค้าเดินทาง (Merchant NPC Settings)")]
+    [Tooltip("เปิด/ปิดระบบพ่อค้าสุ่มเดินเข้ามาในวันเลขคู่ (วันที่ 2, 4, 6, 8...)")]
+    public bool enableMerchantOnEvenDays = true;
+    [Tooltip("Prefab ของพ่อค้า (หากเว้นว่างจะสร้างตัวละครจำลอง พ่อค้าวัตถุมงคล)")]
+    public GameObject merchantNpcPrefab;
+    [Tooltip("จุดเกิดของพ่อค้า (ถ้าไม่ใส่จะใช้ spawnPoints[0])")]
+    public Transform merchantSpawnPoint;
+    [Tooltip("จุดที่พ่อค้าเดินมาหยุดเพื่อเปิดร้านค้า (ถ้าไม่ใส่จะใช้ receptionPoint)")]
+    public Transform merchantReceptionPoint;
+    [Tooltip("จุดที่พ่อค้าเดินออกไปเมื่อปิดร้าน (ถ้าไม่ใส่จะใช้ exitPoint)")]
+    public Transform merchantExitPoint;
+    [Tooltip("ทางเดินขาเข้าของพ่อค้า (ถ้าไม่ใส่จะใช้ approachPath)")]
+    public NPCWaypointPath merchantApproachPath;
+    [Tooltip("ทางเดินขาออกของพ่อค้า (ถ้าไม่ใส่จะใช้ exitPath)")]
+    public NPCWaypointPath merchantExitPath;
+
+    [Header("Merchant Runtime Info")]
+    public bool isMerchantActive = false;
+    public MerchantNPCController currentActiveMerchant;
+
     private Coroutine queueCoroutine;
 
     void Awake()
@@ -253,7 +273,19 @@ public class HallManager : MonoBehaviour
         }
 
         if (queueCoroutine != null) StopCoroutine(queueCoroutine);
-        queueCoroutine = StartCoroutine(SpawnNextNPCRoutine(initialSpawnDelay));
+
+        int currentDay = DayManager.Instance != null ? DayManager.Instance.currentDay : 1;
+        bool isEvenDay = (currentDay % 2 == 0);
+
+        if (enableMerchantOnEvenDays && isEvenDay)
+        {
+            Debug.Log($"[HallManager] 🛒 วันที่ {currentDay} เป็นวันเลขคู่ — พ่อค้าวัตถุมงคลจะเดินทางเข้ารถมาก่อน NPC เควส");
+            queueCoroutine = StartCoroutine(SpawnMerchantRoutine(initialSpawnDelay));
+        }
+        else
+        {
+            queueCoroutine = StartCoroutine(SpawnNextNPCRoutine(initialSpawnDelay));
+        }
     }
 
     /// <summary>
@@ -325,7 +357,72 @@ public class HallManager : MonoBehaviour
 
         npcsServedThisSession = 0;
         currentQueueIndex = 0;
+        isMerchantActive = false;
+        if (currentActiveMerchant != null)
+        {
+            Destroy(currentActiveMerchant.gameObject);
+            currentActiveMerchant = null;
+        }
+
         Debug.Log("[HallManager] 🌅 ขึ้นวันใหม่ — ตำหนักพร้อมเปิดรับผู้มาเยือนอีกครั้ง");
+    }
+
+    private IEnumerator SpawnMerchantRoutine(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        if (!isHallOpen) yield break;
+
+        Transform spawnPt = merchantSpawnPoint != null ? merchantSpawnPoint : (spawnPoints != null && spawnPoints.Length > 0 ? spawnPoints[0] : null);
+        Transform recPt   = merchantReceptionPoint != null ? merchantReceptionPoint : receptionPoint;
+        Transform exitPt  = merchantExitPoint != null ? merchantExitPoint : exitPoint;
+        NPCWaypointPath appPath = merchantApproachPath != null ? merchantApproachPath : approachPath;
+        NPCWaypointPath exPath  = merchantExitPath != null ? merchantExitPath : exitPath;
+
+        if (spawnPt == null)
+        {
+            Debug.LogError("[HallManager] ❌ ไม่พบจุดเกิดพ่อค้า (Merchant Spawn Point)! สลับไปปล่อย NPC ปกติ");
+            queueCoroutine = StartCoroutine(SpawnNextNPCRoutine(0.5f));
+            yield break;
+        }
+
+        GameObject merchantObj = null;
+        if (merchantNpcPrefab != null)
+        {
+            merchantObj = Instantiate(merchantNpcPrefab, spawnPt.position, spawnPt.rotation);
+        }
+        else
+        {
+            merchantObj = CreatePlaceholderMerchant(spawnPt.position, "พ่อค้าวัตถุมงคล");
+        }
+
+        MerchantNPCController controller = merchantObj.GetComponent<MerchantNPCController>();
+        if (controller == null)
+        {
+            controller = merchantObj.AddComponent<MerchantNPCController>();
+        }
+
+        isMerchantActive = true;
+        currentActiveMerchant = controller;
+
+        controller.Initialize(recPt, exitPt, playerTransform, this, appPath, exPath);
+        Debug.Log($"[HallManager] 🛒 พ่อค้าวัตถุมงคลเกิดที่ {spawnPt.position} และกำลังเดินเข้ามายังตำหนัก");
+    }
+
+    /// <summary>
+    /// ทำงานเมื่อพ่อค้าเปิดร้านเสร็จและเดินออกจากตำหนักเรียบร้อย
+    /// </summary>
+    public void OnMerchantDeparted()
+    {
+        isMerchantActive = false;
+        currentActiveMerchant = null;
+        Debug.Log("[HallManager] 🛒 พ่อค้าเดินทางออกจากตำหนักเรียบร้อย — เริ่มส่ง NPC เควสตามปกติ");
+
+        if (isHallOpen)
+        {
+            if (queueCoroutine != null) StopCoroutine(queueCoroutine);
+            queueCoroutine = StartCoroutine(SpawnNextNPCRoutine(delayBetweenNPCs));
+        }
     }
 
     private IEnumerator SpawnNextNPCRoutine(float delay)
@@ -493,5 +590,35 @@ public class HallManager : MonoBehaviour
         Destroy(headIndicator.GetComponent<Collider>());
 
         return npc;
+    }
+
+    /// <summary>
+    /// สร้างตัวละครจำลองสำหรับพ่อค้าวัตถุมงคล (Fallback หากไม่มี 3D Model Prefab)
+    /// </summary>
+    private GameObject CreatePlaceholderMerchant(Vector3 position, string name)
+    {
+        GameObject merchant = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        merchant.name = $"Merchant_{name}";
+        merchant.transform.position = position;
+        merchant.transform.localScale = new Vector3(0.95f, 1.85f, 0.95f);
+
+        // สีส้มทองทรงคุณค่า (Gold / Orange)
+        Renderer rend = merchant.GetComponent<Renderer>();
+        if (rend != null)
+        {
+            rend.material.color = new Color(1.0f, 0.75f, 0.1f);
+        }
+
+        // ดวงตา/ด้านหน้าจำลองสีเขียวมะนาว
+        GameObject headIndicator = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        headIndicator.name = "FaceIndicator";
+        headIndicator.transform.SetParent(merchant.transform);
+        headIndicator.transform.localPosition = new Vector3(0, 0.6f, 0.45f);
+        headIndicator.transform.localScale = new Vector3(0.35f, 0.35f, 0.35f);
+        Renderer headRend = headIndicator.GetComponent<Renderer>();
+        if (headRend != null) headRend.material.color = new Color(0.2f, 1.0f, 0.4f);
+        Destroy(headIndicator.GetComponent<Collider>());
+
+        return merchant;
     }
 }

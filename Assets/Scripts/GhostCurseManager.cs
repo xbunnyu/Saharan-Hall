@@ -26,6 +26,16 @@ public class GhostCurseManager : MonoBehaviour
     public AudioClip ghostAttachSound;
     public AudioClip gameOverSound;
 
+    [Header("Cleanse Jumpscare Settings")]
+    [Tooltip("เสียงเอฟเฟค Jumpscare ตอนชำระล้างผี (ถ้าไม่ใส่จะใช้ ghostAttachSound)")]
+    public AudioClip cleanseJumpscareSound;
+    [Tooltip("ข้อความ Jumpscare ตอนชำระล้างผี")]
+    public string jumpscareText = "BOO!";
+    [Tooltip("ระยะเวลาค้างจอดำพร้อมคำว่า BOO! (วินาที)")]
+    public float jumpscareHoldDuration = 0.8f;
+    [Tooltip("ระยะเวลา Fade จอดำหายไป (วินาที)")]
+    public float jumpscareFadeDuration = 1.5f;
+
     [Header("Game Over Status")]
     public bool isGameOver = false;
 
@@ -37,6 +47,10 @@ public class GhostCurseManager : MonoBehaviour
     private float screenShakeTimer = 0f;
     private float screenShakeIntensity = 0f;
     private PlayerController playerController;
+
+    private bool isJumpscareActive = false;
+    private float jumpscareAlpha = 0f;
+    private Coroutine jumpscareCoroutine;
 
     void Awake()
     {
@@ -166,6 +180,45 @@ public class GhostCurseManager : MonoBehaviour
             InteractionUIManager.Instance.ShowNotification(
                 $"<color=#00FF7F>✨ ชำระล้างวิญญาณชั่วร้ายแล้ว (คงเหลือ {currentGhostCount}/{maxGhostLimit})</color>", 3.0f);
         }
+
+        // แสดงผล Jumpscare (ขึ้นคำว่า BOO! + จอดำแล้วค่อยๆ Fade หายไป)
+        TriggerCleanseJumpscare();
+    }
+
+    public void TriggerCleanseJumpscare()
+    {
+        if (jumpscareCoroutine != null) StopCoroutine(jumpscareCoroutine);
+        jumpscareCoroutine = StartCoroutine(CleanseJumpscareRoutine());
+    }
+
+    private IEnumerator CleanseJumpscareRoutine()
+    {
+        isJumpscareActive = true;
+        jumpscareAlpha = 1f;
+
+        TriggerScreenShake(0.4f, 18f);
+
+        AudioClip soundToPlay = cleanseJumpscareSound != null ? cleanseJumpscareSound : ghostAttachSound;
+        if (soundToPlay != null)
+        {
+            AudioSource.PlayClipAtPoint(soundToPlay, Camera.main != null ? Camera.main.transform.position : transform.position);
+        }
+
+        // ค้างจอดำ + คำว่า BOO! ไว้สักครู่
+        yield return new WaitForSeconds(jumpscareHoldDuration);
+
+        // ค่อยๆ Fade จอดำหายไป
+        float fadeDuration = jumpscareFadeDuration > 0.1f ? jumpscareFadeDuration : 1.5f;
+        float t = 0f;
+        while (t < fadeDuration)
+        {
+            t += Time.deltaTime;
+            jumpscareAlpha = Mathf.Clamp01(1f - (t / fadeDuration));
+            yield return null;
+        }
+
+        jumpscareAlpha = 0f;
+        isJumpscareActive = false;
     }
 
     public void TriggerScreenShake(float duration, float intensity)
@@ -238,8 +291,36 @@ public class GhostCurseManager : MonoBehaviour
         DrawGhostIndicatorBadge();
 
         // ----------------------------------------------------
-        // 3. หน้าต่าง GAME OVER ถูกย้ายไปที่ GameEndingManager แล้ว
+        // 3. Jumpscare Overlay ("BOO!" + Fade จอดำ)
         // ----------------------------------------------------
+        if (isJumpscareActive && jumpscareAlpha > 0f)
+        {
+            GUI.depth = -1000; // วาดทับไว้บนสุด
+            GUI.color = new Color(0f, 0f, 0f, jumpscareAlpha);
+            if (blackTex != null)
+            {
+                GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), blackTex);
+            }
+            else
+            {
+                GUI.Box(new Rect(0, 0, Screen.width, Screen.height), "");
+            }
+
+            GUIStyle booStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = Mathf.RoundToInt(100 * (0.85f + jumpscareAlpha * 0.15f)),
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            booStyle.normal.textColor = new Color(0.95f, 0.1f, 0.1f, jumpscareAlpha);
+
+            float jitterX = (jumpscareAlpha > 0.6f) ? Random.Range(-5f, 5f) : 0f;
+            float jitterY = (jumpscareAlpha > 0.6f) ? Random.Range(-5f, 5f) : 0f;
+
+            GUI.Label(new Rect(jitterX, jitterY, Screen.width, Screen.height), jumpscareText, booStyle);
+
+            GUI.color = Color.white;
+        }
     }
 
     /// <summary>

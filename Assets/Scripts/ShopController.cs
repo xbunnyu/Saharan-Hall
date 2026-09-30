@@ -41,6 +41,7 @@ public class ShopController : MonoBehaviour
 
     [Header("Runtime State")]
     public bool isShopOpen = false;
+    public System.Action onShopClosed;
 
     private PlayerInteraction activePlayer;
     private PlayerController playerController;
@@ -70,6 +71,13 @@ public class ShopController : MonoBehaviour
     void Update()
     {
         if (!isShopOpen) return;
+
+        // หาก UI Panel ถูกปิดโดยตรงจากปุ่ม CloseButton หรือ UI Event ให้สั่งเรียก CloseShop()
+        if (shopPanel != null && !shopPanel.activeInHierarchy)
+        {
+            CloseShop();
+            return;
+        }
 
         // กด Esc หรือ E หรือ Tab เพื่อปิดร้านค้า
         if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Tab))
@@ -127,6 +135,8 @@ public class ShopController : MonoBehaviour
 
         LockPlayerControls(false);
         Debug.Log("[ShopController] 🚪 ปิดหน้าต่างร้านค้าเรียบร้อย");
+
+        onShopClosed?.Invoke();
     }
 
     /// <summary>
