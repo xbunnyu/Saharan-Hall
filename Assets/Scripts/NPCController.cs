@@ -505,6 +505,20 @@ public class NPCController : MonoBehaviour
             KarmaManager.Instance.ApplyKarma(questData.karmaReward, questData.questTitle);
         }
 
+        // ── Reputation & Story Phase ──────────────────────────────────
+        // เพิ่มชื่อเสียงตอบแทนเมื่อส่งเควสสำเร็จ (NPC ทั้ง Story และปกติ)
+        if (!string.IsNullOrEmpty(questData.npcGroupId) && ReputationManager.Instance != null)
+        {
+            ReputationManager.Instance.AddReputation(
+                questData.npcGroupId, 5, $"ส่งเควส '{questData.questTitle}' สำเร็จ");
+        }
+
+        // ถ้าเควสนี้เป็นส่วนหนึ่งของ Story → แจ้ง ReturnNPCScheduler
+        if (questData.ownerStoryData != null && ReturnNPCScheduler.Instance != null)
+        {
+            ReturnNPCScheduler.Instance.OnStoryPhaseCompleted(questData.ownerStoryData);
+        }
+
         string completeMsg = !string.IsNullOrEmpty(questData.completeDialogue)
             ? questData.completeDialogue
             : "ขอบพระคุณท่านมาก! ได้ของครบถ้วนแล้ว ข้าขอตัวลาก่อน";
@@ -564,6 +578,12 @@ public class NPCController : MonoBehaviour
         {
             // ทำภารกิจไม่ผ่าน -> เควสล้มเหลวและ NPC เดินออกจากตำหนักทันที
             Debug.LogWarning($"[NPCController] 💀 มินิเกมล้มเหลว! เควส '{questData.questTitle}'");
+
+            // ถ้าเป็น Story Quest → แจ้ง ReturnNPCScheduler
+            if (questData.ownerStoryData != null && ReturnNPCScheduler.Instance != null)
+            {
+                ReturnNPCScheduler.Instance.OnStoryPhaseFailed(questData.ownerStoryData);
+            }
 
             if (QuestUIManager.Instance != null && questData != null)
             {

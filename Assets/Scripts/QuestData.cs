@@ -50,6 +50,17 @@ public class QuestData
     [Header("NPC Info (ข้อมูล NPC)")]
     public string npcName = "ชาวบ้าน";
     public Sprite npcPortrait;
+    [Tooltip("ID กลุ่มชื่อเสียง ใช้ตรงกับ ReputationManager (เช่น 'somjit_family', 'village_monk') ─ เว้นว่างถ้าไม่ใช้ระบบ Reputation")]
+    public string npcGroupId = "";
+
+    [Header("Inquiry Dialogues (บทสนทนาสอบถามตามระดับชื่อเสียง)")]
+    [Tooltip("ข้อมูลที่ NPC เปิดเผยเมื่อผู้เล่น 'สอบถามเพิ่มเติม' — แต่ละ index = ระดับชื่อเสียง (0-3)")]
+    public string[] inquiryDialogues = new string[4] {
+        "...(NPC ยังไม่ไว้ใจพอที่จะบอก)",
+        "ความจริงก็คือ... (ระดับ 1)",
+        "มีเรื่องที่ซ่อนอยู่... (ระดับ 2)",
+        "ข้าจะบอกความลับสุดท้าย... (ระดับ 3)"
+    };
 
     [Header("Dialogues (บทสนทนา)")]
     [TextArea(2, 4)]
@@ -92,6 +103,14 @@ public class QuestData
     public bool isCompleted = false;
     [HideInInspector]
     public int currentMinigameFails = 0;
+
+    // ─── Story Phase Tracking ────────────────────────────────────────
+    [HideInInspector]
+    [Tooltip("ถ้าเควสนี้เป็นส่วนหนึ่งของ NPCStoryData ให้ใส่ reference ที่นี่ (HallManager จัดการอัตโนมัติ)")]
+    public NPCStoryData ownerStoryData = null;
+    [HideInInspector]
+    [Tooltip("ดัชนี phase ใน ownerStoryData ที่เควสนี้สังกัดอยู่ (-1 = เควสปกติ ไม่ใช่ Story Quest)")]
+    public int ownerPhaseIndex = -1;
 
     /// <summary>
     /// ตรวจสอบว่ามินิเกมประเภทนี้จำเป็นต้องเล่นในขั้นตอนปัจจุบันของเควสหรือไม่
@@ -165,9 +184,19 @@ public class QuestData
     public QuestData Clone()
     {
         QuestData clone = (QuestData)this.MemberwiseClone();
-        clone.requiredMinigameSequence = new List<MinigameType>(this.requiredMinigameSequence);
+        clone.requiredMinigameSequence  = new List<MinigameType>(this.requiredMinigameSequence);
         clone.completedMinigameSequence = new List<MinigameType>(this.completedMinigameSequence);
-        clone.currentMinigameFails = this.currentMinigameFails;
+        clone.currentMinigameFails      = this.currentMinigameFails;
+
+        // Clone inquiry dialogues array
+        if (this.inquiryDialogues != null)
+            clone.inquiryDialogues = (string[])this.inquiryDialogues.Clone();
+
+        // Reset runtime Story tracking สำหรับ clone
+        // (ownerStoryData / ownerPhaseIndex จะถูกตั้งใหม่โดย HallManager)
+        clone.ownerStoryData  = null;
+        clone.ownerPhaseIndex = -1;
+
         return clone;
     }
 }

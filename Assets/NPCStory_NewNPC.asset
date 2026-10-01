@@ -1,0 +1,102 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c7aa280e30979c4ea4f78a5de690f57, type: 3}
+  m_Name: NPCStory_NewNPC
+  m_EditorClassIdentifier: Assembly-CSharp::NPCStoryData
+  npcName: "\u0E1B\u0E49\u0E32\u0E2A\u0E21\u0E2B\u0E21\u0E32\u0E22"
+  npcGroupId: 
+  npcPortrait: {fileID: 0}
+  npcPrefab: {fileID: 1808331191826508427, guid: 1bf1c19527fad0c4096e289b71598f03, type: 3}
+  phases:
+  - unlockOnDay: 0
+    requiredReputationLevel: 0
+    requirePreviousPhaseCompleted: 0
+    introDialogue: 
+    quest:
+      questId: 
+      problemType: 
+      questTitle: 
+      questDescription: 
+      difficulty: 0
+      customNoteSpeed: 0
+      customNoteCount: 0
+      passPercentage: 0
+      npcName: 
+      npcPortrait: {fileID: 0}
+      npcGroupId: 
+      inquiryDialogues: []
+      greetingDialogue: 
+      waitingDialogue: 
+      completeDialogue: 
+      declineDialogue: 
+      failDialogue: 
+      requiredItemName: 
+      requiredQuantity: 0
+      isTaskCompleted: 0
+      rewardDescription: 
+      rewardMoney: 0
+      rewardItemName: 
+      karmaReward: 0
+      requiredMinigameSequence: 
+      completedMinigameSequence: 
+      isAccepted: 0
+      isCompleted: 0
+      currentMinigameFails: 0
+      ownerStoryData: {fileID: 0}
+      ownerPhaseIndex: 0
+    reputationReward: 0
+    isUnlocked: 0
+    isCompleted: 0
+    isFailed: 0
+  - unlockOnDay: 0
+    requiredReputationLevel: 0
+    requirePreviousPhaseCompleted: 0
+    introDialogue: 
+    quest:
+      questId: 
+      problemType: 
+      questTitle: 
+      questDescription: 
+      difficulty: 0
+      customNoteSpeed: 0
+      customNoteCount: 0
+      passPercentage: 0
+      npcName: 
+      npcPortrait: {fileID: 0}
+      npcGroupId: 
+      inquiryDialogues: []
+      greetingDialogue: 
+      waitingDialogue: 
+      completeDialogue: 
+      declineDialogue: 
+      failDialogue: 
+      requiredItemName: 
+      requiredQuantity: 0
+      isTaskCompleted: 0
+      rewardDescription: 
+      rewardMoney: 0
+      rewardItemName: 
+      karmaReward: 0
+      requiredMinigameSequence: 
+      completedMinigameSequence: 
+      isAccepted: 0
+      isCompleted: 0
+      currentMinigameFails: 0
+      ownerStoryData: {fileID: 0}
+      ownerPhaseIndex: 0
+    reputationReward: 0
+    isUnlocked: 0
+    isCompleted: 0
+    isFailed: 0
+  currentPhaseIndex: 0
+  isScheduledForToday: 0
+  scheduledDay: -1

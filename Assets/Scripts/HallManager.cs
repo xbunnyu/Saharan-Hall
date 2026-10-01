@@ -72,6 +72,17 @@ public class HallManager : MonoBehaviour
     public bool isMerchantActive = false;
     public MerchantNPCController currentActiveMerchant;
 
+    // ─────────────────────────────────────────────────────────────────
+    [Header("7. Story NPC (ระบบ NPC เรื่อราวข้ามวัน)")]
+    [Tooltip("รายชื่อ NPCStoryData ทั้งหมด (ลาก ScriptableObject มาใส่) — หรือใช้ ReturnNPCScheduler.Instance.RegisterStoryNPC()")]
+    public System.Collections.Generic.List<NPCStoryData> storyNPCList = new System.Collections.Generic.List<NPCStoryData>();
+    [Tooltip("ถ้า false จะเสนอ Story NPC ก่อน NPC ปกติในวันเดียวกัน | true = สลับกันสุ่ม")]
+    public bool randomizeStoryWithNormal = false;
+
+    // Runtime queue สำหรับ Story NPC ที่พร้อม spawn วันนี้
+    private System.Collections.Generic.Queue<NPCStoryData> pendingStoryNPCQueue
+        = new System.Collections.Generic.Queue<NPCStoryData>();
+
     private Coroutine queueCoroutine;
 
     void Awake()
@@ -124,6 +135,27 @@ public class HallManager : MonoBehaviour
             GameObject minigameObj = new GameObject("MinigameManager");
             minigameObj.AddComponent<MinigameManager>();
             minigameObj.AddComponent<RhythmGameManager>();
+        }
+
+        // Auto-create ReputationManager
+        if (ReputationManager.Instance == null && FindFirstObjectByType<ReputationManager>() == null)
+        {
+            GameObject repObj = new GameObject("ReputationManager");
+            repObj.AddComponent<ReputationManager>();
+        }
+
+        // Auto-create ReturnNPCScheduler และลงทะเบียน Story NPC ที่กำหนดใน Inspector
+        if (ReturnNPCScheduler.Instance == null && FindFirstObjectByType<ReturnNPCScheduler>() == null)
+        {
+            GameObject schedObj = new GameObject("ReturnNPCScheduler");
+            ReturnNPCScheduler scheduler = schedObj.AddComponent<ReturnNPCScheduler>();
+            foreach (var story in storyNPCList)
+                scheduler.RegisterStoryNPC(story);
+        }
+        else if (ReturnNPCScheduler.Instance != null)
+        {
+            foreach (var story in storyNPCList)
+                ReturnNPCScheduler.Instance.RegisterStoryNPC(story);
         }
     }
 
@@ -364,6 +396,12 @@ public class HallManager : MonoBehaviour
             currentActiveMerchant = null;
         }
 
+        pendingStoryNPCQueue.Clear();
+
+        // แจ้ง ReturnNPCScheduler ให้ reset ด้วย
+        if (ReturnNPCScheduler.Instance != null)
+            ReturnNPCScheduler.Instance.OnNewDay();
+
         Debug.Log("[HallManager] 🌅 ขึ้นวันใหม่ — ตำหนักพร้อมเปิดรับผู้มาเยือนอีกครั้ง");
     }
 
@@ -444,7 +482,16 @@ public class HallManager : MonoBehaviour
             }
         }
 
-        SpawnSingleNPC();
+        // ── Spawn Story NPC ก่อนถ้ายังมีในคิว ───────────────────────────
+        if (!randomizeStoryWithNormal && pendingStoryNPCQueue.Count > 0)
+        {
+            NPCStoryData nextStory = pendingStoryNPCQueue.Dequeue();
+            SpawnStoryNPC(nextStory);
+        }
+        else
+        {
+            SpawnSingleNPC();
+        }
     }
 
     private void SpawnSingleNPC()
@@ -509,6 +556,72 @@ public class HallManager : MonoBehaviour
             if (queueCoroutine != null) StopCoroutine(queueCoroutine);
             queueCoroutine = StartCoroutine(SpawnNextNPCRoutine(delayBetweenNPCs));
         }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // Story NPC Spawn
+    // ══════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Spawn Story NPC (NPC เรื่องราวข้ามวัน) โดยใช้ข้อมูลจาก NPCStoryData
+    /// </summary>
+    private void SpawnStoryNPC(NPCStoryData storyData)
+    {
+        if (storyData == null) return;
+
+        StoryPhase phase = storyData.GetCurrentPhase();
+        if (phase == null || phase.quest == null)
+        {
+            Debug.LogWarning($"[HallManager] ⚠️ Story NPC '{storyData.npcName}' Phase {storyData.currentPhaseIndex} ไม่มีข้อมูลเควส!");
+            // Fallback: spawn NPC ปกติแทน
+            SpawnSingleNPC();
+            return;
+        }
+
+        if (spawnPoints == null || spawnPoints.Length == 0)
+        {
+            Debug.LogError("[HallManager] ❌ ไม่พบจุดเกิด NPC!");
+            return;
+        }
+
+        Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
+
+        // Clone QuestData จาก Phase แล้วใส่ข้อมูล owner
+        QuestData questClone = phase.quest.Clone();
+        questClone.npcName     = storyData.npcName;
+        questClone.npcPortrait = storyData.npcPortrait;
+        questClone.npcGroupId  = storyData.npcGroupId;
+        questClone.ownerStoryData  = storyData;
+        questClone.ownerPhaseIndex = storyData.currentPhaseIndex;
+
+        // ถ้า Phase มี introDialogue ให้ override greetingDialogue
+        if (!string.IsNullOrEmpty(phase.introDialogue))
+            questClone.greetingDialogue = phase.introDialogue;
+
+        // Spawn NPC Object
+        GameObject npcObj = null;
+        GameObject prefabToUse = storyData.npcPrefab != null ? storyData.npcPrefab : defaultNpcPrefab;
+        if (prefabToUse != null)
+        {
+            npcObj = Instantiate(prefabToUse, spawnPoint.position, spawnPoint.rotation);
+        }
+        else
+        {
+            npcObj = CreatePlaceholderNPC(spawnPoint.position, storyData.npcName);
+            // ให้สีพิเศษกับ Story NPC ให้สังเกตได้ง่าย (สีม่วงทอง)
+            Renderer rend = npcObj.GetComponent<Renderer>();
+            if (rend != null) rend.material.color = new Color(0.7f, 0.4f, 1.0f);
+        }
+
+        NPCController controller = npcObj.GetComponent<NPCController>();
+        if (controller == null) controller = npcObj.AddComponent<NPCController>();
+
+        currentActiveNPC = controller;
+        npcsServedThisSession++;
+
+        controller.Initialize(questClone, receptionPoint, exitPoint, playerTransform, this, approachPath, exitPath);
+
+        Debug.Log($"[HallManager] 📖 Story NPC '{storyData.npcName}' Phase {storyData.currentPhaseIndex} เกิดที่ {spawnPoint.position}");
     }
 
     /// <summary>

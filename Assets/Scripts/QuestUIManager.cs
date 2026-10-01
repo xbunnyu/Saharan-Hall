@@ -26,8 +26,11 @@ public class QuestUIManager : MonoBehaviour
     [Header("Buttons")]
     public Button acceptButton;
     public Button declineButton;
+    [Tooltip("ปุ่ม 'สอบถามเพิ่มเติม' — ต้องการชื่อเสียงกับ NPC ก่อนจึงจะได้คำตอบที่ลึกขึ้น (Optional)")]
+    public Button inquiryButton;
     public TextMeshProUGUI acceptButtonText;
     public TextMeshProUGUI declineButtonText;
+    public TextMeshProUGUI inquiryButtonText;
 
     [Header("Response Dialogue Panel (เมื่อกดรับ/ปฏิเสธ)")]
     public GameObject responsePanel;
@@ -85,6 +88,12 @@ public class QuestUIManager : MonoBehaviour
         if (declineButton != null)
         {
             declineButton.onClick.AddListener(OnDeclineClicked);
+        }
+
+        if (inquiryButton != null)
+        {
+            inquiryButton.onClick.AddListener(OnInquiryClicked);
+            inquiryButton.gameObject.SetActive(false); // ซ่อนไว้ก่อน
         }
 
         UpdateQuestTrackerCanvas();
@@ -193,6 +202,33 @@ public class QuestUIManager : MonoBehaviour
             if (acceptButton != null) acceptButton.gameObject.SetActive(true);
             if (declineButton != null) declineButton.gameObject.SetActive(true);
 
+            // ── ปุ่ม "สอบถามเพิ่มเติม" (ต้องการชื่อเสียงระดับ 1+) ───────────
+            if (inquiryButton != null)
+            {
+                bool hasGroupId  = !string.IsNullOrEmpty(quest.npcGroupId);
+                bool hasDialogue = quest.inquiryDialogues != null && quest.inquiryDialogues.Length > 0;
+
+                if (hasGroupId && hasDialogue)
+                {
+                    int repLevel = ReputationManager.Instance != null
+                        ? ReputationManager.Instance.GetLevel(quest.npcGroupId)
+                        : 0;
+
+                    // แสดงปุ่มเสมอถ้ามี groupId — แต่ดับ text ตามระดับ
+                    inquiryButton.gameObject.SetActive(true);
+                    if (inquiryButtonText != null)
+                    {
+                        inquiryButtonText.text = repLevel >= 1
+                            ? $"💬 สอบถามเพิ่มเติม (ชื่อเสียง: {ReputationManager.Instance?.GetLevelName(quest.npcGroupId)})"
+                            : $"🔒 สอบถามเพิ่มเติม (ต้องการชื่อเสียงระดับ 1)";
+                    }
+                }
+                else
+                {
+                    inquiryButton.gameObject.SetActive(false);
+                }
+            }
+
             if (npcPortraitImage != null)
             {
                 if (quest.npcPortrait != null)
@@ -250,6 +286,43 @@ public class QuestUIManager : MonoBehaviour
 
         // แสดง UI ปฏิเสธเควสก่อนให้ผู้เล่นอ่าน — NPC จะยังไม่เดินจากไปจนกว่าหน้าต่างนี้จะปิด
         ShowResponseAndClose(false);
+    }
+
+    /// <summary>
+    /// ผู้เล่นกดปุ่ม 'สอบถามเพิ่มเติม' — NPC จะเปิดเผยข้อมูลตามระดับชื่อเสียง (โดยไม่ปิด Dialog)
+    /// </summary>
+    public void OnInquiryClicked()
+    {
+        if (currentNPC == null || currentQuest == null) return;
+        if (string.IsNullOrEmpty(currentQuest.npcGroupId)) return;
+
+        int repLevel = ReputationManager.Instance != null
+            ? ReputationManager.Instance.GetLevel(currentQuest.npcGroupId)
+            : 0;
+
+        // ดึงบทสนทนาตามระดับชื่อเสียง
+        string inquiry = "";
+        if (currentQuest.inquiryDialogues != null && currentQuest.inquiryDialogues.Length > repLevel)
+        {
+            inquiry = currentQuest.inquiryDialogues[repLevel];
+        }
+
+        if (string.IsNullOrEmpty(inquiry))
+            inquiry = repLevel >= 1 ? "สิ่งที่ต้องการรู้คือ..." : "ข้ายังไม่ไว้วางใจพอที่จะบอก";
+
+        // แสดง Notification (ไม่ปิด Dialog)
+        if (InteractionUIManager.Instance != null)
+        {
+            string repName = ReputationManager.Instance?.GetLevelName(currentQuest.npcGroupId) ?? "";
+            string header  = repLevel >= 1
+                ? $"<color=#FFD700>[สอบถาม: {currentQuest.npcName}]</color>"
+                : $"<color=#FF6347>[ยังไม่ไว้วางใจ: {currentQuest.npcName}]</color>";
+
+            InteractionUIManager.Instance.ShowNotification(
+                $"{header}\n\"{inquiry}\"", 4.5f);
+        }
+
+        Debug.Log($"[QuestUIManager] 💬 สอบถาม '{currentQuest.npcName}' (ชื่อเสียงระดับ {repLevel}): '{inquiry}'");
     }
 
     private void ShowResponseAndClose(bool accepted)
