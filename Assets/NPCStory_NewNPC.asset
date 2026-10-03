@@ -12,12 +12,52 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1c7aa280e30979c4ea4f78a5de690f57, type: 3}
   m_Name: NPCStory_NewNPC
   m_EditorClassIdentifier: Assembly-CSharp::NPCStoryData
-  npcName: "\u0E1B\u0E49\u0E32\u0E2A\u0E21\u0E2B\u0E21\u0E32\u0E22"
+  npcName: "\u0E15\u0E32\u0E25\u0E37\u0E2D"
   npcGroupId: 
   npcPortrait: {fileID: 0}
   npcPrefab: {fileID: 1808331191826508427, guid: 1bf1c19527fad0c4096e289b71598f03, type: 3}
   phases:
-  - unlockOnDay: 0
+  - unlockOnDay: 1
+    requiredReputationLevel: 0
+    requirePreviousPhaseCompleted: 0
+    introDialogue: "\u0E2B\u0E21\u0E2D\u0E1C\u0E35! \u0E0A\u0E48\u0E27\u0E22\u0E02\u0E49\u0E32\u0E14\u0E49\u0E27\u0E22!"
+    quest:
+      questId: 001
+      problemType: "\u0E40\u0E2A\u0E35\u0E22\u0E07\u0E41\u0E1B\u0E25\u0E01\u0E46"
+      questTitle: 
+      questDescription: "\"\u0E2A\u0E32\u0E21\u0E04\u0E37\u0E19\u0E41\u0E25\u0E49\u0E27\u0E17\u0E35\u0E48\u0E1A\u0E49\u0E32\u0E19\u0E02\u0E49\u0E32\u0E21\u0E35\u0E40\u0E2A\u0E35\u0E22\u0E07\u0E04\u0E19\u0E40\u0E14\u0E34\u0E19\u0E2D\u0E22\u0E39\u0E48\u0E0A\u0E31\u0E49\u0E19\u0E1A\u0E19\""
+      difficulty: 0
+      customNoteSpeed: 0
+      customNoteCount: 0
+      passPercentage: 0
+      npcName: "\u0E15\u0E32\u0E25\u0E37\u0E2D"
+      npcPortrait: {fileID: 0}
+      npcGroupId: 
+      inquiryDialogues: []
+      greetingDialogue: 
+      waitingDialogue: 
+      completeDialogue: 
+      declineDialogue: 
+      failDialogue: 
+      requiredItemName: 
+      requiredQuantity: 0
+      isTaskCompleted: 0
+      rewardDescription: 
+      rewardMoney: 600
+      rewardItemName: 
+      karmaReward: 0
+      requiredMinigameSequence: 02000000
+      completedMinigameSequence: 
+      isAccepted: 0
+      isCompleted: 0
+      currentMinigameFails: 0
+      ownerStoryData: {fileID: 0}
+      ownerPhaseIndex: 0
+    reputationReward: 50
+    isUnlocked: 0
+    isCompleted: 0
+    isFailed: 0
+  - unlockOnDay: 2
     requiredReputationLevel: 0
     requirePreviousPhaseCompleted: 0
     introDialogue: 
@@ -25,7 +65,7 @@ MonoBehaviour:
       questId: 
       problemType: 
       questTitle: 
-      questDescription: 
+      questDescription: "\u0E01\u0E32\u0E23\u0E01\u0E25\u0E31\u0E1A\u0E21\u0E32"
       difficulty: 0
       customNoteSpeed: 0
       customNoteCount: 0
@@ -57,46 +97,3 @@ MonoBehaviour:
     isUnlocked: 0
     isCompleted: 0
     isFailed: 0
-  - unlockOnDay: 0
-    requiredReputationLevel: 0
-    requirePreviousPhaseCompleted: 0
-    introDialogue: 
-    quest:
-      questId: 
-      problemType: 
-      questTitle: 
-      questDescription: 
-      difficulty: 0
-      customNoteSpeed: 0
-      customNoteCount: 0
-      passPercentage: 0
-      npcName: 
-      npcPortrait: {fileID: 0}
-      npcGroupId: 
-      inquiryDialogues: []
-      greetingDialogue: 
-      waitingDialogue: 
-      completeDialogue: 
-      declineDialogue: 
-      failDialogue: 
-      requiredItemName: 
-      requiredQuantity: 0
-      isTaskCompleted: 0
-      rewardDescription: 
-      rewardMoney: 0
-      rewardItemName: 
-      karmaReward: 0
-      requiredMinigameSequence: 
-      completedMinigameSequence: 
-      isAccepted: 0
-      isCompleted: 0
-      currentMinigameFails: 0
-      ownerStoryData: {fileID: 0}
-      ownerPhaseIndex: 0
-    reputationReward: 0
-    isUnlocked: 0
-    isCompleted: 0
-    isFailed: 0
-  currentPhaseIndex: 0
-  isScheduledForToday: 0
-  scheduledDay: -1

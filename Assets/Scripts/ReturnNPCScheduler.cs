@@ -40,6 +40,7 @@ public class ReturnNPCScheduler : MonoBehaviour
     public void RegisterStoryNPC(NPCStoryData storyData)
     {
         if (storyData == null || allStoryNPCs.Contains(storyData)) return;
+        storyData.ResetRuntimeState();
         allStoryNPCs.Add(storyData);
         Debug.Log($"[ReturnNPCScheduler] ✅ ลงทะเบียน Story NPC: '{storyData.npcName}' ({storyData.phases.Count} phases)");
     }
@@ -56,13 +57,29 @@ public class ReturnNPCScheduler : MonoBehaviour
         foreach (var story in allStoryNPCs)
         {
             if (story == null) continue;
-            if (story.IsFullyCompleted()) continue;         // จบแล้ว ข้ามไป
-            if (story.isScheduledForToday) continue;        // spawn แล้ววันนี้
+            if (story.IsFullyCompleted())
+            {
+                Debug.Log($"[ReturnNPCScheduler] 🏁 '{story.npcName}' จบทุก Phase แล้ว");
+                continue;
+            }
+            if (story.isScheduledForToday)
+            {
+                Debug.Log($"[ReturnNPCScheduler] ⏰ '{story.npcName}' ถูกปล่อยออกมาแล้วสำหรับวันนี้");
+                continue;
+            }
 
             if (story.IsReadyForDay(currentDay))
             {
                 result.Add(story);
                 Debug.Log($"[ReturnNPCScheduler] 📅 '{story.npcName}' Phase {story.currentPhaseIndex} พร้อม spawn วันที่ {currentDay}");
+            }
+            else
+            {
+                StoryPhase phase = story.GetCurrentPhase();
+                if (phase != null)
+                {
+                    Debug.Log($"[ReturnNPCScheduler] ⏳ '{story.npcName}' Phase {story.currentPhaseIndex} ยังไม่พร้อมสำหรับวันที่ {currentDay} (เงื่อนไข: unlockOnDay={phase.unlockOnDay}, requiredRep={phase.requiredReputationLevel})");
+                }
             }
         }
 

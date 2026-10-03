@@ -64,10 +64,36 @@ public class NPCStoryData : ScriptableObject
     public List<StoryPhase> phases = new List<StoryPhase>();
 
     // ─── Runtime tracking ───────────────────────────────────────────
-    // ค่าเหล่านี้ reset ทุกครั้งที่เริ่ม Session ใหม่ (HallManager จัดการ)
-    [HideInInspector] public int     currentPhaseIndex   = 0;
-    [HideInInspector] public bool    isScheduledForToday = false;
-    [HideInInspector] public int     scheduledDay        = -1;
+    [System.NonSerialized] public int     currentPhaseIndex   = 0;
+    [System.NonSerialized] public bool    isScheduledForToday = false;
+    [System.NonSerialized] public int     scheduledDay        = -1;
+
+    private void OnEnable()
+    {
+        ResetRuntimeState();
+    }
+
+    /// <summary>
+    /// รีเซ็ตค่า Runtime ทั้งหมดให้พร้อมสำหรับการเล่นใหม่
+    /// </summary>
+    public void ResetRuntimeState()
+    {
+        currentPhaseIndex = 0;
+        isScheduledForToday = false;
+        scheduledDay = -1;
+        if (phases != null)
+        {
+            foreach (var p in phases)
+            {
+                if (p != null)
+                {
+                    p.isUnlocked = false;
+                    p.isCompleted = false;
+                    p.isFailed = false;
+                }
+            }
+        }
+    }
 
     // ══════════════════════════════════════════════════════════════════
     // Helper API

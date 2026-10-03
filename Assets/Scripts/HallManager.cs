@@ -309,6 +309,21 @@ public class HallManager : MonoBehaviour
         int currentDay = DayManager.Instance != null ? DayManager.Instance.currentDay : 1;
         bool isEvenDay = (currentDay % 2 == 0);
 
+        // ดึง Story NPC ที่พร้อมสำหรับวันนี้เข้าคิว
+        pendingStoryNPCQueue.Clear();
+        if (ReturnNPCScheduler.Instance != null)
+        {
+            var readyStories = ReturnNPCScheduler.Instance.GetReadyStoryNPCs(currentDay);
+            foreach (var story in readyStories)
+            {
+                pendingStoryNPCQueue.Enqueue(story);
+            }
+            if (readyStories.Count > 0)
+            {
+                Debug.Log($"[HallManager] 📖 พบ Story NPC พร้อมเข้าคิว {readyStories.Count} ตัว สำหรับวันที่ {currentDay}");
+            }
+        }
+
         if (enableMerchantOnEvenDays && isEvenDay)
         {
             Debug.Log($"[HallManager] 🛒 วันที่ {currentDay} เป็นวันเลขคู่ — พ่อค้าวัตถุมงคลจะเดินทางเข้ารถมาก่อน NPC เควส");
@@ -483,7 +498,16 @@ public class HallManager : MonoBehaviour
         }
 
         // ── Spawn Story NPC ก่อนถ้ายังมีในคิว ───────────────────────────
-        if (!randomizeStoryWithNormal && pendingStoryNPCQueue.Count > 0)
+        bool shouldSpawnStory = false;
+        if (pendingStoryNPCQueue.Count > 0)
+        {
+            if (!randomizeStoryWithNormal)
+                shouldSpawnStory = true;
+            else
+                shouldSpawnStory = (Random.value < 0.5f) || (questList == null || questList.Count == 0);
+        }
+
+        if (shouldSpawnStory)
         {
             NPCStoryData nextStory = pendingStoryNPCQueue.Dequeue();
             SpawnStoryNPC(nextStory);
@@ -572,7 +596,7 @@ public class HallManager : MonoBehaviour
         StoryPhase phase = storyData.GetCurrentPhase();
         if (phase == null || phase.quest == null)
         {
-            Debug.LogWarning($"[HallManager] ⚠️ Story NPC '{storyData.npcName}' Phase {storyData.currentPhaseIndex} ไม่มีข้อมูลเควส!");
+            Debug.LogWarning($"[HallManager] ⚠️ Story NPC '{storyData.npcName}' Phase {storyData.currentPhaseIndex} ไม่มีข้อมูลเควส (Quest เป็น null)! กรุณาใส่ QuestData ในช่อง Quest ของ Phase ใน Inspector");
             // Fallback: spawn NPC ปกติแทน
             SpawnSingleNPC();
             return;
@@ -583,6 +607,9 @@ public class HallManager : MonoBehaviour
             Debug.LogError("[HallManager] ❌ ไม่พบจุดเกิด NPC!");
             return;
         }
+
+        int currentDay = DayManager.Instance != null ? DayManager.Instance.currentDay : 1;
+        ReturnNPCScheduler.Instance?.MarkSpawnedToday(storyData, currentDay);
 
         Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
 

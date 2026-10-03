@@ -9380,7 +9380,7 @@ MonoBehaviour:
     rewardMoney: 120
     rewardItemName: 
     karmaReward: 0
-    requiredMinigameSequence: 05000000
+    requiredMinigameSequence: 010000000300000005000000
     completedMinigameSequence: 
     isAccepted: 0
     isCompleted: 0
@@ -9393,7 +9393,7 @@ MonoBehaviour:
   weightVeryHard: 5
   initialSpawnDelay: 1.5
   delayBetweenNPCs: 2
-  maxNpcPerSession: 4
+  maxNpcPerSession: 3
   currentQueueIndex: 0
   npcsServedThisSession: 0
   currentActiveNPC: {fileID: 0}
@@ -22711,6 +22711,7 @@ SceneRoots:
   - {fileID: 906452943}
   - {fileID: 504418563}
   - {fileID: 564098275}
+  - {fileID: 364583543}
   - {fileID: 907359691}
   - {fileID: 758856124}
   - {fileID: 1885207811}
@@ -22744,4 +22745,3 @@ SceneRoots:
   - {fileID: 42817853}
   - {fileID: 580359859}
   - {fileID: 1241083816}
-  - {fileID: 364583543}
