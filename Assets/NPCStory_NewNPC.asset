@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: NPCStory_NewNPC
   m_EditorClassIdentifier: Assembly-CSharp::NPCStoryData
   npcName: "\u0E15\u0E32\u0E25\u0E37\u0E2D"
-  npcGroupId: 
+  npcGroupId: taruu
   npcPortrait: {fileID: 0}
   npcPrefab: {fileID: 1808331191826508427, guid: 1bf1c19527fad0c4096e289b71598f03, type: 3}
   phases:
