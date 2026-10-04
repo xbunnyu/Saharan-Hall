@@ -133,6 +133,14 @@ public class QuestUIManager : MonoBehaviour
             {
                 OnDeclineClicked();
             }
+            // ปุ่มลัด: กด F หรือ 3 เพื่อสอบถามเพิ่มเติม
+            else if (keyboard.fKey.wasPressedThisFrame || keyboard.digit3Key.wasPressedThisFrame)
+            {
+                if (inquiryButton != null && inquiryButton.gameObject.activeInHierarchy)
+                {
+                    OnInquiryClicked();
+                }
+            }
         }
     }
 
@@ -202,30 +210,17 @@ public class QuestUIManager : MonoBehaviour
             if (acceptButton != null) acceptButton.gameObject.SetActive(true);
             if (declineButton != null) declineButton.gameObject.SetActive(true);
 
-            // ── ปุ่ม "สอบถามเพิ่มเติม" (ต้องการชื่อเสียงระดับ 1+) ───────────
+            // ── ปุ่ม "สอบถามเพิ่มเติม" (เปิดให้กดได้เสมอตามระดับชื่อเสียงรวม) ───────────
             if (inquiryButton != null)
             {
-                bool hasGroupId  = !string.IsNullOrEmpty(quest.npcGroupId);
-                bool hasDialogue = quest.inquiryDialogues != null && quest.inquiryDialogues.Length > 0;
+                int repLevel = ReputationManager.Instance != null ? ReputationManager.Instance.GetLevel() : 0;
+                inquiryButton.gameObject.SetActive(true);
 
-                if (hasGroupId && hasDialogue)
+                if (inquiryButtonText != null)
                 {
-                    int repLevel = ReputationManager.Instance != null
-                        ? ReputationManager.Instance.GetLevel(quest.npcGroupId)
-                        : 0;
-
-                    // แสดงปุ่มเสมอถ้ามี groupId — แต่ดับ text ตามระดับ
-                    inquiryButton.gameObject.SetActive(true);
-                    if (inquiryButtonText != null)
-                    {
-                        inquiryButtonText.text = repLevel >= 1
-                            ? $"💬 สอบถามเพิ่มเติม (ชื่อเสียง: {ReputationManager.Instance?.GetLevelName(quest.npcGroupId)})"
-                            : $"🔒 สอบถามเพิ่มเติม (ต้องการชื่อเสียงระดับ 1)";
-                    }
-                }
-                else
-                {
-                    inquiryButton.gameObject.SetActive(false);
+                    inquiryButtonText.text = repLevel >= 1
+                        ? "💬 สอบถามเพิ่มเติม [F]"
+                        : "🔒 สอบถามเพิ่มเติม (ต้องมีระดับ 1)";
                 }
             }
 
@@ -250,6 +245,7 @@ public class QuestUIManager : MonoBehaviour
 
     public void OnAcceptClicked()
     {
+        Debug.Log($"[QuestUIManager] 🔘 OnAcceptClicked ถูกกดสำหรับเควส: '{currentQuest?.questTitle}'");
         if (currentNPC == null || currentQuest == null) return;
 
         // บันทึกเควสเข้าสู่รายการเควสที่กำลังทำ (Active Quests)
@@ -267,17 +263,25 @@ public class QuestUIManager : MonoBehaviour
             return;
         }
 
-        // หากเป็นเควสส่งของทั่วไป -> แสดงข้อความตอบรับบน UI ก่อนปิด
-        responseMessage = !string.IsNullOrEmpty(currentQuest.waitingDialogue) 
-            ? currentQuest.waitingDialogue 
+        // หากเป็นเควสส่งของทั่วไป -> ปิด Quest Dialog แล้วแสดง waitingDialogue ใน ReadingDialog ของผู้เล่น
+        string waitMsg = !string.IsNullOrEmpty(currentQuest.waitingDialogue)
+            ? currentQuest.waitingDialogue
             : "ขอบคุณมากที่รับปากช่วยข้า!";
 
-        ShowResponseAndClose(true);
-        currentNPC.OnQuestAccepted();
+        NPCController npc2 = currentNPC;
+        CloseDialog();
+        npc2.OnQuestAccepted();
+
+        if (InteractionUIManager.Instance != null)
+        {
+            string title = $"✅ {currentQuest?.npcName ?? "NPC"} — รับงานแล้ว";
+            InteractionUIManager.Instance.ShowReadingDialog(title, $"\"{waitMsg}\"");
+        }
     }
 
     public void OnDeclineClicked()
     {
+        Debug.Log($"[QuestUIManager] 🔘 OnDeclineClicked ถูกกดสำหรับเควส: '{currentQuest?.questTitle}'");
         if (currentNPC == null || currentQuest == null) return;
 
         responseMessage = !string.IsNullOrEmpty(currentQuest.declineDialogue) 
@@ -293,14 +297,12 @@ public class QuestUIManager : MonoBehaviour
     /// </summary>
     public void OnInquiryClicked()
     {
+        Debug.Log($"[QuestUIManager] 🔘 OnInquiryClicked ถูกกด");
         if (currentNPC == null || currentQuest == null) return;
-        if (string.IsNullOrEmpty(currentQuest.npcGroupId)) return;
 
-        int repLevel = ReputationManager.Instance != null
-            ? ReputationManager.Instance.GetLevel(currentQuest.npcGroupId)
-            : 0;
+        int repLevel = ReputationManager.Instance != null ? ReputationManager.Instance.GetLevel() : 0;
 
-        // ดึงบทสนทนาตามระดับชื่อเสียง
+        // ดึงบทสนทนาตามระดับชื่อเสียงของผู้เล่น
         string inquiry = "";
         if (currentQuest.inquiryDialogues != null && currentQuest.inquiryDialogues.Length > repLevel)
         {
@@ -308,18 +310,24 @@ public class QuestUIManager : MonoBehaviour
         }
 
         if (string.IsNullOrEmpty(inquiry))
-            inquiry = repLevel >= 1 ? "สิ่งที่ต้องการรู้คือ..." : "ข้ายังไม่ไว้วางใจพอที่จะบอก";
+        {
+            inquiry = repLevel >= 1 
+                ? "ความจริงมีเรื่องราวที่ข้าอยากบอกท่าน..." 
+                : "ข้ายังไม่รู้จักท่านดีพอ ขออภัยที่ยังบอกอะไรไม่ได้ (ต้องมีชื่อเสียงระดับ 1 ขึ้นไป)";
+        }
 
-        // แสดง Notification (ไม่ปิด Dialog)
+        // แสดงคำพูดสอบถามใน ReadingDialog (UI ของผู้เล่น) แทน Quest Dialog
         if (InteractionUIManager.Instance != null)
         {
-            string repName = ReputationManager.Instance?.GetLevelName(currentQuest.npcGroupId) ?? "";
-            string header  = repLevel >= 1
-                ? $"<color=#FFD700>[สอบถาม: {currentQuest.npcName}]</color>"
-                : $"<color=#FF6347>[ยังไม่ไว้วางใจ: {currentQuest.npcName}]</color>";
+            string title = repLevel >= 1
+                ? $"💬 {currentQuest.npcName} — ข้อมูลเพิ่มเติม"
+                : $"🔒 {currentQuest.npcName} — ยังไม่ไว้วางใจ";
 
-            InteractionUIManager.Instance.ShowNotification(
-                $"{header}\n\"{inquiry}\"", 4.5f);
+            string body = repLevel >= 1
+                ? $"\"{inquiry}\""
+                : $"\"{inquiry}\"\n\n<size=85%><color=#FFAAAA>(ต้องมีชื่อเสียงระดับ 1 ขึ้นไปก่อน)</color></size>";
+
+            InteractionUIManager.Instance.ShowReadingDialog(title, body);
         }
 
         Debug.Log($"[QuestUIManager] 💬 สอบถาม '{currentQuest.npcName}' (ชื่อเสียงระดับ {repLevel}): '{inquiry}'");
@@ -329,30 +337,39 @@ public class QuestUIManager : MonoBehaviour
     {
         isShowingResponse = true;
 
-        // ซ่อนปุ่มเลือกเควส เพื่อให้เห็นเฉพาะข้อความตอบกลับของ NPC
+        // ───── กรณีปฏิเสธเควส: ปิด Quest Dialog ทันที แล้วแสดงคำพูด NPC ใน ReadingDialog ของผู้เล่น ─────
+        if (!accepted)
+        {
+            // เล่นเสียงปฏิเสธ
+            if (currentNPC != null && currentNPC.declineSound != null)
+                AudioSource.PlayClipAtPoint(currentNPC.declineSound, currentNPC.transform.position);
+
+            // ปิด Quest Dialog Panel ทันที
+            CloseDialog();
+
+            // แสดงคำพูด NPC ใน ReadingDialog (UI ที่ผู้เล่นสร้างเอง)
+            if (InteractionUIManager.Instance != null)
+            {
+                string title = $"❌ {currentQuest?.npcName ?? "NPC"} — ปฏิเสธงาน";
+                string body  = $"\"{responseMessage}\"\n\n<size=85%><color=#FFAAAA>(NPC กำลังจะเดินออกจากตำหนัก...)</color></size>";
+                InteractionUIManager.Instance.ShowReadingDialog(title, body);
+            }
+            return;
+        }
+
+        // ───── กรณีรับเควส: แสดงการตอบกลับใน Quest Dialog เดิม ─────
         if (acceptButton != null) acceptButton.gameObject.SetActive(false);
         if (declineButton != null) declineButton.gameObject.SetActive(false);
+        if (inquiryButton != null) inquiryButton.gameObject.SetActive(false);
         if (questRequirementText != null) questRequirementText.gameObject.SetActive(false);
         if (questRewardText != null) questRewardText.gameObject.SetActive(false);
 
-        // อัปเดตหัวข้อและคำพูดของ NPC บน Quest Dialog Panel ให้ชัดเจน
         if (questTitleText != null)
-        {
-            questTitleText.text = accepted 
-                ? $"<color=#00FF7F>✅ รับเควสสำเร็จ</color> — {currentQuest.npcName}" 
-                : $"<color=#FF6347>❌ ปฏิเสธเควส</color> — {currentQuest.npcName}";
-        }
+            questTitleText.text = $"<color=#00FF7F>✅ รับเควสสำเร็จ</color> — {currentQuest.npcName}";
 
         if (questDescriptionText != null)
-        {
-            string hint = accepted
-                ? "<size=85%><color=#A0E6FF>(บันทึกภารกิจลงสมุดเควสแล้ว...)</color></size>"
-                : "<size=85%><color=#FFAAAA>(NPC รับทราบและกำลังจะเดินออกจากตำหนัก...)</color></size>";
+            questDescriptionText.text = $"<b>{currentQuest.npcName}</b> กล่าวว่า:\n\n<size=115%><color=#FFD700>\"{responseMessage}\"</color></size>\n\n<size=85%><color=#A0E6FF>(บันทึกภารกิจลงสมุดเควสแล้ว...)</color></size>";
 
-            questDescriptionText.text = $"<b>{currentQuest.npcName}</b> กล่าวว่า:\n\n<size=115%><color=#FFD700>\"{responseMessage}\"</color></size>\n\n{hint}";
-        }
-
-        // จัดการ Response Panel (หากมีใน Canvas)
         if (responsePanel != null)
         {
             RectTransform rt = responsePanel.GetComponent<RectTransform>();
@@ -361,25 +378,13 @@ public class QuestUIManager : MonoBehaviour
                 rt.localScale = Vector3.one;
                 rt.anchoredPosition = Vector2.zero;
             }
-
             if (responseDialogueText != null)
-            {
                 responseDialogueText.text = $"\"{responseMessage}\"";
-            }
             responsePanel.SetActive(true);
         }
 
         if (InteractionUIManager.Instance != null)
-        {
-            string statusTag = accepted ? "<color=#00FF7F>[รับเควสแล้ว]</color>" : "<color=#FF6347>[ปฏิเสธเควส]</color>";
-            InteractionUIManager.Instance.ShowNotification($"{statusTag} {currentQuest.npcName}: \"{responseMessage}\"", 3.0f);
-        }
-
-        // เล่นเสียงปฏิเสธทันที (ถ้าปฏิเสธ)
-        if (!accepted && currentNPC != null && currentNPC.declineSound != null)
-        {
-            AudioSource.PlayClipAtPoint(currentNPC.declineSound, currentNPC.transform.position);
-        }
+            InteractionUIManager.Instance.ShowNotification($"<color=#00FF7F>[รับเควสแล้ว]</color> {currentQuest.npcName}: \"{responseMessage}\"", 3.0f);
 
         CancelInvoke(nameof(CloseDialog));
         Invoke(nameof(CloseDialog), 2.2f);
@@ -470,6 +475,7 @@ public class QuestUIManager : MonoBehaviour
         // คืนค่าปุ่มให้กลับมาเปิดสำหรับครั้งถัดไป
         if (acceptButton != null) acceptButton.gameObject.SetActive(true);
         if (declineButton != null) declineButton.gameObject.SetActive(true);
+        if (inquiryButton != null) inquiryButton.gameObject.SetActive(true);
 
         LockCursorAndUnfreezePlayer();
 
