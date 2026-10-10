@@ -4868,6 +4868,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GhostCurseManager
   currentGhostCount: 0
   maxGhostLimit: 3
+  ghostPrefab: {fileID: 0}
+  ghostPrefabs: []
+  ghostSpawnPoints: []
+  sceneGhostObjects: []
+  shufflePositionsOnNewGhost: 1
+  ghostSpawnSound: {fileID: 0}
+  showNumberBadgeOnUI: 0
+  ghostSpawnNotification: "<color=#FF2020>\U0001F47B \u0E27\u0E34\u0E0D\u0E0D\u0E32\u0E13\u0E23\u0E49\u0E32\u0E22\u0E1B\u0E23\u0E32\u0E01\u0E0F\u0E15\u0E31\u0E27\u0E02\u0E36\u0E49\u0E19\u0E43\u0E19\u0E15\u0E33\u0E2B\u0E19\u0E31\u0E01!</color>"
   enableScreenEffects: 1
   ghostVignetteColor: {r: 0.7, g: 0.05, b: 0.05, a: 0.35}
   ghostAttachSound: {fileID: 0}
@@ -18930,7 +18938,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameEndingManager
   endingCanvas: {fileID: 1852376340}
+  goodEndingPanel: {fileID: 0}
+  badEndingPanel: {fileID: 0}
+  titleText: {fileID: 0}
+  descriptionText: {fileID: 0}
+  restartButton: {fileID: 0}
+  mainMenuButton: {fileID: 0}
+  bgImage: {fileID: 0}
   isGameEnding: 0
+  currentEndingType: 0
 --- !u!4 &1436580573
 Transform:
   m_ObjectHideFlags: 0
@@ -22490,6 +22506,7 @@ MonoBehaviour:
       m_Calls: []
   fadeDuration: 0.8
   sleepSound: {fileID: 0}
+  requireAllQuestsCleared: 1
   wakeUpPoint: {fileID: 0}
 --- !u!1 &1630393068
 GameObject:
