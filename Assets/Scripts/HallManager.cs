@@ -411,6 +411,12 @@ public class HallManager : MonoBehaviour
             currentActiveMerchant = null;
         }
 
+        if (currentActiveNPC != null)
+        {
+            Destroy(currentActiveNPC.gameObject);
+            currentActiveNPC = null;
+        }
+
         pendingStoryNPCQueue.Clear();
 
         // แจ้ง ReturnNPCScheduler ให้ reset ด้วย

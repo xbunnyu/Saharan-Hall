@@ -1,0 +1,118 @@
+﻿m_Name: PauseMenu
+m_Name:
+m_Name: home_corider
+m_Name: tree_0 (5)
+m_Name: 7e36d3ae-3d28-4e26-88fe-ebc16a628187_0
+m_Name: Text (TMP)
+m_Name: Point Light
+m_Name: 'PlayerWalletManager '
+m_Name: f8e75df2-6fba-4be0-b469-0172d4eca77a_0
+m_Name: corner_exit
+m_Name: tree_0 (4)
+m_Name: b65f64f1-ef1d-4088-a1b5-d987d4704915_1
+m_Name: Global Volume
+m_Name: 461a7313-353f-4240-843b-6abc1822e3da_0
+m_Name: gate
+m_Name: Drop Button
+m_Name: mini game
+m_Name: EventSystem
+m_Name: PauseText
+m_Name: Quest Tracker Panel
+m_Name: PauseMenuManager
+m_Name: GhostcurseManager
+m_Name: DeclineDialogue
+m_Name: Panel
+m_Name: Image
+m_Name: Interaction UI Manager
+m_Name: ReadingPanel
+m_Name: hall
+m_Name: level1
+m_Name: Main Camera
+m_Name: Decline
+m_Name: P1_Gate
+m_Name: Prompt Text
+m_Name: ReputationDisplay
+m_Name: 'Quest Titel '
+m_Name: home_fureniture
+m_Name: DayManager
+m_Name: 0d403545-252f-4f67-b972-def21c54cc7a_0
+m_Name: d3eb644d-fc70-4bd0-81d2-64a320cfa1de_0
+m_Name: f8e75df2-6fba-4be0-b469-0172d4eca77a_0 (1)
+m_Name: QuestUIManager
+m_Name: close button
+m_Name: 7e36d3ae-3d28-4e26-88fe-ebc16a628187_0 (1)
+m_Name: Quest  Descriptions
+m_Name: exit
+m_Name: Descliptions
+m_Name: Crosshair
+m_Name: 27dc59c0-6b13-442c-bde2-46d909531b4d_0
+m_Name: Detail Description Text
+m_Name: ExitPoint
+m_Name: box corider
+m_Name: NPC name
+m_Name: backMainmenu
+m_Name: level4
+m_Name: 27dc59c0-6b13-442c-bde2-46d909531b4d_0 (1)
+m_Name: Directional Light (1)
+m_Name: level2
+m_Name: HallManager
+m_Name: SpawnPoint_1
+m_Name: Quest  Reward
+m_Name: MinigameManager
+m_Name: Equip Button
+m_Name: Use Button
+m_Name: GameObject (5)
+m_Name: inquiry
+m_Name: Detail Icon Image
+m_Name: Tracker Content
+m_Name: GameObject (6)
+m_Name: GameObject
+m_Name: P2_AisleCorner
+m_Name: level3
+m_Name: Directional Light
+m_Name: GameObject (1)
+m_Name: f8e75df2-6fba-4be0-b469-0172d4eca77a_0 (2)
+m_Name: Prompt Item Name
+m_Name: bedroom
+m_Name: QuestDialogPanel
+m_Name: "\u0E22\u0E31\u0E19"
+m_Name: corne_in
+m_Name: GameObject (2)
+m_Name: NPC_ApproachPath
+m_Name: Restart
+m_Name: GameEndingManager5
+m_Name: Detail Name Text
+m_Name: Hallseat
+m_Name: Tracker Header
+m_Name: Display NPC
+m_Name: Title
+m_Name: PromptPanel
+m_Name: 5df218ae-a927-4fa9-8453-46b9c69d4ce1_0
+m_Name: NPC Info Dispaly
+m_Name: ReputationManger
+m_Name: Inventory Panel
+m_Name: Player
+m_Name: Accept
+m_Name: GameObject (4)
+m_Name: NotificationPanel
+m_Name: Canvas
+m_Name: Plane
+m_Name: GameObject (3)
+m_Name: EnedingCanvas
+m_Name: "\u0E1E\u0E23\u0E21_0"
+m_Name: Start
+m_Name: ReturnMenu
+m_Name: ReceptionPoint
+m_Name: tree_0 (3)
+m_Name: QuestRequirement
+m_Name: "\u0E1E\u0E23\u0E21_0 (2)"
+m_Name: "\u0E1E\u0E23\u0E21_0 (1)"
+m_Name: MoneyText
+m_Name: 5df218ae-a927-4fa9-8453-46b9c69d4ce1_0 (1)
+m_Name: Item Detail Panel
+m_Name: DayPanel
+m_Name: Setting
+m_Name: MoneyPanel
+m_Name: GameObject (7)
+m_Name: QTEController
+m_Name: Day

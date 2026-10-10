@@ -520,6 +520,7 @@ public class PlayerInteraction : MonoBehaviour
     // ==========================================
     public void OpenReading(InteractableItem item)
     {
+        CancelInvoke(nameof(CloseReading));
         isReading = true;
         readingTitle = string.IsNullOrEmpty(item.readTitle) ? item.itemName : item.readTitle;
         readingContent = item.readDescription;
@@ -537,6 +538,7 @@ public class PlayerInteraction : MonoBehaviour
 
     public void CloseReading()
     {
+        CancelInvoke(nameof(CloseReading));
         isReading = false;
         readingTitle = "";
         readingContent = "";
@@ -549,6 +551,31 @@ public class PlayerInteraction : MonoBehaviour
         if (InteractionUIManager.Instance != null)
         {
             InteractionUIManager.Instance.HideReadingDialog();
+        }
+
+        if (!isInventoryOpen)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+    }
+
+    /// <summary>
+    /// เปิด ReadingDialog จากระบบภายนอก (เช่น QuestUIManager เมื่อปฏิเสธเควส)
+    /// โดยไม่ต้องใช้ InteractableItem — ตั้ง isReading=true เพื่อให้กด E/Esc/Space ปิดได้ปกติ
+    /// หากระบุ autoCloseDuration > 0 จะปิดตัวเองอัตโนมัติเมื่อครบเวลาที่กำหนด
+    /// </summary>
+    public void OpenReadingExternal(string title, string description, float autoCloseDuration = 0f)
+    {
+        CancelInvoke(nameof(CloseReading));
+        isReading = true;
+        readingTitle = title;
+        readingContent = description;
+        // ไม่ freeze player เพราะ QuestUIManager เปิดและปล่อยการควบคุมกลับแล้ว
+
+        if (autoCloseDuration > 0f)
+        {
+            Invoke(nameof(CloseReading), autoCloseDuration);
         }
     }
 

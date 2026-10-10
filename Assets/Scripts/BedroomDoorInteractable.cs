@@ -16,8 +16,8 @@ public class BedroomDoorInteractable : InteractableItem
     [Tooltip("เวลา Fade Out ก่อนเปลี่ยนซีน (วินาที)")]
     public float fadeDuration = 0.8f;
 
-    [Tooltip("แสดงข้อความเตือนถ้าเควสทุกอย่างยังไม่เสร็จ (ถ้าจะใช้เงื่อนไข)")]
-    public bool requireAllQuestsDone = false;
+    [Tooltip("แสดงข้อความเตือนถ้าเควสและผู้มาเยือนประจำวันยังไม่เสร็จ")]
+    public bool requireAllQuestsDone = true;
 
     [Tooltip("เสียงเปิดประตู (Optional)")]
     public AudioClip doorOpenSound;
@@ -49,18 +49,35 @@ public class BedroomDoorInteractable : InteractableItem
         EnsureFadeCanvas();
     }
 
+    void Update()
+    {
+        UpdatePromptText();
+    }
+
+    private void UpdatePromptText()
+    {
+        if (isTransitioning) return;
+
+        if (requireAllQuestsDone && !DayManager.CanSleep(out _))
+        {
+            customReadPromptText = "ยังเข้าห้องนอนไม่ได้ (ต้องเคลียร์เควสก่อน)";
+        }
+        else
+        {
+            customReadPromptText = "เข้าห้องนอน (พักผ่อน)";
+        }
+    }
+
     // ─────────────────────────────────────────────────────────
 
     public override void OnRead(PlayerInteraction interactor)
     {
         if (isTransitioning) return;
 
-        // ตรวจเงื่อนไขเควส (ถ้าเปิดใช้งาน)
-        if (requireAllQuestsDone && QuestUIManager.Instance != null
-            && QuestUIManager.Instance.activeQuests.Count > 0)
+        // ตรวจเงื่อนไขเควส (ต้องเคลียร์เควสและบริการผู้มาเยือนของวันนั้นๆ ให้หมดก่อน)
+        if (requireAllQuestsDone && !DayManager.CanSleep(out string blockReason))
         {
-            interactor.ShowNotification(
-                "<color=#FF9900>⚠️ ยังมีภาระกิจค้างอยู่ กรุณาทำให้เสร็จก่อนเข้านอน</color>", 3.0f);
+            interactor.ShowNotification(blockReason, 3.5f);
             return;
         }
 

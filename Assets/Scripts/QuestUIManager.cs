@@ -344,15 +344,37 @@ public class QuestUIManager : MonoBehaviour
             if (currentNPC != null && currentNPC.declineSound != null)
                 AudioSource.PlayClipAtPoint(currentNPC.declineSound, currentNPC.transform.position);
 
-            // ปิด Quest Dialog Panel ทันที
+            // บันทึก NPC ก่อน CloseDialog() เคลียร์ค่า
+            NPCController declinedNPC = currentNPC;
+            QuestData declinedQuest = currentQuest;
+
+            // ปิด Quest Dialog Panel ทันที (isShowingResponse ยังไม่ถูก reset = false จะถูก set ใน CloseDialog)
+            isShowingResponse = false; // ตั้ง false ก่อนเพื่อไม่ให้ CloseDialog ส่ง wasDeclined
             CloseDialog();
 
             // แสดงคำพูด NPC ใน ReadingDialog (UI ที่ผู้เล่นสร้างเอง)
             if (InteractionUIManager.Instance != null)
             {
-                string title = $"❌ {currentQuest?.npcName ?? "NPC"} — ปฏิเสธงาน";
+                string title = $"❌ {declinedQuest?.npcName ?? "NPC"} — ปฏิเสธงาน";
                 string body  = $"\"{responseMessage}\"\n\n<size=85%><color=#FFAAAA>(NPC กำลังจะเดินออกจากตำหนัก...)</color></size>";
-                InteractionUIManager.Instance.ShowReadingDialog(title, body);
+                string guide = "จะปิดอัตโนมัติใน 4 วิ หรือกด <color=#FFD700>[E]</color> / <color=#FFD700>[Esc]</color> เพื่อปิด";
+                InteractionUIManager.Instance.ShowReadingDialog(title, body, guide);
+
+                // ให้ PlayerInteraction รู้ว่ากำลังอ่านอยู่ เพื่อให้กด E/Esc ปิดได้ และปิดตัวเองอัตโนมัติหลังผ่านไป 4 วินาที
+                if (playerInteraction != null)
+                {
+                    playerInteraction.OpenReadingExternal(title, body, 4.0f);
+                }
+            }
+
+            // Fallback เผื่อไม่มี playerInteraction ให้ปิด UI อัตโนมัติหลังผ่านไป 4 วินาที
+            CancelInvoke(nameof(AutoCloseDeclineReading));
+            Invoke(nameof(AutoCloseDeclineReading), 4.0f);
+
+            // NPC เดินออกจากตำหนักทันที
+            if (declinedNPC != null)
+            {
+                declinedNPC.OnQuestDeclined();
             }
             return;
         }
@@ -462,8 +484,11 @@ public class QuestUIManager : MonoBehaviour
     public void CloseDialog()
     {
         CancelInvoke(nameof(CloseDialog));
+        CancelInvoke(nameof(AutoCloseDeclineReading));
 
-        bool wasDeclined = isShowingResponse && (currentQuest != null && !currentQuest.isAccepted);
+        bool wasDeclined = !isShowingResponse
+            ? false
+            : (currentQuest != null && !currentQuest.isAccepted);
         NPCController departingNPC = currentNPC;
 
         isDialogActive = false;
@@ -483,6 +508,18 @@ public class QuestUIManager : MonoBehaviour
         if (wasDeclined && departingNPC != null)
         {
             departingNPC.OnQuestDeclined();
+        }
+    }
+
+    private void AutoCloseDeclineReading()
+    {
+        if (playerInteraction != null && playerInteraction.IsReading())
+        {
+            playerInteraction.CloseReading();
+        }
+        else if (InteractionUIManager.Instance != null)
+        {
+            InteractionUIManager.Instance.HideReadingDialog();
         }
     }
 

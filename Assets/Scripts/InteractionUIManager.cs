@@ -243,7 +243,7 @@ public class InteractionUIManager : MonoBehaviour
     // ==========================================
     // ส่วนควบคุม Reading Dialog
     // ==========================================
-    public void ShowReadingDialog(string title, string description)
+    public void ShowReadingDialog(string title, string description, string closeGuide = null)
     {
         if (promptPanel != null) promptPanel.SetActive(false);
 
@@ -263,7 +263,9 @@ public class InteractionUIManager : MonoBehaviour
 
             if (readingCloseGuideText != null)
             {
-                readingCloseGuideText.text = "กด <color=#FFD700>[E]</color> หรือ <color=#FFD700>[Esc]</color> เพื่อปิด";
+                readingCloseGuideText.text = string.IsNullOrEmpty(closeGuide)
+                    ? "กด <color=#FFD700>[E]</color> หรือ <color=#FFD700>[Esc]</color> เพื่อปิด"
+                    : closeGuide;
             }
         }
     }

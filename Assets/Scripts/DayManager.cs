@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -64,7 +65,64 @@ public class DayManager : MonoBehaviour
     // ══════════════════════════════════════════════
 
     /// <summary>
-    /// เพิ่มวัน 1 วัน — เรียกจาก BedroomDoorInteractable เมื่อกดนอน
+    /// ตรวจสอบว่าผู้เล่นสามารถเข้านอนเพื่อขึ้นวันใหม่ได้หรือไม่
+    /// ต้องเคลียร์เควสที่ค้างอยู่ และให้บริการผู้มาเยือน/เควสประจำวันให้ครบถ้วนก่อน
+    /// </summary>
+    public static bool CanSleep(out string blockReason)
+    {
+        // 1. ตรวจสอบว่ายังมีเควสที่รับไว้แล้วแต่ยังทำไม่เสร็จหรือไม่ (Active Quests)
+        if (QuestUIManager.Instance != null && QuestUIManager.Instance.activeQuests != null && QuestUIManager.Instance.activeQuests.Count > 0)
+        {
+            int count = QuestUIManager.Instance.activeQuests.Count;
+            string questNames = "";
+            for (int i = 0; i < Mathf.Min(count, 2); i++)
+            {
+                var q = QuestUIManager.Instance.activeQuests[i];
+                if (q != null && !string.IsNullOrEmpty(q.questTitle))
+                {
+                    questNames += (string.IsNullOrEmpty(questNames) ? "" : ", ") + $"'{q.questTitle}'";
+                }
+            }
+            if (count > 2) questNames += $" และอีก {count - 2} เควส";
+
+            blockReason = $"<color=#FF4500>⚠️ ยังมีเควสที่ค้างอยู่ ({count} เควส)!</color>\nกรุณาทำเควส {questNames} ให้เสร็จสิ้นก่อนเข้านอน";
+            return false;
+        }
+
+        // 2. ตรวจสอบสถานะตำหนักและผู้มาเยือนประจำวัน
+        if (HallManager.Instance != null)
+        {
+            // 2.1 มี NPC หรือพ่อค้ากำลังรอหรืออยู่ในตำหนัก
+            if (HallManager.Instance.currentActiveNPC != null || HallManager.Instance.isMerchantActive)
+            {
+                blockReason = "<color=#FF4500>⚠️ กำลังมีผู้มาเยือนอยู่ในตำหนัก!</color>\nกรุณาต้อนรับหรือจัดการเควสให้เรียบร้อยก่อนเข้านอน";
+                return false;
+            }
+
+            int target = HallManager.Instance.maxNpcPerSession > 0 ? HallManager.Instance.maxNpcPerSession : 5;
+            int served = HallManager.Instance.npcsServedThisSession;
+
+            // 2.2 ตำหนักยังเปิดทำการอยู่
+            if (HallManager.Instance.isHallOpen)
+            {
+                blockReason = $"<color=#FF4500>⚠️ ตำหนักยังเปิดทำการอยู่ ไม่สามารถเข้านอนได้!</color>\nต้องต้อนรับผู้มาเยือนให้ครบก่อน ({served}/{target} คน)";
+                return false;
+            }
+
+            // 2.3 วันนี้ยังให้บริการผู้มาเยือน/เควสประจำวันไม่ครบ
+            if (served < target)
+            {
+                blockReason = $"<color=#FF4500>⚠️ ยังไม่ได้เคลียร์เควสประจำวัน!</color>\nต้องเปิดตำหนักและต้อนรับผู้มาเยือนให้ครบ ({served}/{target} คน) ก่อนจึงจะเข้านอนได้";
+                return false;
+            }
+        }
+
+        blockReason = string.Empty;
+        return true;
+    }
+
+    /// <summary>
+    /// เพิ่มวัน 1 วัน — เรียกจาก BedroomDoorInteractable หรือ BedInteractable เมื่อกดนอน
     /// </summary>
     public void AdvanceDay()
     {

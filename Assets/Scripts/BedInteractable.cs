@@ -18,6 +18,10 @@ public class BedInteractable : InteractableItem
     [Tooltip("เสียงนอนหลับ (ถ้ามี)")]
     public AudioClip sleepSound;
 
+    [Header("Quest Requirements")]
+    [Tooltip("ต้องเคลียร์เควสที่ค้างอยู่และต้อนรับผู้มาเยือนของวันนั้นๆ ให้ครบก่อนจึงจะนอนได้")]
+    public bool requireAllQuestsCleared = true;
+
     [Tooltip("ตำแหน่งสำหรับผู้เล่นเมื่อตื่นนอน (ถ้าเว้นว่างจะยืนข้างเตียง)")]
     public Transform wakeUpPoint;
 
@@ -71,6 +75,29 @@ public class BedInteractable : InteractableItem
         EnsureFadeCanvas();
     }
 
+    private void Update()
+    {
+        UpdatePromptState();
+    }
+
+    private void UpdatePromptState()
+    {
+        if (isSleeping)
+        {
+            customReadPromptText = "กำลังนอนหลับ...";
+            return;
+        }
+
+        if (requireAllQuestsCleared && !DayManager.CanSleep(out _))
+        {
+            customReadPromptText = "ยังนอนไม่ได้ (ต้องเคลียร์เควสก่อน)";
+        }
+        else
+        {
+            customReadPromptText = "นอนหลับ (ขึ้นวันใหม่)";
+        }
+    }
+
     /// <summary>
     /// เมื่อผู้เล่นมองที่เตียงแล้วกด [E]
     /// </summary>
@@ -78,23 +105,17 @@ public class BedInteractable : InteractableItem
     {
         if (isSleeping) return;
 
-        // 1. ตรวจสอบว่าตำหนักยังเปิดอยู่หรือไม่ (หากเปิดอยู่ต้องให้บริการลูกค้าให้ครบก่อน)
-        if (HallManager.Instance != null && HallManager.Instance.isHallOpen)
+        // ตรวจสอบเงื่อนไขการนอน: ต้องเคลียร์เควสและบริการผู้มาเยือนของวันนั้นๆ ให้หมดก่อน
+        if (requireAllQuestsCleared && !DayManager.CanSleep(out string blockReason))
         {
-            int target = HallManager.Instance.maxNpcPerSession > 0 ? HallManager.Instance.maxNpcPerSession : 5;
-            int served = HallManager.Instance.npcsServedThisSession;
-
-            interactor.ShowNotification(
-                $"<color=#FF4500>⚠️ ตำหนักยังเปิดอยู่ ไม่สามารถเข้านอนได้!</color>\nต้องต้อนรับผู้มาเยือนให้ครบก่อน ({served}/{target} คน)", 
-                3.5f
-            );
+            interactor.ShowNotification(blockReason, 3.5f);
             return;
         }
 
-        // 2. ปิดหน้าต่างอ่าน (ถ้ามี)
+        // ปิดหน้าต่างอ่าน (ถ้ามี)
         interactor.CloseReading();
 
-        // 3. เริ่มกระบวนการนอนหลับ
+        // เริ่มกระบวนการนอนหลับ
         StartCoroutine(SleepRoutine(interactor));
     }
 
@@ -135,6 +156,12 @@ public class BedInteractable : InteractableItem
 
         // พักจอมืดสั้นๆ ให้ความรู้สึกเหมือนหลับข้ามคืน
         yield return new WaitForSeconds(0.5f);
+
+        // ประเมินผล Karma ก่อนนอน (ถ้ามี KarmaManager)
+        if (KarmaManager.Instance != null)
+        {
+            KarmaManager.Instance.EvaluateKarmaEnding();
+        }
 
         // 5. สั่ง DayManager ขึ้นวันใหม่
         if (DayManager.Instance != null)
