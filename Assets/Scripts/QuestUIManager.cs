@@ -448,6 +448,13 @@ public class QuestUIManager : MonoBehaviour
             GhostCurseManager.Instance.AttachGhost($"ทำเควส {quest.npcName} ล้มเหลว");
         }
 
+        // ลดค่าความดีเมื่อทำเควสพลาด (อาจลดจนเหลือ 0 นำไปสู่ฉากโดนกลืนกิน)
+        if (KarmaManager.Instance != null)
+        {
+            int penalty = quest.karmaReward > 0 ? quest.karmaReward : 20;
+            KarmaManager.Instance.ApplyKarma(-penalty, $"ทำเควสพลาด: {quest.questTitle}");
+        }
+
         string failDialogue = !string.IsNullOrEmpty(quest.failDialogue) 
             ? quest.failDialogue 
             : "ไม่เห็นเก่งเลยนี่หว่า... ข้าไปหาคนอื่นดีกว่า!";

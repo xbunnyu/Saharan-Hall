@@ -1,104 +1,135 @@
 using UnityEngine;
 
 /// <summary>
-/// Singleton ติดตามค่า Karma (ดี/ชั่ว) ของผู้เล่น
-/// ผู้เล่นไม่สามารถเห็นค่านี้ได้โดยตรง — ใช้ภายในระบบเกมเท่านั้น
-/// ค่า karma บวก = ดี | ค่า karma ลบ = ชั่ว
+/// Singleton ติดตามค่า Karma (ค่าความดี) ของผู้เล่น
+/// - ค่าความดีถึง 80  -> เรียกฉากจบดี (GoodEnding)
+/// - ค่าความดีถึง 0   -> เรียกฉากโดนกลืนกิน (BadEnding)
 /// </summary>
 public class KarmaManager : MonoBehaviour
 {
-    public static KarmaManager Instance { get; private set; }
+    private static KarmaManager _instance;
+    public static KarmaManager Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = FindFirstObjectByType<KarmaManager>();
+                if (_instance == null)
+                {
+                    GameObject go = new GameObject("KarmaManager");
+                    _instance = go.AddComponent<KarmaManager>();
+                    DontDestroyOnLoad(go);
+                }
+            }
+            return _instance;
+        }
+        private set => _instance = value;
+    }
 
-    [Header("ค่า Karma เริ่มต้น")]
-    public int startingKarma = 0;
+    [Header("1. ค่าความดีเริ่มต้น & เกณฑ์ฉากจบ")]
+    [Tooltip("ค่าความดีเริ่มต้น (แนะนำ 40 เพื่อให้อยู่กึ่งกลางระหว่าง 0 ถึง 80)")]
+    public int startingKarma = 40;
 
-    /// <summary>ค่า Karma ปัจจุบัน (ไม่แสดงให้ผู้เล่นเห็น)</summary>
-    [HideInInspector]
+    [Tooltip("เกณฑ์ค่าความดีสำหรับฉากจบดี")]
+    public int targetGoodKarma = 80;
+
+    [Tooltip("เกณฑ์ค่าความดีสำหรับฉากโดนกลืนกิน")]
+    public int targetBadKarma = 0;
+
+    /// <summary>ค่าความดีปัจจุบันของผู้เล่น</summary>
+    [Header("2. ค่าความดีปัจจุบัน (Current Karma)")]
     public int karma;
-
-    // ──────────────────────────────────────────────────────────
-    // Thresholds ระดับ Karma (ปรับ Balance ใน Inspector ไม่ได้
-    // เพราะ HideInInspector แต่ Designer แก้ได้ในโค้ดนี้)
-    // ──────────────────────────────────────────────────────────
-    [Header("Threshold ระดับ Karma (Internal)")]
-    [Tooltip("Karma สูงกว่านี้ = ดีมาก")]
-    public int thresholdVirtuous  =  50;
-    [Tooltip("Karma ต่ำกว่านี้ = ชั่วมาก")]
-    public int thresholdSinful    = -50;
 
     void Awake()
     {
-        if (Instance == null) Instance = this;
-        else { Destroy(gameObject); return; }
+        if (_instance == null)
+        {
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else if (_instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
 
         karma = startingKarma;
-        Debug.Log($"[Karma] เริ่มต้น karma = {karma}");
+        Debug.Log($"[KarmaManager] 🌟 เริ่มต้นค่าความดี = {karma} (จบดี: >={targetGoodKarma}, โดนกลืนกิน: <={targetBadKarma})");
     }
 
     // ──────────────────────────────────────────────────────────
     // Public API
     // ──────────────────────────────────────────────────────────
 
-    /// <summary>เพิ่ม/ลด Karma หลังส่งเควส</summary>
+    /// <summary>
+    /// เพิ่มหรือลดค่าความดี
+    /// </summary>
     public void ApplyKarma(int amount, string questTitle = "")
     {
         if (amount == 0) return;
 
         karma += amount;
         string sign = amount > 0 ? "+" : "";
-        Debug.Log($"[Karma] {sign}{amount} จาก '{questTitle}'  → รวม {karma}  ({GetKarmaLabel()})");
+        Debug.Log($"[KarmaManager] {sign}{amount} จาก '{questTitle}' → ค่าความดีรวมปัจจุบัน: {karma}");
 
-        // ตรวจสอบเงื่อนไขการจบเกม (ถ้าต้องการให้จบเกมทันทีเมื่อถึงเกณฑ์ สามารถเปิดคอมเมนต์บรรทัดล่างได้)
-        // EvaluateKarmaEnding();
+        // ตรวจสอบเงื่อนไขการจบเกมทันทีที่มีการเปลี่ยนแปลง
+        EvaluateKarmaEnding();
     }
 
     /// <summary>
-    /// ตรวจสอบและเรียกฉากจบตามค่า Karma ปัจจุบัน
-    /// (สามารถเรียกใช้จากตอนจบเควสสุดท้าย หรือเรียกผ่าน ApplyKarma ก็ได้)
+    /// ตรวจสอบและเรียกฉากจบตามเกณฑ์ค่าความดี
     /// </summary>
     public void EvaluateKarmaEnding()
     {
         if (GameEndingManager.Instance == null)
         {
-            Debug.LogError("[KarmaManager] ไม่พบ GameEndingManager ในฉาก!");
+            Debug.LogError("[KarmaManager] ⚠️ ไม่พบ GameEndingManager ในฉาก!");
             return;
         }
 
-        if (karma >= 80)
+        if (karma >= targetGoodKarma)
         {
+            Debug.Log($"[KarmaManager] ✨ ค่าความดีถึง {karma} (>= {targetGoodKarma}) → เรียกฉากจบดี!");
             GameEndingManager.Instance.TriggerEnding(GameEndingType.GoodEnding);
         }
-        else if (karma <= 20)
+        else if (karma <= targetBadKarma)
         {
+            Debug.Log($"[KarmaManager] 💀 ค่าความดีลดลงถึง {karma} (<= {targetBadKarma}) → เรียกฉากโดนกลืนกิน!");
             GameEndingManager.Instance.TriggerEnding(GameEndingType.BadEnding);
         }
         else
         {
-            Debug.Log($"[KarmaManager] Karma อยู่ที่ {karma} ยังไม่ถึงเกณฑ์ฉากจบ (Good: >= 80, Bad: <= 20)");
-            // หากมี Neutral Ending สามารถเพิ่มเงื่อนไขได้ที่นี่
+            Debug.Log($"[KarmaManager] ค่าความดีปัจจุบัน: {karma} (ยังเล่นต่อได้: เป้าหมายจบดี {targetGoodKarma}, ระวังโดนกลืนกิน {targetBadKarma})");
         }
     }
 
-    /// <summary>ระดับ Karma ปัจจุบัน (ใช้ภายใน)</summary>
-    public KarmaLevel GetKarmaLevel()
+    // ──────────────────────────────────────────────────────────
+    // ตัวช่วยทดสอบใน Unity Inspector (คลิกขวาที่คอมโพเนนต์)
+    // ──────────────────────────────────────────────────────────
+    [ContextMenu("🧪 ทดสอบ: ตั้งค่าความดีเป็น 80 (เรียกฉากจบดี)")]
+    public void TestSetKarma80()
     {
-        if (karma >= thresholdVirtuous)  return KarmaLevel.Virtuous;
-        if (karma <= thresholdSinful)    return KarmaLevel.Sinful;
-        return KarmaLevel.Neutral;
+        karma = targetGoodKarma;
+        EvaluateKarmaEnding();
     }
 
-    /// <summary>ชื่อระดับ Karma (สำหรับ Debug เท่านั้น)</summary>
-    public string GetKarmaLabel() => GetKarmaLevel() switch
+    [ContextMenu("🧪 ทดสอบ: ตั้งค่าความดีเป็น 0 (เรียกฉากโดนกลืนกิน)")]
+    public void TestSetKarma0()
     {
-        KarmaLevel.Virtuous => "ผู้มีคุณธรรม",
-        KarmaLevel.Sinful   => "ผู้มีบาป",
-        _                   => "กลาง"
-    };
-}
+        karma = targetBadKarma;
+        EvaluateKarmaEnding();
+    }
 
-public enum KarmaLevel
-{
-    Virtuous,   // ดี
-    Neutral,    // กลาง
-    Sinful      // ชั่ว
+    [ContextMenu("🧪 ทดสอบ: เพิ่มความดี +20")]
+    public void TestAddKarma20()
+    {
+        ApplyKarma(20, "ทดสอบเพิ่มความดี");
+    }
+
+    [ContextMenu("🧪 ทดสอบ: ลดความดี -20")]
+    public void TestSubtractKarma20()
+    {
+        ApplyKarma(-20, "ทดสอบลดความดี");
+    }
 }
