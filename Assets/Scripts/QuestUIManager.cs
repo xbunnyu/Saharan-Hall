@@ -36,6 +36,12 @@ public class QuestUIManager : MonoBehaviour
     public GameObject responsePanel;
     public TextMeshProUGUI responseDialogueText;
 
+    [Header("Decline & Waiting Dialogue (กล่องข้อความปฏิเสธ และ ข้อความตอนรอ)")]
+    [Tooltip("กล่องข้อความเมื่อปฏิเสธเควส (Decline Dialogue Text) ในหน้าต่างเควส")]
+    public TextMeshProUGUI declineDialogueText;
+    [Tooltip("กล่องข้อความตอนรอเมื่อรับเควสแล้ว (Waiting Dialogue Text) ในหน้าต่างเควส")]
+    public TextMeshProUGUI waitingDialogueText;
+
     [Header("2. Quest Tracker HUD (แถบแสดงเควสฝั่งซ้ายจอ)")]
     [Tooltip("Panel HUD แสดงรายการเควสฝั่งซ้ายจอ (Optional Canvas)")]
     public GameObject questTrackerPanel;
@@ -55,6 +61,8 @@ public class QuestUIManager : MonoBehaviour
     private QuestData currentQuest;
     private bool isDialogActive = false;
     private bool isShowingResponse = false;
+    private bool isPendingDecline = false;
+    private bool isPendingAccept = false;
     private string responseMessage = "";
     private float canAcceptInputTime = 0f;
     private PlayerController playerController;
@@ -118,7 +126,20 @@ public class QuestUIManager : MonoBehaviour
                     || keyboard.qKey.wasPressedThisFrame)
                 {
                     CancelInvoke(nameof(CloseDialog));
-                    CloseDialog();
+                    CancelInvoke(nameof(FinishAcceptAndClose));
+                    CancelInvoke(nameof(FinishDeclineAndClose));
+                    if (isPendingDecline)
+                    {
+                        FinishDeclineAndClose();
+                    }
+                    else if (isPendingAccept)
+                    {
+                        FinishAcceptAndClose();
+                    }
+                    else
+                    {
+                        CloseDialog();
+                    }
                 }
                 return;
             }
@@ -238,6 +259,17 @@ public class QuestUIManager : MonoBehaviour
             }
 
             if (responsePanel != null) responsePanel.SetActive(false);
+
+            if (declineDialogueText != null)
+            {
+                declineDialogueText.text = "";
+                declineDialogueText.gameObject.SetActive(false);
+            }
+            if (waitingDialogueText != null)
+            {
+                waitingDialogueText.text = "";
+                waitingDialogueText.gameObject.SetActive(false);
+            }
         }
 
         Debug.Log($"[QuestUIManager] 📜 เปิดหน้าต่างเควส: '{quest.questTitle}' จาก '{quest.npcName}'");
@@ -263,11 +295,35 @@ public class QuestUIManager : MonoBehaviour
             return;
         }
 
-        // หากเป็นเควสส่งของทั่วไป -> ปิด Quest Dialog แล้วแสดง waitingDialogue ใน ReadingDialog ของผู้เล่น
+        // หากเป็นเควสส่งของทั่วไป
         string waitMsg = !string.IsNullOrEmpty(currentQuest.waitingDialogue)
             ? currentQuest.waitingDialogue
             : "ขอบคุณมากที่รับปากช่วยข้า!";
 
+        // หากมีกล่องข้อความตอนรอ (waitingDialogueText) ในหน้าต่างเควส ให้แสดงบนหน้าต่างนี้ก่อนปิด
+        if (waitingDialogueText != null)
+        {
+            if (acceptButton != null) acceptButton.gameObject.SetActive(false);
+            if (declineButton != null) declineButton.gameObject.SetActive(false);
+            if (inquiryButton != null) inquiryButton.gameObject.SetActive(false);
+            if (questRequirementText != null) questRequirementText.gameObject.SetActive(false);
+            if (questRewardText != null) questRewardText.gameObject.SetActive(false);
+
+            if (questTitleText != null)
+                questTitleText.text = $"<color=#00FF7F>✅ รับเควสสำเร็จ</color> — {currentQuest.npcName}";
+
+            waitingDialogueText.text = $"\"{waitMsg}\"";
+            waitingDialogueText.gameObject.SetActive(true);
+
+            isShowingResponse = true;
+            isPendingAccept = true;
+
+            CancelInvoke(nameof(FinishAcceptAndClose));
+            Invoke(nameof(FinishAcceptAndClose), 2.2f);
+            return;
+        }
+
+        // Fallback: หากไม่มีกล่องข้อความตอนรอ ให้ปิด Dialog แล้วแสดงใน ReadingDialog ของผู้เล่น
         NPCController npc2 = currentNPC;
         CloseDialog();
         npc2.OnQuestAccepted();
@@ -288,7 +344,33 @@ public class QuestUIManager : MonoBehaviour
             ? currentQuest.declineDialogue 
             : "น่าเสียดายจัง... ไม่เป็นไรนะ โอกาสหน้าข้าจะมาใหม่";
 
-        // แสดง UI ปฏิเสธเควสก่อนให้ผู้เล่นอ่าน — NPC จะยังไม่เดินจากไปจนกว่าหน้าต่างนี้จะปิด
+        // หากมีกล่องข้อความปฏิเสธ (declineDialogueText) ในหน้าต่างเควส ให้แสดงบนหน้าต่างนี้ก่อนปิด
+        if (declineDialogueText != null)
+        {
+            if (acceptButton != null) acceptButton.gameObject.SetActive(false);
+            if (declineButton != null) declineButton.gameObject.SetActive(false);
+            if (inquiryButton != null) inquiryButton.gameObject.SetActive(false);
+            if (questRequirementText != null) questRequirementText.gameObject.SetActive(false);
+            if (questRewardText != null) questRewardText.gameObject.SetActive(false);
+
+            if (questTitleText != null)
+                questTitleText.text = $"<color=#FF5555>❌ ปฏิเสธเควส</color> — {currentQuest.npcName}";
+
+            declineDialogueText.text = $"\"{responseMessage}\"";
+            declineDialogueText.gameObject.SetActive(true);
+
+            if (currentNPC != null && currentNPC.declineSound != null)
+                AudioSource.PlayClipAtPoint(currentNPC.declineSound, currentNPC.transform.position);
+
+            isShowingResponse = true;
+            isPendingDecline = true;
+
+            CancelInvoke(nameof(FinishDeclineAndClose));
+            Invoke(nameof(FinishDeclineAndClose), 2.5f);
+            return;
+        }
+
+        // แสดง UI ปฏิเสธเควสก่อนให้ผู้เล่นอ่าน — NPC จะยังไม่เดินจากไปจนกว่าหน้าต่างนี้จะปิด (Fallback)
         ShowResponseAndClose(false);
     }
 
@@ -488,18 +570,57 @@ public class QuestUIManager : MonoBehaviour
         }
     }
 
+    private void FinishDeclineAndClose()
+    {
+        CancelInvoke(nameof(FinishDeclineAndClose));
+        isPendingDecline = false;
+        NPCController declinedNPC = currentNPC;
+        CloseDialog();
+        if (declinedNPC != null)
+        {
+            declinedNPC.OnQuestDeclined();
+        }
+    }
+
+    private void FinishAcceptAndClose()
+    {
+        CancelInvoke(nameof(FinishAcceptAndClose));
+        isPendingAccept = false;
+        NPCController acceptedNPC = currentNPC;
+        CloseDialog();
+        if (acceptedNPC != null)
+        {
+            acceptedNPC.OnQuestAccepted();
+        }
+    }
+
     public void CloseDialog()
     {
         CancelInvoke(nameof(CloseDialog));
         CancelInvoke(nameof(AutoCloseDeclineReading));
+        CancelInvoke(nameof(FinishDeclineAndClose));
+        CancelInvoke(nameof(FinishAcceptAndClose));
 
-        bool wasDeclined = !isShowingResponse
+        bool wasDeclined = isPendingDecline || (!isShowingResponse
             ? false
-            : (currentQuest != null && !currentQuest.isAccepted);
+            : (currentQuest != null && !currentQuest.isAccepted));
         NPCController departingNPC = currentNPC;
 
         isDialogActive = false;
         isShowingResponse = false;
+        isPendingDecline = false;
+        isPendingAccept = false;
+
+        if (declineDialogueText != null)
+        {
+            declineDialogueText.text = "";
+            declineDialogueText.gameObject.SetActive(false);
+        }
+        if (waitingDialogueText != null)
+        {
+            waitingDialogueText.text = "";
+            waitingDialogueText.gameObject.SetActive(false);
+        }
 
         if (questDialogPanel != null) questDialogPanel.SetActive(false);
         if (responsePanel != null) responsePanel.SetActive(false);

@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 7523765599086ba439f208560becc981
+guid: ba8912ea2185d934bbc79dca3cd66746
 TrueTypeFontImporter:
   externalObjects: {}
   serializedVersion: 4
@@ -9,7 +9,7 @@ TrueTypeFontImporter:
   characterPadding: 1
   includeFontData: 1
   fontNames:
-  - Thasadith
+  - K2D
   fallbackFontReferences: []
   customCharacters: 
   fontRenderingMode: 0

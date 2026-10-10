@@ -26,8 +26,8 @@ public class ReputationManager : MonoBehaviour
     public int thresholdLevel3 = 60;
 
     [Header("3. HUD แสดงผลบนหน้าจอ")]
-    [Tooltip("แสดงตัวเลขชื่อเสียงมุมจอด้านล่างแบบง่ายอัตโนมัติ")]
-    public bool showHUD = true;
+    [Tooltip("แสดงตัวเลขชื่อเสียงมุมจอด้านล่างแบบง่ายอัตโนมัติ (ปิดไว้เพราะมี UI บน Canvas แล้ว)")]
+    public bool showHUD = false;
 
     [Header("Event")]
     public UnityEvent<int, int> onReputationChanged; // (คะแนนปัจจุบัน, ระดับปัจจุบัน)
