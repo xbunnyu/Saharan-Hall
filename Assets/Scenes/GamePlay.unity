@@ -12707,26 +12707,26 @@ MonoBehaviour:
     rewardDescription: 120
     rewardMoney: 120
     rewardItemName: 
-    karmaReward: 0
-    requiredMinigameSequence: 03000000
+    karmaReward: 30
+    requiredMinigameSequence: 0300000005000000
     completedMinigameSequence: 
     isAccepted: 0
     isCompleted: 0
     currentMinigameFails: 0
     ownerStoryData: {fileID: 0}
     ownerPhaseIndex: -1
-  - questId: 01
-    problemType: "\u0E2B\u0E25\u0E32\u0E19\u0E40\u0E2B\u0E47\u0E19\u0E1C\u0E35\u0E40\u0E14\u0E47\u0E01"
+  - questId: 02
+    problemType: "\u0E1C\u0E35\u0E2D\u0E33"
     questTitle: 
-    questDescription: "\u0E2B\u0E21\u0E2D\u0E08\u0E4A\u0E30 \u0E2B\u0E25\u0E32\u0E19\u0E22\u0E32\u0E22\u0E0A\u0E35\u0E49\u0E21\u0E38\u0E21\u0E2B\u0E49\u0E2D\u0E07\u0E17\u0E38\u0E01\u0E04\u0E37\u0E19
-      \u0E1A\u0E2D\u0E01\u0E27\u0E48\u0E32\u0E21\u0E35\u0E40\u0E14\u0E47\u0E01\u0E21\u0E32\u0E22\u0E37\u0E19\u0E40\u0E23\u0E35\u0E22\u0E01\u0E40\u0E25\u0E48\u0E19\u0E14\u0E49\u0E27\u0E22
-      \u0E22\u0E32\u0E22\u0E01\u0E25\u0E31\u0E27\u0E40\u0E2B\u0E25\u0E37\u0E2D\u0E40\u0E01\u0E34\u0E19
-      \u0E0A\u0E48\u0E27\u0E22\u0E14\u0E39\u0E43\u0E2B\u0E49\u0E17\u0E35\u0E19\u0E30"
-    difficulty: 0
+    questDescription: "\u0E1B\u0E49\u0E2D\u0E2B\u0E21\u0E2D\u0E40\u0E08\u0E49\u0E32
+      \u0E02\u0E49\u0E32\u0E40\u0E08\u0E49\u0E32\u0E16\u0E39\u0E01\u0E1C\u0E35\u0E2D\u0E33\u0E41\u0E17\u0E1A\u0E01\u0E39\u0E49\u0E04\u0E37\u0E19
+      \u0E25\u0E37\u0E21\u0E15\u0E32\u0E44\u0E14\u0E49\u0E41\u0E15\u0E48\u0E02\u0E22\u0E31\u0E1A\u0E15\u0E31\u0E4B\u0E27\u0E1A\u0E48\u0E44\u0E14\u0E49
+      \u0E0A\u0E48\u0E27\u0E22\u0E01\u0E33\u0E40\u0E19\u0E49\u0E2D"
+    difficulty: 2
     customNoteSpeed: 0
     customNoteCount: 0
     passPercentage: 60
-    npcName: "\u0E22\u0E32\u0E22\u0E17\u0E2D\u0E07"
+    npcName: "\u0E41\u0E01\u0E49\u0E27\u0E15\u0E32"
     npcPortrait: {fileID: 1707211250, guid: 582d85b6ad204784ebb715458ac77e76, type: 3}
     npcGroupId: 
     inquiryDialogues:
@@ -12754,8 +12754,54 @@ MonoBehaviour:
     rewardDescription: 120
     rewardMoney: 120
     rewardItemName: 
-    karmaReward: 0
-    requiredMinigameSequence: 03000000
+    karmaReward: 30
+    requiredMinigameSequence: 0400000001000000
+    completedMinigameSequence: 
+    isAccepted: 0
+    isCompleted: 0
+    currentMinigameFails: 0
+    ownerStoryData: {fileID: 0}
+    ownerPhaseIndex: -1
+  - questId: 03
+    problemType: "\u0E04\u0E27\u0E32\u0E22\u0E15\u0E37\u0E48\u0E19\u0E01\u0E25\u0E31\u0E27\u0E2A\u0E34\u0E48\u0E07\u0E25\u0E35\u0E49\u0E25\u0E31\u0E1A"
+    questTitle: 
+    questDescription: "\u0E1E\u0E48\u0E2D\u0E2B\u0E21\u0E2D \u0E04\u0E27\u0E32\u0E22\u0E02\u0E48\u0E2D\u0E22\u0E22\u0E48\u0E32\u0E19\u0E04\u0E2D\u0E01\u0E15\u0E31\u0E27\u0E40\u0E2D\u0E07\u0E17\u0E38\u0E01\u0E04\u0E37\u0E19
+      \u0E21\u0E31\u0E19\u0E40\u0E1A\u0E34\u0E48\u0E07\u0E44\u0E1B\u0E21\u0E38\u0E21\u0E40\u0E14\u0E34\u0E21\u0E41\u0E25\u0E49\u0E27\u0E2E\u0E49\u0E2D\u0E07\u0E04\u0E37\u0E2D\u0E40\u0E2B\u0E47\u0E19\u0E2B\u0E22\u0E31\u0E07
+      \u0E0A\u0E48\u0E27\u0E22\u0E40\u0E1A\u0E34\u0E48\u0E07\u0E41\u0E19\u0E40\u0E14\u0E49\u0E2D"
+    difficulty: 1
+    customNoteSpeed: 0
+    customNoteCount: 0
+    passPercentage: 60
+    npcName: "\u0E25\u0E38\u0E07\u0E40\u0E1E\u0E47\u0E07"
+    npcPortrait: {fileID: 1707211250, guid: 582d85b6ad204784ebb715458ac77e76, type: 3}
+    npcGroupId: 
+    inquiryDialogues:
+    - "...(NPC \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E27\u0E49\u0E43\u0E08\u0E1E\u0E2D\u0E17\u0E35\u0E48\u0E08\u0E30\u0E1A\u0E2D\u0E01)"
+    - "\u0E04\u0E27\u0E32\u0E21\u0E08\u0E23\u0E34\u0E07\u0E01\u0E47\u0E04\u0E37\u0E2D...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 1)"
+    - "\u0E21\u0E35\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E17\u0E35\u0E48\u0E0B\u0E48\u0E2D\u0E19\u0E2D\u0E22\u0E39\u0E48...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 2)"
+    - "\u0E02\u0E49\u0E32\u0E08\u0E30\u0E1A\u0E2D\u0E01\u0E04\u0E27\u0E32\u0E21\u0E25\u0E31\u0E1A\u0E2A\u0E38\u0E14\u0E17\u0E49\u0E32\u0E22...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 3)"
+    greetingDialogue: 
+    waitingDialogue: "\u0E02\u0E2D\u0E1A\u0E43\u0E08\u0E21\u0E32\u0E01\u0E19\u0E30\u0E2B\u0E21\u0E2D
+      \u0E22\u0E32\u0E22\u0E44\u0E21\u0E48\u0E21\u0E35\u0E2D\u0E30\u0E44\u0E23\u0E15\u0E2D\u0E1A\u0E41\u0E17\u0E19\u0E21\u0E32\u0E01
+      \u0E02\u0E2D\u0E43\u0E2B\u0E49\u0E1A\u0E38\u0E0D\u0E23\u0E31\u0E01\u0E29\u0E32\u0E19\u0E30\u0E08\u0E4A\u0E30"
+    completeDialogue: "\u0E22\u0E2D\u0E14\u0E40\u0E22\u0E35\u0E48\u0E22\u0E21\u0E21\u0E32\u0E01!
+      \u0E44\u0E14\u0E49\u0E02\u0E2D\u0E07\u0E04\u0E23\u0E1A\u0E16\u0E49\u0E27\u0E19\u0E41\u0E25\u0E49\u0E27
+      \u0E02\u0E2D\u0E1A\u0E1E\u0E23\u0E30\u0E04\u0E38\u0E13\u0E17\u0E48\u0E32\u0E19\u0E08\u0E23\u0E34\u0E07
+      \u0E46 \u0E02\u0E49\u0E32\u0E02\u0E2D\u0E15\u0E31\u0E27\u0E25\u0E32\u0E01\u0E48\u0E2D\u0E19"
+    declineDialogue: "\u0E2B\u0E21\u0E2D\u0E44\u0E21\u0E48\u0E0A\u0E48\u0E27\u0E22\u0E08\u0E23\u0E34\u0E07\u0E46\u0E2B\u0E23\u0E37\u0E2D...\u0E22\u0E32\u0E22\u0E04\u0E07\u0E15\u0E49\u0E2D\u0E07\u0E1E\u0E32\u0E2B\u0E25\u0E32\u0E19\u0E01\u0E25\u0E31\u0E1A\u0E44\u0E1B\u0E17\u0E19\u0E40\u0E2D\u0E32\u0E40\u0E2D\u0E07\u0E2A\u0E34\u0E19\u0E30"
+    failDialogue: "\u0E44\u0E21\u0E48\u0E40\u0E2B\u0E47\u0E19\u0E40\u0E01\u0E48\u0E07\u0E40\u0E25\u0E22\u0E19\u0E35\u0E48\u0E2B\u0E27\u0E48\u0E32...
+      \u0E02\u0E49\u0E32\u0E44\u0E1B\u0E2B\u0E32\u0E2B\u0E21\u0E2D\u0E18\u0E23\u0E23\u0E21\u0E04\u0E19\u0E2D\u0E37\u0E48\u0E19\u0E14\u0E35\u0E01\u0E27\u0E48\u0E32!"
+    requiredItemName: 
+    requiredQuantity: 0
+    isTaskCompleted: 0
+    rewardDescription: 120
+    rewardMoney: 120
+    rewardItemName: 
+    karmaReward: 30
+    requiredMinigameSequence: 0100000003000000
     completedMinigameSequence: 
     isAccepted: 0
     isCompleted: 0
@@ -12768,7 +12814,7 @@ MonoBehaviour:
   weightVeryHard: 5
   initialSpawnDelay: 1.5
   delayBetweenNPCs: 2
-  maxNpcPerSession: 3
+  maxNpcPerSession: 2
   currentQueueIndex: 0
   npcsServedThisSession: 0
   currentActiveNPC: {fileID: 0}
