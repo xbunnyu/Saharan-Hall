@@ -126,6 +126,17 @@ public class DayManager : MonoBehaviour
     /// </summary>
     public void AdvanceDay()
     {
+        // เมื่อกดนอนในวันที่ 2 (หรือมากกว่า) ให้คำนวณและดึงฉากจบ
+        if (currentDay >= 2)
+        {
+            Debug.Log($"[DayManager] 💤 กดนอนจบวันที่ {currentDay} -> คำนวณและดึงฉากจบ!");
+            if (GameEndingManager.Instance != null)
+            {
+                GameEndingManager.Instance.EvaluateDay2Ending();
+                return;
+            }
+        }
+
         currentDay++;
         Debug.Log($"[DayManager] ☀️ ขึ้นวันที่ {currentDay}!");
 

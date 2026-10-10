@@ -269,6 +269,13 @@ public class MinigameManager : MonoBehaviour
             {
                 QuestUIManager.Instance.FailQuest(qToFail);
             }
+            else
+            {
+                if (GhostCurseManager.Instance != null)
+                {
+                    GhostCurseManager.Instance.AttachGhost("มินิเกมล้มเหลว");
+                }
+            }
         }
 
         Debug.Log($"[MinigameManager] 🏁 มินิเกมสิ้นสุดลง ผลลัพธ์: {(isSuccess ? "สำเร็จ (SUCCESS)" : "ล้มเหลว (FAILED)")} | รวมแพ้สะสม: {totalFailedMinigames} ครั้ง");

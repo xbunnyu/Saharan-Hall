@@ -227,152 +227,187 @@ public class GhostCurseManager : MonoBehaviour
     // ระบบโมเดลผีปรากฏในตำหนัก (Ghost Visual Spawning & Shuffling)
     // ══════════════════════════════════════════════════════════════════
 
+    // Dictionary ติดตาม GameObject ที่ถูก Instantiate ออกมาตาม Index คู่ (ghostPrefabs[i] + ghostSpawnPoints[i])
+    private Dictionary<int, GameObject> activeGhostMap = new Dictionary<int, GameObject>();
+
     /// <summary>
-    /// อัปเดตจำนวนและตำแหน่งของโมเดลผีในตำหนัก
+    /// อัปเดตโมเดลผีในฉากโดยจับคู่ ghostPrefabs[i] กับ ghostSpawnPoints[i] แล้วสุ่มเลือกเฉพาะว่าจะให้คู่อินเด็กซ์ไหนเกิดก่อน
     /// </summary>
     public void UpdateGhostModels(bool shuffle = true)
     {
-        EnsureSpawnPointsExist();
-
         int targetGhostCount = Mathf.Clamp(currentGhostCount, 0, maxGhostLimit);
 
-        // กรณีที่ 1: ผู้เล่นลากโมเดลผีที่มีอยู่ในฉากมาใส่ที่ sceneGhostObjects โดยตรง
+        // กรณีที่ 1: ตั้งค่า ghostPrefabs และ ghostSpawnPoints ใน Inspector (ตรงตามภาพ)
+        if (ghostPrefabs != null && ghostPrefabs.Length > 0 && ghostSpawnPoints != null && ghostSpawnPoints.Length > 0)
+        {
+            UpdatePrefabsWithMatchingSpawnPoints(targetGhostCount, shuffle);
+            return;
+        }
+
+        // กรณีที่ 2: ตั้งค่า sceneGhostObjects ไว้ใน Inspector
         if (sceneGhostObjects != null && sceneGhostObjects.Length > 0)
         {
             UpdateSceneGhostObjects(targetGhostCount, shuffle);
             return;
         }
 
-        // กรณีที่ 2: ใช้ Prefab ในการ Instantiate ออกมาตามจุด
-        UpdateInstantiatedGhosts(targetGhostCount, shuffle);
+        EnsureSceneGhostObjectsExist();
+        if (sceneGhostObjects != null && sceneGhostObjects.Length > 0)
+        {
+            UpdateSceneGhostObjects(targetGhostCount, shuffle);
+        }
+    }
+
+    private void UpdatePrefabsWithMatchingSpawnPoints(int targetCount, bool shuffle)
+    {
+        int maxPairs = Mathf.Min(ghostPrefabs.Length, ghostSpawnPoints.Length);
+        if (maxPairs == 0) return;
+
+        // หา Index ที่ยังไม่ได้เกิด (Available) และที่เกิดไปแล้ว (Active)
+        List<int> availableIndices = new List<int>();
+        List<int> activeIndices = new List<int>();
+
+        for (int i = 0; i < maxPairs; i++)
+        {
+            if (activeGhostMap.ContainsKey(i) && activeGhostMap[i] != null)
+            {
+                activeIndices.Add(i);
+            }
+            else
+            {
+                if (ghostPrefabs[i] != null && ghostSpawnPoints[i] != null)
+                {
+                    availableIndices.Add(i);
+                }
+            }
+        }
+
+        // หากต้องเพิ่มจำนวนผี (activeIndices.Count < targetCount)
+        while (activeIndices.Count < targetCount && availableIndices.Count > 0)
+        {
+            // สุ่มเลือกว่าจะให้อินเด็กซ์ไหนโผล่ออกมาก่อน (เช่น สุ่มเลือกระหว่าง 0, 1, 2)
+            int pickPos = (shuffle && availableIndices.Count > 1) ? Random.Range(0, availableIndices.Count) : 0;
+            int chosenIndex = availableIndices[pickPos];
+
+            GameObject prefab = ghostPrefabs[chosenIndex];
+            Transform spawnPt = ghostSpawnPoints[chosenIndex];
+
+            GameObject instance = null;
+
+            // ตรวจสอบว่า prefab เป็น GameObject ที่อยู่ในฉากแล้ว หรือเป็น Prefab Asset นอกฉาก
+            if (prefab.scene.IsValid())
+            {
+                prefab.transform.position = spawnPt.position;
+                prefab.transform.rotation = spawnPt.rotation;
+                prefab.SetActive(true);
+                instance = prefab;
+            }
+            else
+            {
+                instance = Instantiate(prefab, spawnPt.position, spawnPt.rotation);
+                instance.name = $"Ghost_{prefab.name}_Index{chosenIndex}";
+                instance.SetActive(true); // ปลดล็อคความซ่อน ปรับเปิดตา SetActive(true)
+            }
+
+            activeGhostMap[chosenIndex] = instance;
+
+            availableIndices.RemoveAt(pickPos);
+            activeIndices.Add(chosenIndex);
+
+            Debug.Log($"[GhostCurseManager] 👻 เกิดผี Index {chosenIndex}: '{prefab.name}' ที่ตำแหน่ง '{spawnPt.name}' (Active: {instance.activeSelf})");
+        }
+
+        // หากต้องลดจำนวนผี (กรณีชำระล้าง: activeIndices.Count > targetCount)
+        while (activeIndices.Count > targetCount && activeIndices.Count > 0)
+        {
+            int removePos = activeIndices.Count - 1;
+            int indexToRemove = activeIndices[removePos];
+
+            if (activeGhostMap.ContainsKey(indexToRemove) && activeGhostMap[indexToRemove] != null)
+            {
+                GameObject objToRemove = activeGhostMap[indexToRemove];
+                if (objToRemove.scene.IsValid() && ghostPrefabs != null && chosenIndexIsSceneObject(indexToRemove))
+                {
+                    objToRemove.SetActive(false); // ปิดตา
+                }
+                else
+                {
+                    Destroy(objToRemove);
+                }
+                activeGhostMap.Remove(indexToRemove);
+            }
+
+            activeIndices.RemoveAt(removePos);
+        }
+    }
+
+    private bool chosenIndexIsSceneObject(int index)
+    {
+        if (ghostPrefabs != null && index >= 0 && index < ghostPrefabs.Length)
+        {
+            return ghostPrefabs[index] != null && ghostPrefabs[index].scene.IsValid();
+        }
+        return false;
     }
 
     private void UpdateSceneGhostObjects(int targetCount, bool shuffle)
     {
-        List<Transform> candidatePoints = GetShuffledSpawnPoints(shuffle);
+        List<GameObject> activeObjects = new List<GameObject>();
+        List<GameObject> inactiveObjects = new List<GameObject>();
 
-        for (int i = 0; i < sceneGhostObjects.Length; i++)
+        foreach (var obj in sceneGhostObjects)
         {
-            GameObject ghostObj = sceneGhostObjects[i];
-            if (ghostObj == null) continue;
+            if (obj == null) continue;
+            if (obj.activeSelf) activeObjects.Add(obj);
+            else inactiveObjects.Add(obj);
+        }
 
-            if (i < targetCount)
-            {
-                ghostObj.SetActive(true);
+        while (activeObjects.Count < targetCount && inactiveObjects.Count > 0)
+        {
+            int pickIndex = (shuffle && inactiveObjects.Count > 1) ? Random.Range(0, inactiveObjects.Count) : 0;
+            GameObject toEnable = inactiveObjects[pickIndex];
+            toEnable.SetActive(true);
+            inactiveObjects.RemoveAt(pickIndex);
+            activeObjects.Add(toEnable);
+        }
 
-                if (candidatePoints.Count > 0)
-                {
-                    Transform targetPt = candidatePoints[i % candidatePoints.Count];
-                    ghostObj.transform.position = targetPt.position;
-                    ghostObj.transform.rotation = targetPt.rotation;
-                }
-            }
-            else
-            {
-                ghostObj.SetActive(false);
-            }
+        while (activeObjects.Count > targetCount && activeObjects.Count > 0)
+        {
+            int removeIndex = activeObjects.Count - 1;
+            GameObject toDisable = activeObjects[removeIndex];
+            toDisable.SetActive(false);
+            activeObjects.RemoveAt(removeIndex);
+            inactiveObjects.Add(toDisable);
         }
     }
 
-    private void UpdateInstantiatedGhosts(int targetCount, bool shuffle)
+    private void EnsureSceneGhostObjectsExist()
     {
-        List<Transform> candidatePoints = GetShuffledSpawnPoints(shuffle);
+        if (sceneGhostObjects != null && sceneGhostObjects.Length > 0) return;
 
-        // ทำลายตัวที่เกิน (กรณีชำระล้าง)
-        while (activeGhostInstances.Count > targetCount)
+        List<GameObject> foundList = new List<GameObject>();
+        GameObject group = GameObject.Find("Ghosts") ?? GameObject.Find("GhostObjects");
+
+        if (group != null)
         {
-            int lastIdx = activeGhostInstances.Count - 1;
-            if (activeGhostInstances[lastIdx] != null)
+            foreach (Transform child in group.transform)
+                foundList.Add(child.gameObject);
+        }
+        else
+        {
+            var allObjs = FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var o in allObjs)
             {
-                Destroy(activeGhostInstances[lastIdx]);
-            }
-            activeGhostInstances.RemoveAt(lastIdx);
-        }
-
-        // สร้างตัวที่ยังขาด
-        while (activeGhostInstances.Count < targetCount)
-        {
-            int nextIdx = activeGhostInstances.Count;
-            Transform targetPt = (candidatePoints.Count > 0) ? candidatePoints[nextIdx % candidatePoints.Count] : null;
-
-            Vector3 spawnPos = targetPt != null ? targetPt.position : transform.position + new Vector3(1.5f, 0, 1.5f);
-            Quaternion spawnRot = targetPt != null ? targetPt.rotation : Quaternion.identity;
-
-            GameObject newGhost = SpawnGhostObject(spawnPos, spawnRot);
-            activeGhostInstances.Add(newGhost);
-        }
-
-        // จัดตำแหน่งและมุมมองให้สลับสุ่มตาม candidatePoints
-        for (int i = 0; i < activeGhostInstances.Count; i++)
-        {
-            GameObject ghostObj = activeGhostInstances[i];
-            if (ghostObj == null) continue;
-
-            ghostObj.SetActive(true);
-
-            if (candidatePoints.Count > 0)
-            {
-                Transform targetPt = candidatePoints[i % candidatePoints.Count];
-                ghostObj.transform.position = targetPt.position;
-                ghostObj.transform.rotation = targetPt.rotation;
-            }
-        }
-    }
-
-    private GameObject SpawnGhostObject(Vector3 position, Quaternion rotation)
-    {
-        GameObject prefabToUse = null;
-
-        // สุ่มเลือกจาก ghostPrefabs (ถ้ามีหลายท่าทาง) หรือ ghostPrefab หลัก
-        if (ghostPrefabs != null && ghostPrefabs.Length > 0)
-        {
-            var validList = new List<GameObject>();
-            foreach (var p in ghostPrefabs) if (p != null) validList.Add(p);
-            if (validList.Count > 0) prefabToUse = validList[Random.Range(0, validList.Count)];
-        }
-
-        if (prefabToUse == null)
-        {
-            prefabToUse = ghostPrefab;
-        }
-
-        if (prefabToUse != null)
-        {
-            GameObject instantiated = Instantiate(prefabToUse, position, rotation);
-            instantiated.name = $"GhostInstance_{activeGhostInstances.Count + 1}";
-            return instantiated;
-        }
-
-        // Fallback: หากยังไม่ได้ลาก Prefab ใน Inspector ให้สร้างโมเดลเงาผีจำลองขึ้นมาอัตโนมัติ
-        return CreatePlaceholderGhost(position, rotation);
-    }
-
-    /// <summary>
-    /// สุ่มสับเปลี่ยนลำดับจุดเกิด (Fisher-Yates Shuffle) เพื่อให้ผีสลับตำแหน่งกัน
-    /// </summary>
-    private List<Transform> GetShuffledSpawnPoints(bool shuffle)
-    {
-        List<Transform> list = new List<Transform>();
-        if (ghostSpawnPoints != null)
-        {
-            foreach (var pt in ghostSpawnPoints)
-            {
-                if (pt != null) list.Add(pt);
+                if (o != null && o.name.ToLower().Contains("ghost") && !o.name.Contains("Manager") && !o.name.Contains("Canvas"))
+                    foundList.Add(o);
             }
         }
 
-        if (shuffle && list.Count > 1)
+        if (foundList.Count > 0)
         {
-            for (int i = 0; i < list.Count; i++)
-            {
-                int rnd = Random.Range(i, list.Count);
-                Transform temp = list[i];
-                list[i] = list[rnd];
-                list[rnd] = temp;
-            }
+            sceneGhostObjects = foundList.ToArray();
+            Debug.Log($"[GhostCurseManager] 👻 ตรวจพบโมเดลผีในฉากอัตโนมัติ {sceneGhostObjects.Length} ตัว");
         }
-
-        return list;
     }
 
     /// <summary>
@@ -742,5 +777,12 @@ public class GhostCurseManager : MonoBehaviour
         GUI.Label(new Rect(posX - 40f, posY + badgeSize + 2f, badgeSize + 80f, 20f), label, labelStyle);
     }
 
-    // DrawGameOverModal was removed.
+    // ==========================================
+    // ContextMenu สำหรับทดสอบเพิ่ม/ล้างผีใน Inspector
+    // ==========================================
+    [ContextMenu("🧪 ทดสอบ: เพิ่มผี +1 (AttachGhost)")]
+    public void TestAttachGhost() => AttachGhost("ทดสอบจาก Inspector");
+
+    [ContextMenu("🧪 ทดสอบ: ชำระล้างผี -1 (CleanseGhosts)")]
+    public void TestCleanseGhost() => CleanseGhosts(1);
 }

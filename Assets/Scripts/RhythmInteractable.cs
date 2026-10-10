@@ -167,14 +167,22 @@ public class RhythmInteractable : InteractableItem
         {
             QuestUIManager.Instance.FailQuest(q);
         }
-        else if (HallManager.Instance != null && HallManager.Instance.currentActiveNPC != null)
+        else
         {
-            NPCController npc = HallManager.Instance.currentActiveNPC;
-            if (InteractionUIManager.Instance != null)
+            if (GhostCurseManager.Instance != null)
             {
-                InteractionUIManager.Instance.ShowNotification($"<color=#FF3333>[เควสล้มเหลว]</color> {npc.questData?.npcName ?? "NPC"}: \"ไม่เห็นเก่งเลยนี่หว่า... ข้าไปหาคนอื่นดีกว่า!\"", 4.5f);
+                GhostCurseManager.Instance.AttachGhost($"ทำพิธี {itemName} ล้มเหลว");
             }
-            npc.StartLeaving();
+
+            if (HallManager.Instance != null && HallManager.Instance.currentActiveNPC != null)
+            {
+                NPCController npc = HallManager.Instance.currentActiveNPC;
+                if (InteractionUIManager.Instance != null)
+                {
+                    InteractionUIManager.Instance.ShowNotification($"<color=#FF3333>[เควสล้มเหลว]</color> {npc.questData?.npcName ?? "NPC"}: \"ไม่เห็นเก่งเลยนี่หว่า... ข้าไปหาคนอื่นดีกว่า!\"", 4.5f);
+                }
+                npc.StartLeaving();
+            }
         }
 
         Debug.Log($"[RhythmInteractable] ❌ พิธีท่องคาถาพลาดบนวัตถุ '{itemName}'");

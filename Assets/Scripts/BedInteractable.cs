@@ -157,20 +157,22 @@ public class BedInteractable : InteractableItem
         // พักจอมืดสั้นๆ ให้ความรู้สึกเหมือนหลับข้ามคืน
         yield return new WaitForSeconds(0.5f);
 
-        // ประเมินผล Karma ก่อนนอน (ถ้ามี KarmaManager)
-        if (KarmaManager.Instance != null)
-        {
-            KarmaManager.Instance.EvaluateKarmaEnding();
-        }
+        // ปิดจอมืด Fade ก่อนเข้าสู่ขั้นตอนถัดไป เพื่อไม่ให้บังหน้าจอฉากจบ
+        if (fadeImage != null) fadeImage.color = new Color(0f, 0f, 0f, 0f);
+        if (fadeCanvasGO != null) fadeCanvasGO.SetActive(false);
 
-        // 5. สั่ง DayManager ขึ้นวันใหม่
+        // 5. สั่ง DayManager ขึ้นวันใหม่ (หากเป็นวันที่ 2 DayManager จะประเมินและดึงฉากจบให้อัตโนมัติ)
         if (DayManager.Instance != null)
         {
             DayManager.Instance.AdvanceDay();
         }
+        else if (GameEndingManager.Instance != null)
+        {
+            GameEndingManager.Instance.EvaluateDay2Ending();
+        }
         else if (HallManager.Instance != null)
         {
-            // Fallback กรณีไม่มี DayManager ในฉาก
+            // Fallback กรณีไม่มี DayManager หรือ GameEndingManager ในฉาก
             HallManager.Instance.OnNewDay();
         }
 
