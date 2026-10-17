@@ -17,12 +17,17 @@ ModelImporter:
     removeConstantScaleCurves: 0
     motionNodeName: 
     animationImportErrors: 
-    animationImportWarnings: 
+    animationImportWarnings: "\nClip 'Take 001' has import animation warnings that
+      might lower retargeting quality:\nNote: Activate translation DOF on avatar
+      to improve retargeting quality.\n\t'kwanta_rig:l_leg' has translation animation
+      that will be discarded.\n\t'kwanta_rig:r_leg' has translation animation that
+      will be discarded.\n\t'kwanta_rig:body' has translation animation that will
+      be discarded.\n"
     animationRetargetingWarnings: 
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0
     importConstraints: 0
-    animationCompression: 1
+    animationCompression: 3
     animationRotationError: 0.5
     animationPositionError: 0.5
     animationScaleError: 0.5
@@ -111,8 +116,218 @@ ModelImporter:
   importAnimation: 1
   humanDescription:
     serializedVersion: 3
-    human: []
-    skeleton: []
+    human:
+    - boneName: kwanta_rig:core_joint
+      humanName: Hips
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: kwanta_rig:l_thigh
+      humanName: LeftUpperLeg
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: kwanta_rig:r_thigh
+      humanName: RightUpperLeg
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: kwanta_rig:l_leg
+      humanName: LeftLowerLeg
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: kwanta_rig:r_leg
+      humanName: RightLowerLeg
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: kwanta_rig:l_foot
+      humanName: LeftFoot
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: kwanta_rig:r_foot
+      humanName: RightFoot
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: kwanta_rig:body
+      humanName: Spine
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: kwanta_rig:head
+      humanName: Head
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: kwanta_rig:l_shouder
+      humanName: LeftUpperArm
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: kwanta_rig:r_shouder
+      humanName: RightUpperArm
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: kwanta_rig:l_arm
+      humanName: LeftLowerArm
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: kwanta_rig:r_arm
+      humanName: RightLowerArm
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: kwanta_rig:l_hand
+      humanName: LeftHand
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: kwanta_rig:r_hand
+      humanName: RightHand
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    skeleton:
+    - name: kwanta_walk(Clone)
+      parentName: 
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: kwanta_rig:Hair_pony_tail1
+      parentName: kwanta_walk(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: kwanta_rig:core_joint
+      parentName: kwanta_walk(Clone)
+      position: {x: -0, y: 0.028167257, z: -0.0009886861}
+      rotation: {x: -0.012819657, y: -0.7660406, z: 0.010753123, w: 0.6425744}
+      scale: {x: 1.0000001, y: 1, z: 1.0000002}
+    - name: kwanta_rig:l_thigh
+      parentName: kwanta_rig:core_joint
+      position: {x: 0.00023617836, y: -0.002539673, z: 0.0029272574}
+      rotation: {x: -9.3132246e-10, y: -0, z: -0.000000010244547, w: 1}
+      scale: {x: 1.0000001, y: 1, z: 1.0000001}
+    - name: kwanta_rig:l_leg
+      parentName: kwanta_rig:l_thigh
+      position: {x: -0.0005396216, y: -0.011579055, z: -0.00030472063}
+      rotation: {x: -0.0000000018626449, y: -1.7347233e-18, z: -0.00000001862645, w: 1}
+      scale: {x: 1.0000001, y: 0.99999994, z: 1.0000001}
+    - name: kwanta_rig:l_foot
+      parentName: kwanta_rig:l_leg
+      position: {x: -0.000513433, y: -0.012069951, z: -0.00006358208}
+      rotation: {x: -0.0000000018626476, y: 0.00000008940696, z: 0.00000001117587, w: 1}
+      scale: {x: 1, y: 0.9999999, z: 1}
+    - name: kwanta_rig:r_thigh
+      parentName: kwanta_rig:core_joint
+      position: {x: -0.0007856343, y: -0.0025054722, z: -0.0028600683}
+      rotation: {x: 0.17386758, y: -0.005821411, z: 0.9847518, w: 9.3132246e-10}
+      scale: {x: 1, y: 1.0000002, z: 1.0000001}
+    - name: kwanta_rig:r_leg
+      parentName: kwanta_rig:r_thigh
+      position: {x: 0.00053961505, y: 0.011579028, z: 0.00030472534}
+      rotation: {x: 0.0000000027336102, y: 0.000000014949954, z: -0.000000008963979, w: 1}
+      scale: {x: 0.9999999, y: 1, z: 1}
+    - name: kwanta_rig:r_foot
+      parentName: kwanta_rig:r_leg
+      position: {x: 0.00051343656, y: 0.0120699685, z: 0.0000635776}
+      rotation: {x: 0.0000000016192678, y: -5.421618e-11, z: 0.0000000091968095, w: 1}
+      scale: {x: 1, y: 1.0000001, z: 1}
+    - name: kwanta_rig:body
+      parentName: kwanta_rig:core_joint
+      position: {x: 0.000100719095, y: 0.0036095683, z: 0.0000035532903}
+      rotation: {x: -0.0038133273, y: 0.00012746453, z: -0.021598965, w: 0.9997595}
+      scale: {x: 0.9999999, y: 1, z: 0.99999976}
+    - name: kwanta_rig:chest
+      parentName: kwanta_rig:body
+      position: {x: -0.00002392756, y: 0.0045236293, z: 0.00003096396}
+      rotation: {x: -0.00007233862, y: 0.0000027779606, z: -0.00041121314, w: 1}
+      scale: {x: 1, y: 0.99999994, z: 0.9999999}
+    - name: kwanta_rig:l_shouder
+      parentName: kwanta_rig:chest
+      position: {x: -0.000072194525, y: 0.0018962602, z: 0.0041067805}
+      rotation: {x: -0.42001876, y: 0.033528715, z: 0.07282806, w: 0.9039669}
+      scale: {x: 1.0000001, y: 1, z: 0.9999999}
+    - name: kwanta_rig:l_arm
+      parentName: kwanta_rig:l_shouder
+      position: {x: 0.0002548054, y: -0.0056437515, z: 0.0042318287}
+      rotation: {x: -0.017698133, y: -0.042276412, z: -0.050639328, w: 0.9976649}
+      scale: {x: 0.9999999, y: 1, z: 1.0000002}
+    - name: kwanta_rig:l_hand
+      parentName: kwanta_rig:l_arm
+      position: {x: 0.002151318, y: -0.0068506226, z: 0.004967391}
+      rotation: {x: 0.000000010593791, y: -0.00000002933665, z: -0.00000001866146, w: 1}
+      scale: {x: 0.9999999, y: 1.0000001, z: 1}
+    - name: kwanta_rig:r_shouder
+      parentName: kwanta_rig:chest
+      position: {x: -0.0013874425, y: 0.0018918198, z: -0.0041118665}
+      rotation: {x: 0.11898018, y: -0.43192157, z: 0.89402235, w: -0.0034086525}
+      scale: {x: 0.99999976, y: 0.99999946, z: 0.9999996}
+    - name: kwanta_rig:r_arm
+      parentName: kwanta_rig:r_shouder
+      position: {x: -0.00026922228, y: 0.005644269, z: -0.004229275}
+      rotation: {x: -0.008389199, y: -0.020886766, z: -0.025043648, w: 0.999433}
+      scale: {x: 0.9999999, y: 0.9999998, z: 1}
+    - name: kwanta_rig:r_hand
+      parentName: kwanta_rig:r_arm
+      position: {x: -0.0015988856, y: 0.00668165, z: -0.005036968}
+      rotation: {x: -0, y: -0, z: -3.1211632e-16, w: 1}
+      scale: {x: 1, y: 1.0000004, z: 1.0000002}
+    - name: kwanta_rig:head
+      parentName: kwanta_rig:chest
+      position: {x: 0.00023761023, y: 0.007097324, z: -6.016021e-17}
+      rotation: {x: 0.008537768, y: -0.00028612127, z: 0.04835814, w: 0.9987936}
+      scale: {x: 0.9999999, y: 1, z: 1.0000001}
     armTwist: 0.5
     foreArmTwist: 0.5
     upperLegTwist: 0.5
@@ -123,13 +338,13 @@ ModelImporter:
     globalScale: 1
     rootMotionBoneName: 
     hasTranslationDoF: 0
-    hasExtraRoot: 0
+    hasExtraRoot: 1
     skeletonHasParents: 1
   lastHumanDescriptionAvatarSource: {instanceID: 0}
   autoGenerateAvatarMappingIfUnspecified: 1
-  animationType: 2
+  animationType: 3
   humanoidOversampling: 1
-  avatarSetup: 0
+  avatarSetup: 1
   addHumanoidExtraRootOnlyWhenUsingAvatar: 1
   importBlendShapeDeformPercent: 1
   remapMaterialsIfMaterialImportModeIsNone: 0

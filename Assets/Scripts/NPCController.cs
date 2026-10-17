@@ -51,23 +51,169 @@ public class NPCController : MonoBehaviour
     private int currentApproachIndex = 0;
     private int currentExitIndex = 0;
 
+    [Header("Ground & Height Alignment (การจัดระดับพื้น)")]
+    [Tooltip("ติ๊กถูกถ้าจุด Pivot (0,0,0) ของโมเดล 3D อยู่ที่ฝ่าเท้า (ถ้าโมเดลถูกสร้างโดยมี Pivot อยู่ที่เอว ให้เอาติ๊กถูกออก)")]
+    public bool pivotAtFeet = false;
+    [Tooltip("ความสูงชดเชยเพิ่มเติมจากพื้นดิน (หากใส่เป็น 0 ระบบจะคำนวณจากขอบล่างสุดของเท้าโมเดลให้อัตโนมัติ ป้องกันตัวละครจมดิน)")]
+    public float customHeightOffset = 0f;
+
+    [Header("Collider Settings (การตั้งค่า Collider)")]
+    [Tooltip("ตำแหน่ง Center ของ Collider เริ่มต้นในหน่วยเมตรจริง (ค่าเริ่มต้น Z = 1.3 เมตรเพื่อให้ยื่นไปข้างหน้าถึงโต๊ะรับแขกเหมือน NPC เดิม)")]
+    public Vector3 colliderCenterOffset = new Vector3(0, 0, 1.3f);
+
+    [Header("Sitting / Reception Height (การปรับระดับตอนนั่งรับเควส)")]
+    [Tooltip("ระยะลดความสูงเมื่อนั่งลงที่โต๊ะรับแขกในหน่วยเมตรจริง (หากใส่เป็น 0 ระบบจะคำนวณจากระดับเข่า/ขอบล่างของโมเดลให้แตะพื้นพอดีโดยอัตโนมัติ)")]
+    public float sittingHeightOffset = 0f;
+
+    private float currentSittingDrop = 0f;
+    private Coroutine sittingHeightCoroutine;
+
     private float GetNpcHeightOffset()
     {
+        // 1. ถ้าผู้ใช้ระบุ customHeightOffset เอง ให้ใช้ค่านั้นทันที
+        if (customHeightOffset > 0.01f)
+        {
+            return customHeightOffset;
+        }
+
+        // 2. ถ้าติ๊ก pivotAtFeet ยืนยันว่า Pivot อยู่ที่เท้าจริง ให้เป็น 0
+        if (pivotAtFeet)
+        {
+            return 0f;
+        }
+
+        // 3. ตรวจสอบจาก SkinnedMeshRenderer อัตโนมัติ (วัดระยะจากจุด Root ถึงขอบล่างสุดของเท้า)
+        var skinnedMeshes = GetComponentsInChildren<SkinnedMeshRenderer>();
+        if (skinnedMeshes != null && skinnedMeshes.Length > 0)
+        {
+            float maxBelowRoot = 0f;
+            foreach (var smr in skinnedMeshes)
+            {
+                if (smr == null) continue;
+                // ใน World Space: ระยะจากตำแหน่ง Root ถึงขอบล่างสุดของ Bounds
+                float distBelow = transform.position.y - smr.bounds.min.y;
+                if (distBelow > maxBelowRoot)
+                {
+                    maxBelowRoot = distBelow;
+                }
+            }
+
+            // หากเท้าอยู่ต่ำกว่าจุด Root (เช่น โมเดลที่ Pivot อยู่ระดับเอว/สะโพก)
+            // ให้ยกขึ้นมาเท่ากับระยะนั้น เพื่อให้เท้าแตะพื้นพอดี ไม่จมดิน!
+            if (maxBelowRoot > 0.05f && maxBelowRoot < 3.0f)
+            {
+                return maxBelowRoot;
+            }
+        }
+
+        // 4. กรณีเป็น Primitive Capsule แบบดั้งเดิม (Pivot อยู่กึ่งกลางตัว)
         CapsuleCollider capCol = GetComponent<CapsuleCollider>();
         if (capCol != null)
         {
-            return capCol.height * 0.5f * transform.localScale.y;
+            if (capCol.center.y > 0.3f) return 0f;
+
+            float effectiveScaleY = Mathf.Min(Mathf.Abs(transform.localScale.y), 2.0f);
+            float offset = capCol.height * 0.5f * effectiveScaleY;
+            return Mathf.Clamp(offset, 0f, 2.5f);
         }
+
         CharacterController charCol = GetComponent<CharacterController>();
         if (charCol != null)
         {
-            return charCol.height * 0.5f * transform.localScale.y;
+            if (charCol.center.y > 0.3f) return 0f;
+            float effectiveScaleY = Mathf.Min(Mathf.Abs(transform.localScale.y), 2.0f);
+            float offset = charCol.height * 0.5f * effectiveScaleY;
+            return Mathf.Clamp(offset, 0f, 2.5f);
         }
-        return 0.9f; // ค่าตั้งต้นครึ่งความสูงของ Capsule 1.8 เมตร
+
+        return 0.9f;
+    }
+
+    /// <summary>
+    /// ตรวจสอบและปรับขนาด CapsuleCollider ให้ครอบตัวละครพอดีตามสเกลจริง
+    /// ป้องกันปัญหา Collider หลุดลอยไปบนฟ้า หรือไม่มี Collider จนผู้เล่นเล็งกด [E] ไม่ติด
+    /// </summary>
+    private void EnsureProperCollider()
+    {
+        CapsuleCollider capCol = GetComponent<CapsuleCollider>();
+        if (capCol == null)
+        {
+            capCol = gameObject.AddComponent<CapsuleCollider>();
+        }
+
+        float scaleY = Mathf.Max(0.0001f, Mathf.Abs(transform.lossyScale.y));
+        float scaleXZ = Mathf.Max(0.0001f, Mathf.Max(Mathf.Abs(transform.lossyScale.x), Mathf.Abs(transform.lossyScale.z)));
+
+        Vector3 baseCenter = Vector3.zero;
+
+        // ตรวจสอบ Bounds จาก Renderers ทั้งหมดของตัวละคร
+        Renderer[] allRenderers = GetComponentsInChildren<Renderer>();
+        if (allRenderers != null && allRenderers.Length > 0)
+        {
+            Bounds combinedBounds = allRenderers[0].bounds;
+            bool foundValid = false;
+            foreach (var r in allRenderers)
+            {
+                if (r != null && !(r is ParticleSystemRenderer) && r.enabled)
+                {
+                    if (!foundValid)
+                    {
+                        combinedBounds = r.bounds;
+                        foundValid = true;
+                    }
+                    else
+                    {
+                        combinedBounds.Encapsulate(r.bounds);
+                    }
+                }
+            }
+
+            if (foundValid && combinedBounds.size.y > 0.1f)
+            {
+                baseCenter = transform.InverseTransformPoint(combinedBounds.center);
+                capCol.height = Mathf.Max(combinedBounds.size.y / scaleY, 0.8f / scaleY);
+                capCol.radius = Mathf.Clamp(Mathf.Max(combinedBounds.extents.x, combinedBounds.extents.z) / scaleXZ, 0.15f / scaleXZ, 0.5f / scaleXZ);
+            }
+            else
+            {
+                capCol.height = 1.8f / scaleY;
+                capCol.radius = 0.35f / scaleXZ;
+            }
+        }
+        else
+        {
+            capCol.height = 1.8f / scaleY;
+            capCol.radius = 0.35f / scaleXZ;
+        }
+
+        capCol.direction = 1; // Y-Axis
+
+        // ปรับตำแหน่ง Center เริ่มต้นตามค่า offset ในหน่วยเมตรจริง (เช่น Z = 1.3 เมตร หรือ Y ตามที่กำหนด)
+        Vector3 scaledOffset = new Vector3(
+            colliderCenterOffset.x / scaleXZ,
+            colliderCenterOffset.y / scaleY,
+            colliderCenterOffset.z / scaleXZ
+        );
+
+        capCol.center = baseCenter + scaledOffset;
+        capCol.isTrigger = false;
+    }
+
+    private void Awake()
+    {
+        if (animator == null)
+        {
+            animator = GetComponentInChildren<Animator>();
+        }
     }
 
     public void Initialize(QuestData data, Transform reception, Transform exit, Transform player, HallManager manager, NPCWaypointPath approach = null, NPCWaypointPath exitP = null)
     {
+        if (animator == null)
+        {
+            animator = GetComponentInChildren<Animator>();
+        }
+
         this.questData = data != null ? data.Clone() : new QuestData();
 
         this.targetReceptionPoint = reception;
@@ -78,6 +224,9 @@ public class NPCController : MonoBehaviour
         this.exitPath = exitP;
         this.currentApproachIndex = 0;
         this.currentExitIndex = 0;
+
+        // ปรับขนาดและตำแหน่ง Collider ให้ครอบตัวละครพอดีตามสเกลจริง (ทำให้เล็งกด [E] คุยได้ 100%)
+        EnsureProperCollider();
 
         float heightOffset = GetNpcHeightOffset();
 
@@ -124,13 +273,13 @@ public class NPCController : MonoBehaviour
             if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out navHit, 3.5f, UnityEngine.AI.NavMesh.AllAreas))
             {
                 navAgent.enabled = true;
-                navAgent.baseOffset = heightOffset; // ยกโมเดลขึ้นเหนือ NavMesh ให้เท้าแตะพื้นพอดี!
+                navAgent.baseOffset = heightOffset; // ยกโมเดลขึ้นเหนือ NavMesh ให้เท้าแตะพื้นพอดี ไม่จมดิน!
                 navAgent.Warp(navHit.position);    // Snap ตัวละครลงบน NavMesh surface อย่างถูกต้อง
                 navAgent.speed = walkSpeed;
                 navAgent.stoppingDistance = 0.2f;
                 navAgent.isStopped = false;
                 isNavMeshActive = true;
-                Debug.Log($"[NPCController] 🟢 {questData.npcName} เชื่อมต่อกับ NavMesh ในฉากสำเร็จ! (BaseOffset: {heightOffset:F2}, Speed: {walkSpeed})");
+                Debug.Log($"[NPCController] 🟢 {questData.npcName} เชื่อมต่อกับ NavMesh ในฉากสำเร็จ! (BaseOffset: {navAgent.baseOffset:F2}, Speed: {walkSpeed})");
             }
             else
             {
@@ -220,26 +369,30 @@ public class NPCController : MonoBehaviour
 
     private void HandleApproaching()
     {
+        if (currentState != NPCState.Approaching) return;
+
         Vector3 currentTarget = GetNextApproachTarget();
         if (currentTarget == Vector3.zero)
         {
             if (playerTransform != null)
             {
-                SetAnimationWalking(true);
                 MoveTowards(playerTransform.position + playerTransform.forward * 1.5f);
-                if (Vector3.Distance(transform.position, playerTransform.position) <= 2.2f)
+                float distPlayerXZ = Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(playerTransform.position.x, playerTransform.position.z));
+                if (distPlayerXZ <= 2.2f)
                 {
                     ArrivedAtReception();
+                }
+                else
+                {
+                    SetAnimationWalking(true);
                 }
             }
             return;
         }
 
-        SetAnimationWalking(true);
-
-        // เช็คระยะห่างทางกายภาพจริง XZ
+        // เช็คระยะห่างทางกายภาพจริง XZ (ไม่รวมความสูง Y เพื่อป้องกันปัญหาจุดเป้าหมายลอยบนโต๊ะ)
         float distXZ = Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(currentTarget.x, currentTarget.z));
-        float checkDist = Mathf.Max(arrivalDistance, 1.0f);
+        float checkDist = Mathf.Max(arrivalDistance, 1.4f);
 
         if (isNavMeshActive && navAgent != null && navAgent.enabled)
         {
@@ -262,6 +415,10 @@ public class NPCController : MonoBehaviour
                 {
                     AdvanceApproachWaypoint();
                 }
+                else
+                {
+                    SetAnimationWalking(true);
+                }
             }
         }
         else
@@ -270,6 +427,10 @@ public class NPCController : MonoBehaviour
             if (distXZ <= checkDist)
             {
                 AdvanceApproachWaypoint();
+            }
+            else
+            {
+                SetAnimationWalking(true);
             }
         }
     }
@@ -282,6 +443,7 @@ public class NPCController : MonoBehaviour
         if (approachPath != null && currentApproachIndex < approachPath.PointCount)
         {
             Vector3 nextTarget = approachPath.GetPointPosition(currentApproachIndex);
+            SetAnimationWalking(true);
             if (isNavMeshActive && navAgent != null)
             {
                 navAgent.isStopped = false;
@@ -290,14 +452,17 @@ public class NPCController : MonoBehaviour
             return;
         }
 
-        // 2. ถ้าเดินครบทุกจุดใน approachPath แล้ว แต่ยังไม่ถึง targetReceptionPoint -> เดินไปยังโต๊ะรับแขก
+        // 2. ถ้าเดินครบทุกจุดใน approachPath แล้ว หรือไม่มี approachPath:
+        // ให้ตรวจสอบระยะห่างจากโต๊ะรับแขก (คำนวณเฉพาะแกน XZ เท่านั้น ไม่รวมความสูงแกน Y)
         if (targetReceptionPoint != null)
         {
             Vector3 receptionPos = targetReceptionPoint.position;
-            float distToReception = Vector3.Distance(transform.position, receptionPos);
+            float distXZ = Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(receptionPos.x, receptionPos.z));
+            float checkDist = Mathf.Max(arrivalDistance, 1.4f);
             
-            if (distToReception > 1.2f)
+            if (distXZ > checkDist)
             {
+                SetAnimationWalking(true);
                 if (isNavMeshActive && navAgent != null)
                 {
                     navAgent.isStopped = false;
@@ -307,7 +472,7 @@ public class NPCController : MonoBehaviour
             }
         }
 
-        // 3. เมื่อถึงโต๊ะรับแขกเรียบร้อยแล้ว -> สั่ง ArrivedAtReception()
+        // 3. เมื่อถึงโต๊ะรับแขกเรียบร้อยแล้ว -> สั่ง ArrivedAtReception() ทันที!
         ArrivedAtReception();
     }
 
@@ -319,7 +484,11 @@ public class NPCController : MonoBehaviour
         if (isNavMeshActive && navAgent != null && navAgent.enabled)
         {
             navAgent.ResetPath();
+            navAgent.velocity = Vector3.zero;
+            navAgent.isStopped = true;
         }
+
+        Debug.Log($"[NPCController] 🛑 {questData.npcName} เดินมาถึงโต๊ะรับแขกแล้ว! สลับเข้าสู่ท่า Idle และพร้อมรับเควส");
 
         if (greetingSound != null)
         {
@@ -337,7 +506,190 @@ public class NPCController : MonoBehaviour
             InteractionUIManager.Instance.ShowNotification($"{questData.npcName} เดินมาถึงแล้ว (เดินเข้าไปกด [E] เพื่อพูดคุย)", 3.0f);
         }
 
-        // ยืนรอที่โต๊ะรับแขก หันหน้าหาผู้เล่น จนกว่าผู้เล่นจะเดินมากด [E] คุยด้วยตัวเอง
+        // ปรับระดับความสูงลงให้นั่งคุกเข่าติดพื้นพอดี โดยที่ Collider ยังคงตำแหน่งเดิมใน World Space 100%
+        if (sittingHeightCoroutine != null) StopCoroutine(sittingHeightCoroutine);
+        sittingHeightCoroutine = StartCoroutine(AdjustSittingHeightRoutine());
+    }
+
+    private float GetKneeWorldY()
+    {
+        Transform leftKnee = null;
+        Transform rightKnee = null;
+
+        if (animator != null)
+        {
+            if (animator.isHuman)
+            {
+                leftKnee = animator.GetBoneTransform(HumanBodyBones.LeftLowerLeg);
+                rightKnee = animator.GetBoneTransform(HumanBodyBones.RightLowerLeg);
+            }
+
+            if (leftKnee == null || rightKnee == null)
+            {
+                foreach (Transform t in GetComponentsInChildren<Transform>())
+                {
+                    string nameLower = t.name.ToLower();
+                    if (leftKnee == null && (nameLower.Contains("l_leg") || nameLower.Contains("leftleg") || nameLower.Contains("knee_l") || nameLower.Contains("l_knee") || nameLower.Contains("shin_l")))
+                    {
+                        leftKnee = t;
+                    }
+                    if (rightKnee == null && (nameLower.Contains("r_leg") || nameLower.Contains("rightleg") || nameLower.Contains("knee_r") || nameLower.Contains("r_knee") || nameLower.Contains("shin_r")))
+                    {
+                        rightKnee = t;
+                    }
+                }
+            }
+        }
+
+        if (leftKnee != null && rightKnee != null)
+        {
+            return Mathf.Min(leftKnee.position.y, rightKnee.position.y);
+        }
+        else if (leftKnee != null)
+        {
+            return leftKnee.position.y;
+        }
+        else if (rightKnee != null)
+        {
+            return rightKnee.position.y;
+        }
+
+        return float.MinValue;
+    }
+
+    private IEnumerator AdjustSittingHeightRoutine()
+    {
+        // รอให้ Animator เบลนด์จากท่าเดินเข้าสู่ท่าคุกเข่า (Idle) ให้สมบูรณ์ก่อนวัดตำแหน่งข้อเข่า
+        yield return new WaitForSeconds(0.25f);
+
+        CapsuleCollider capCol = GetComponent<CapsuleCollider>();
+        float scaleY = Mathf.Max(0.0001f, Mathf.Abs(transform.lossyScale.y));
+
+        // 1. หาความสูงของพื้นดินหรือเบาะใต้ตัวละคร
+        float floorY = transform.position.y - GetNpcHeightOffset();
+        RaycastHit[] hits = Physics.RaycastAll(transform.position + Vector3.up * 1.5f, Vector3.down, 4f);
+        System.Array.Sort(hits, (a, b) => b.point.y.CompareTo(a.point.y));
+        foreach (var h in hits)
+        {
+            if (h.transform != transform && !h.transform.IsChildOf(transform) && !h.collider.isTrigger)
+            {
+                if (h.point.y <= transform.position.y + 0.15f)
+                {
+                    floorY = h.point.y;
+                    break;
+                }
+            }
+        }
+
+        // 2. คำนวณระยะที่โมเดลต้องลดระดับลง
+        float targetDrop = 0f;
+        if (sittingHeightOffset > 0.01f)
+        {
+            targetDrop = sittingHeightOffset;
+        }
+        else
+        {
+            float kneeY = GetKneeWorldY();
+            if (kneeY > float.MinValue + 1f)
+            {
+                // สำหรับโมเดล Rigged Humanoid: วัดระยะจากระดับหัวเข่าจริงใน World Space ถึงระดับพื้น
+                float kneeRadius = 0.06f; // รัศมีเนื้อเข่าถึงพื้นผิวสัมผัส
+                float kneeBottomY = kneeY - kneeRadius;
+                float kneeGap = kneeBottomY - floorY;
+
+                if (kneeGap > 0.03f)
+                {
+                    targetDrop = kneeGap;
+                }
+                else
+                {
+                    targetDrop = 0.45f;
+                }
+            }
+            else
+            {
+                // สำหรับโมเดลที่ไม่มีกระดูกเข่า (เช่น Capsule หรือ NPC ตัวพิเศษ)
+                targetDrop = 0.42f;
+            }
+
+            targetDrop = Mathf.Clamp(targetDrop, 0.15f, 0.85f);
+        }
+
+        Debug.Log($"[NPCController] 🧘 ปรับระดับท่านั่งคุกเข่า '{questData?.npcName}': floorY={floorY:F2}, targetDrop={targetDrop:F2}");
+
+        // 3. ปรับลดระดับความสูงลงอย่างนุ่มนวล พร้อมชดเชยตำแหน่ง Center และ Height ของ Collider
+        // เพื่อให้ตำแหน่ง Collider ใน World Space ยังอยู่ที่เดิม 100% ผู้เล่นที่นั่งโต๊ะจึงกด [E] คุยได้เหมือนเดิม
+        float elapsed = 0f;
+        float duration = 0.25f;
+        float startY = transform.position.y;
+        float targetY = startY - targetDrop;
+
+        Vector3 startColCenter = capCol != null ? capCol.center : Vector3.zero;
+        float startColHeight = capCol != null ? capCol.height : 0f;
+
+        currentSittingDrop = targetDrop;
+
+        while (elapsed < duration && currentState != NPCState.Leaving && currentState != NPCState.Finished)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
+            float curY = Mathf.Lerp(startY, targetY, t);
+            transform.position = new Vector3(transform.position.x, curY, transform.position.z);
+
+            float currentLowered = targetDrop * t;
+            if (capCol != null)
+            {
+                capCol.center = new Vector3(startColCenter.x, startColCenter.y + (currentLowered / scaleY), startColCenter.z);
+                capCol.height = startColHeight + (currentLowered / scaleY);
+            }
+
+            if (navAgent != null && navAgent.enabled)
+            {
+                navAgent.baseOffset = GetNpcHeightOffset() - currentLowered;
+            }
+
+            yield return null;
+        }
+
+        if (currentState != NPCState.Leaving && currentState != NPCState.Finished)
+        {
+            transform.position = new Vector3(transform.position.x, targetY, transform.position.z);
+            if (capCol != null)
+            {
+                capCol.center = new Vector3(startColCenter.x, startColCenter.y + (targetDrop / scaleY), startColCenter.z);
+                capCol.height = startColHeight + (targetDrop / scaleY);
+            }
+            if (navAgent != null && navAgent.enabled)
+            {
+                navAgent.baseOffset = GetNpcHeightOffset() - targetDrop;
+            }
+        }
+
+        sittingHeightCoroutine = null;
+    }
+
+    private void RestoreStandingHeight()
+    {
+        if (currentSittingDrop > 0.001f)
+        {
+            CapsuleCollider capCol = GetComponent<CapsuleCollider>();
+            float scaleY = Mathf.Max(0.0001f, Mathf.Abs(transform.lossyScale.y));
+
+            transform.position = new Vector3(transform.position.x, transform.position.y + currentSittingDrop, transform.position.z);
+
+            if (capCol != null)
+            {
+                capCol.center = new Vector3(capCol.center.x, capCol.center.y - (currentSittingDrop / scaleY), capCol.center.z);
+                capCol.height = Mathf.Max(0.1f, capCol.height - (currentSittingDrop / scaleY));
+            }
+
+            if (navAgent != null && navAgent.enabled)
+            {
+                navAgent.baseOffset = GetNpcHeightOffset();
+            }
+
+            currentSittingDrop = 0f;
+        }
     }
 
     private void HandleWaitingAtReception()
@@ -414,6 +766,7 @@ public class NPCController : MonoBehaviour
 
         // ยังไม่ได้รับเควส -> เปิดหน้าต่าง Dialog
         currentState = NPCState.InDialogue;
+        SetAnimationWalking(false);
         SetAnimationTalking(true);
 
         if (QuestUIManager.Instance != null)
@@ -539,6 +892,7 @@ public class NPCController : MonoBehaviour
     {
         questData.isAccepted = true;
         SetAnimationTalking(false);
+        SetAnimationWalking(false);
 
         // NPC เปลี่ยนสถานะเป็นยืนรอผู้เล่นทำภารกิจและนำผลลัพธ์มาส่งมอบ
         currentState = NPCState.WaitingForDelivery;
@@ -640,6 +994,13 @@ public class NPCController : MonoBehaviour
         currentExitIndex = 0;
         SetAnimationWalking(true);
 
+        if (sittingHeightCoroutine != null)
+        {
+            StopCoroutine(sittingHeightCoroutine);
+            sittingHeightCoroutine = null;
+        }
+        RestoreStandingHeight();
+
         // ปิดการ Interact ระหว่างกำลังเดินออก
         if (interactItem != null)
         {
@@ -734,9 +1095,10 @@ public class NPCController : MonoBehaviour
         if (targetExitPoint != null)
         {
             Vector3 exitPos = targetExitPoint.position;
-            float distToExit = Vector3.Distance(transform.position, exitPos);
+            float distXZ = Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(exitPos.x, exitPos.z));
+            float checkDist = Mathf.Max(arrivalDistance, 1.5f);
             
-            if (distToExit > 1.2f)
+            if (distXZ > checkDist)
             {
                 if (isNavMeshActive && navAgent != null)
                 {
@@ -802,17 +1164,62 @@ public class NPCController : MonoBehaviour
 
     private void SetAnimationWalking(bool walking)
     {
-        if (animator != null && !string.IsNullOrEmpty(walkAnimParam))
+        if (animator == null)
         {
-            animator.SetBool(walkAnimParam, walking);
+            animator = GetComponentInChildren<Animator>();
+        }
+
+        if (animator != null)
+        {
+            // ตรวจหา Parameter แบบไม่สนตัวพิมพ์เล็ก-ใหญ่ (isWalking / IsWalking)
+            string targetParam = walkAnimParam;
+            if (animator.parameters != null)
+            {
+                foreach (var p in animator.parameters)
+                {
+                    if (p.type == AnimatorControllerParameterType.Bool &&
+                        string.Equals(p.name, walkAnimParam, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        targetParam = p.name;
+                        break;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(targetParam))
+            {
+                animator.SetBool(targetParam, walking);
+            }
         }
     }
 
     private void SetAnimationTalking(bool talking)
     {
-        if (animator != null && !string.IsNullOrEmpty(talkAnimParam))
+        if (animator == null)
         {
-            animator.SetBool(talkAnimParam, talking);
+            animator = GetComponentInChildren<Animator>();
+        }
+
+        if (animator != null)
+        {
+            string targetParam = talkAnimParam;
+            if (animator.parameters != null)
+            {
+                foreach (var p in animator.parameters)
+                {
+                    if (p.type == AnimatorControllerParameterType.Bool &&
+                        string.Equals(p.name, talkAnimParam, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        targetParam = p.name;
+                        break;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(targetParam))
+            {
+                animator.SetBool(targetParam, talking);
+            }
         }
     }
 }

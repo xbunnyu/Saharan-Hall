@@ -57,17 +57,126 @@ public class MerchantNPCController : MonoBehaviour
     private bool isSubscribedToShopClose = false;
     private bool hasOpenedShop = false;
 
+    [Header("Ground & Height Alignment (การจัดระดับพื้น)")]
+    [Tooltip("ติ๊กถูกถ้าจุด Pivot (0,0,0) ของโมเดล 3D อยู่ที่ฝ่าเท้า")]
+    public bool pivotAtFeet = false;
+    [Tooltip("ความสูงชดเชยเพิ่มเติมจากพื้นดิน (ปกติคือ 0)")]
+    public float customHeightOffset = 0f;
+
+    [Header("Collider Settings")]
+    [Tooltip("ตำแหน่ง Center ของ Collider เริ่มต้นในหน่วยเมตรจริง")]
+    public Vector3 colliderCenterOffset = new Vector3(0, 0, 1.3f);
+
+    [Header("Sitting / Reception Height")]
+    [Tooltip("ระยะลดความสูงเมื่อนั่งลงที่โต๊ะรับแขกในหน่วยเมตรจริง (หากใส่เป็น 0 ระบบจะคำนวณจากระดับเข่า/ขอบล่างของโมเดลให้แตะพื้นพอดีโดยอัตโนมัติ)")]
+    public float sittingHeightOffset = 0f;
+
+    private float currentSittingDrop = 0f;
+    private Coroutine sittingHeightCoroutine;
+
     private float GetNpcHeightOffset()
     {
+        bool isHumanoidRig = pivotAtFeet || GetComponentInChildren<SkinnedMeshRenderer>() != null;
+        if (isHumanoidRig) return customHeightOffset;
+
         CapsuleCollider capCol = GetComponent<CapsuleCollider>();
-        if (capCol != null) return capCol.height * 0.5f * transform.localScale.y;
+        if (capCol != null)
+        {
+            if (capCol.center.y > 0.3f) return customHeightOffset;
+            float effectiveScaleY = Mathf.Min(Mathf.Abs(transform.localScale.y), 2.0f);
+            float offset = capCol.height * 0.5f * effectiveScaleY;
+            return Mathf.Clamp(offset + customHeightOffset, 0f, 2.5f);
+        }
+
         CharacterController charCol = GetComponent<CharacterController>();
-        if (charCol != null) return charCol.height * 0.5f * transform.localScale.y;
-        return 0.9f;
+        if (charCol != null)
+        {
+            if (charCol.center.y > 0.3f) return customHeightOffset;
+            float effectiveScaleY = Mathf.Min(Mathf.Abs(transform.localScale.y), 2.0f);
+            float offset = charCol.height * 0.5f * effectiveScaleY;
+            return Mathf.Clamp(offset + customHeightOffset, 0f, 2.5f);
+        }
+
+        return customHeightOffset > 0 ? customHeightOffset : 0.9f;
+    }
+
+    private void EnsureProperCollider()
+    {
+        CapsuleCollider capCol = GetComponent<CapsuleCollider>();
+        if (capCol == null)
+        {
+            capCol = gameObject.AddComponent<CapsuleCollider>();
+        }
+
+        float scaleY = Mathf.Max(0.0001f, Mathf.Abs(transform.lossyScale.y));
+        float scaleXZ = Mathf.Max(0.0001f, Mathf.Max(Mathf.Abs(transform.lossyScale.x), Mathf.Abs(transform.lossyScale.z)));
+
+        Vector3 baseCenter = Vector3.zero;
+
+        Renderer[] allRenderers = GetComponentsInChildren<Renderer>();
+        if (allRenderers != null && allRenderers.Length > 0)
+        {
+            Bounds combinedBounds = allRenderers[0].bounds;
+            bool foundValid = false;
+            foreach (var r in allRenderers)
+            {
+                if (r != null && !(r is ParticleSystemRenderer) && r.enabled)
+                {
+                    if (!foundValid)
+                    {
+                        combinedBounds = r.bounds;
+                        foundValid = true;
+                    }
+                    else
+                    {
+                        combinedBounds.Encapsulate(r.bounds);
+                    }
+                }
+            }
+
+            if (foundValid && combinedBounds.size.y > 0.1f)
+            {
+                baseCenter = transform.InverseTransformPoint(combinedBounds.center);
+                capCol.height = Mathf.Max(combinedBounds.size.y / scaleY, 0.8f / scaleY);
+                capCol.radius = Mathf.Clamp(Mathf.Max(combinedBounds.extents.x, combinedBounds.extents.z) / scaleXZ, 0.15f / scaleXZ, 0.5f / scaleXZ);
+            }
+            else
+            {
+                capCol.height = 1.8f / scaleY;
+                capCol.radius = 0.35f / scaleXZ;
+            }
+        }
+        else
+        {
+            capCol.height = 1.8f / scaleY;
+            capCol.radius = 0.35f / scaleXZ;
+        }
+
+        capCol.direction = 1;
+        Vector3 scaledOffset = new Vector3(
+            colliderCenterOffset.x / scaleXZ,
+            colliderCenterOffset.y / scaleY,
+            colliderCenterOffset.z / scaleXZ
+        );
+        capCol.center = baseCenter + scaledOffset;
+        capCol.isTrigger = false;
+    }
+
+    private void Awake()
+    {
+        if (animator == null)
+        {
+            animator = GetComponentInChildren<Animator>();
+        }
     }
 
     public void Initialize(Transform reception, Transform exit, Transform player, HallManager manager, NPCWaypointPath approach = null, NPCWaypointPath exitP = null)
     {
+        if (animator == null)
+        {
+            animator = GetComponentInChildren<Animator>();
+        }
+
         this.targetReceptionPoint = reception;
         this.targetExitPoint = exit;
         this.playerTransform = player;
@@ -76,6 +185,8 @@ public class MerchantNPCController : MonoBehaviour
         this.exitPath = exitP;
         this.currentApproachIndex = 0;
         this.currentExitIndex = 0;
+
+        EnsureProperCollider();
 
         float heightOffset = GetNpcHeightOffset();
 
@@ -264,9 +375,11 @@ public class MerchantNPCController : MonoBehaviour
         if (targetReceptionPoint != null)
         {
             Vector3 receptionPos = targetReceptionPoint.position;
-            float distToReception = Vector3.Distance(transform.position, receptionPos);
-            if (distToReception > 1.2f)
+            float distXZ = Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(receptionPos.x, receptionPos.z));
+            float checkDist = Mathf.Max(arrivalDistance, 1.4f);
+            if (distXZ > checkDist)
             {
+                SetAnimationWalking(true);
                 if (isNavMeshActive && navAgent != null)
                 {
                     navAgent.isStopped = false;
@@ -287,6 +400,8 @@ public class MerchantNPCController : MonoBehaviour
         if (isNavMeshActive && navAgent != null && navAgent.enabled)
         {
             navAgent.ResetPath();
+            navAgent.velocity = Vector3.zero;
+            navAgent.isStopped = true;
         }
 
         if (greetingSound != null)
@@ -297,6 +412,184 @@ public class MerchantNPCController : MonoBehaviour
         if (InteractionUIManager.Instance != null)
         {
             InteractionUIManager.Instance.ShowNotification($"<color=#FFD700>🛒 {merchantName} เดินทางมาถึงแล้ว!</color> (เดินเข้าไปกด [E] เพื่อเปิดร้านค้า)", 3.5f);
+        }
+
+        // ปรับระดับความสูงลงให้นั่งคุกเข่าติดพื้นพอดี โดยที่ Collider ยังคงตำแหน่งเดิมใน World Space 100%
+        if (sittingHeightCoroutine != null) StopCoroutine(sittingHeightCoroutine);
+        sittingHeightCoroutine = StartCoroutine(AdjustSittingHeightRoutine());
+    }
+
+    private float GetKneeWorldY()
+    {
+        Transform leftKnee = null;
+        Transform rightKnee = null;
+
+        if (animator != null)
+        {
+            if (animator.isHuman)
+            {
+                leftKnee = animator.GetBoneTransform(HumanBodyBones.LeftLowerLeg);
+                rightKnee = animator.GetBoneTransform(HumanBodyBones.RightLowerLeg);
+            }
+
+            if (leftKnee == null || rightKnee == null)
+            {
+                foreach (Transform t in GetComponentsInChildren<Transform>())
+                {
+                    string nameLower = t.name.ToLower();
+                    if (leftKnee == null && (nameLower.Contains("l_leg") || nameLower.Contains("leftleg") || nameLower.Contains("knee_l") || nameLower.Contains("l_knee") || nameLower.Contains("shin_l")))
+                    {
+                        leftKnee = t;
+                    }
+                    if (rightKnee == null && (nameLower.Contains("r_leg") || nameLower.Contains("rightleg") || nameLower.Contains("knee_r") || nameLower.Contains("r_knee") || nameLower.Contains("shin_r")))
+                    {
+                        rightKnee = t;
+                    }
+                }
+            }
+        }
+
+        if (leftKnee != null && rightKnee != null)
+        {
+            return Mathf.Min(leftKnee.position.y, rightKnee.position.y);
+        }
+        else if (leftKnee != null)
+        {
+            return leftKnee.position.y;
+        }
+        else if (rightKnee != null)
+        {
+            return rightKnee.position.y;
+        }
+
+        return float.MinValue;
+    }
+
+    private IEnumerator AdjustSittingHeightRoutine()
+    {
+        yield return new WaitForSeconds(0.25f);
+
+        CapsuleCollider capCol = GetComponent<CapsuleCollider>();
+        float scaleY = Mathf.Max(0.0001f, Mathf.Abs(transform.lossyScale.y));
+
+        float floorY = transform.position.y - GetNpcHeightOffset();
+        RaycastHit[] hits = Physics.RaycastAll(transform.position + Vector3.up * 1.5f, Vector3.down, 4f);
+        System.Array.Sort(hits, (a, b) => b.point.y.CompareTo(a.point.y));
+        foreach (var h in hits)
+        {
+            if (h.transform != transform && !h.transform.IsChildOf(transform) && !h.collider.isTrigger)
+            {
+                if (h.point.y <= transform.position.y + 0.15f)
+                {
+                    floorY = h.point.y;
+                    break;
+                }
+            }
+        }
+
+        float targetDrop = 0f;
+        if (sittingHeightOffset > 0.01f)
+        {
+            targetDrop = sittingHeightOffset;
+        }
+        else
+        {
+            float kneeY = GetKneeWorldY();
+            if (kneeY > float.MinValue + 1f)
+            {
+                float kneeRadius = 0.06f;
+                float kneeBottomY = kneeY - kneeRadius;
+                float kneeGap = kneeBottomY - floorY;
+
+                if (kneeGap > 0.03f)
+                {
+                    targetDrop = kneeGap;
+                }
+                else
+                {
+                    targetDrop = 0.45f;
+                }
+            }
+            else
+            {
+                targetDrop = 0.42f;
+            }
+
+            targetDrop = Mathf.Clamp(targetDrop, 0.15f, 0.85f);
+        }
+
+        Debug.Log($"[MerchantNPCController] 🧘 ปรับระดับท่านั่งคุกเข่า '{merchantName}': floorY={floorY:F2}, targetDrop={targetDrop:F2}");
+
+        float elapsed = 0f;
+        float duration = 0.25f;
+        float startY = transform.position.y;
+        float targetY = startY - targetDrop;
+
+        Vector3 startColCenter = capCol != null ? capCol.center : Vector3.zero;
+        float startColHeight = capCol != null ? capCol.height : 0f;
+
+        currentSittingDrop = targetDrop;
+
+        while (elapsed < duration && currentState != MerchantState.Leaving && currentState != MerchantState.Finished)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
+            float curY = Mathf.Lerp(startY, targetY, t);
+            transform.position = new Vector3(transform.position.x, curY, transform.position.z);
+
+            float currentLowered = targetDrop * t;
+            if (capCol != null)
+            {
+                capCol.center = new Vector3(startColCenter.x, startColCenter.y + (currentLowered / scaleY), startColCenter.z);
+                capCol.height = startColHeight + (currentLowered / scaleY);
+            }
+
+            if (navAgent != null && navAgent.enabled)
+            {
+                navAgent.baseOffset = GetNpcHeightOffset() - currentLowered;
+            }
+
+            yield return null;
+        }
+
+        if (currentState != MerchantState.Leaving && currentState != MerchantState.Finished)
+        {
+            transform.position = new Vector3(transform.position.x, targetY, transform.position.z);
+            if (capCol != null)
+            {
+                capCol.center = new Vector3(startColCenter.x, startColCenter.y + (targetDrop / scaleY), startColCenter.z);
+                capCol.height = startColHeight + (targetDrop / scaleY);
+            }
+            if (navAgent != null && navAgent.enabled)
+            {
+                navAgent.baseOffset = GetNpcHeightOffset() - targetDrop;
+            }
+        }
+
+        sittingHeightCoroutine = null;
+    }
+
+    private void RestoreStandingHeight()
+    {
+        if (currentSittingDrop > 0.001f)
+        {
+            CapsuleCollider capCol = GetComponent<CapsuleCollider>();
+            float scaleY = Mathf.Max(0.0001f, Mathf.Abs(transform.lossyScale.y));
+
+            transform.position = new Vector3(transform.position.x, transform.position.y + currentSittingDrop, transform.position.z);
+
+            if (capCol != null)
+            {
+                capCol.center = new Vector3(capCol.center.x, capCol.center.y - (currentSittingDrop / scaleY), capCol.center.z);
+                capCol.height = Mathf.Max(0.1f, capCol.height - (currentSittingDrop / scaleY));
+            }
+
+            if (navAgent != null && navAgent.enabled)
+            {
+                navAgent.baseOffset = GetNpcHeightOffset();
+            }
+
+            currentSittingDrop = 0f;
         }
     }
 
@@ -364,6 +657,13 @@ public class MerchantNPCController : MonoBehaviour
 
         currentState = MerchantState.Leaving;
         currentExitIndex = 0;
+
+        if (sittingHeightCoroutine != null)
+        {
+            StopCoroutine(sittingHeightCoroutine);
+            sittingHeightCoroutine = null;
+        }
+        RestoreStandingHeight();
 
         if (interactItem != null)
         {
@@ -502,8 +802,9 @@ public class MerchantNPCController : MonoBehaviour
         if (targetExitPoint != null)
         {
             Vector3 exitPos = targetExitPoint.position;
-            float distToExit = Vector3.Distance(transform.position, exitPos);
-            if (distToExit > 1.2f)
+            float distXZ = Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(exitPos.x, exitPos.z));
+            float checkDist = Mathf.Max(arrivalDistance, 1.5f);
+            if (distXZ > checkDist)
             {
                 if (isNavMeshActive && navAgent != null)
                 {
@@ -562,9 +863,31 @@ public class MerchantNPCController : MonoBehaviour
 
     private void SetAnimationWalking(bool isWalking)
     {
-        if (animator != null && !string.IsNullOrEmpty(walkAnimParam))
+        if (animator == null)
         {
-            animator.SetBool(walkAnimParam, isWalking);
+            animator = GetComponentInChildren<Animator>();
+        }
+
+        if (animator != null)
+        {
+            string targetParam = walkAnimParam;
+            if (animator.parameters != null)
+            {
+                foreach (var p in animator.parameters)
+                {
+                    if (p.type == AnimatorControllerParameterType.Bool &&
+                        string.Equals(p.name, walkAnimParam, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        targetParam = p.name;
+                        break;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(targetParam))
+            {
+                animator.SetBool(targetParam, isWalking);
+            }
         }
     }
 
