@@ -1578,6 +1578,12 @@ MonoBehaviour:
   onCollect:
     m_PersistentCalls:
       m_Calls: []
+  isImportantItem: 1
+  highlightTriggerMode: 1
+  glowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  enablePointLightGlow: 1
+  enableSparkles: 1
+  showImportantBadgeInUI: 1
 --- !u!4 &91687265 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f36e8aea353d990479186e86961bf790, type: 3}
@@ -1604,6 +1610,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.0610563, y: 0.019391133, z: 0.05251287}
   m_Center: {x: -0.0046229414, y: 0, z: 0.016484328}
+--- !u!114 &91687269
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 91687261}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db4857c79d673d94da66b7e3f365e08d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemHighlighter
+  isHighlightActive: 1
+  triggerMode: 1
+  glowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  enableMeshEmission: 1
+  minEmissionIntensity: 0.4
+  maxEmissionIntensity: 1.8
+  pulseSpeed: 1.2
+  hoverBrightnessMultiplier: 1.6
+  enablePointLight: 1
+  pointLightRange: 2
+  minLightIntensity: 0.5
+  maxLightIntensity: 1.8
+  enableSparkles: 1
+  sparkleRate: 5
+  maxEffectDistance: 18
+  proximityDistance: 7
+  enableGentleFloating: 0
+  floatAmplitude: 0.05
+  floatFrequency: 1.5
 --- !u!4 &92426809 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: abcde1a78709b7543b8d7eb943d78ed0, type: 3}
@@ -1795,6 +1832,12 @@ MonoBehaviour:
   onCollect:
     m_PersistentCalls:
       m_Calls: []
+  isImportantItem: 0
+  highlightTriggerMode: 1
+  glowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  enablePointLightGlow: 1
+  enableSparkles: 1
+  showImportantBadgeInUI: 1
   difficulty: 0
   customNoteCount: 0
   customNoteSpeed: 0
@@ -11102,7 +11145,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 
+  m_text: "\u0E01\u0E14\u0E14\u0E01\u0E14\u0E01\u0E14\u0E01\u0E49\u0E14\u0E01\u0E49\u0E14\u0E23\u0E49\u0E48\u0E1F\u0E34\u0E48\u0E1F\u0E01\u0E48\u0E48\u0E48\u0E48\u0E48\u0E01\u0E2B\u0E01\u0E2B\u0E01\u0E2B\u0E01\u0E01\u0E2B\u0E01"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -11413,7 +11456,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 
+  m_text: "\u0E2B\u0E14\u0E01\u0E14\u0E01\u0E14"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5733287fdbe0e6744b9077a70dc04b85, type: 2}
   m_sharedMaterial: {fileID: 5785673611050665618, guid: 5733287fdbe0e6744b9077a70dc04b85, type: 2}
@@ -11447,7 +11490,7 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
-  m_HorizontalAlignment: 1
+  m_HorizontalAlignment: 2
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
@@ -11479,7 +11522,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: -126.29969, w: -101.38924}
+  m_margin: {x: -419.0996, y: -175.26991, z: -383.52448, w: -101.38924}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -16270,6 +16313,12 @@ MonoBehaviour:
   onCollect:
     m_PersistentCalls:
       m_Calls: []
+  isImportantItem: 0
+  highlightTriggerMode: 1
+  glowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  enablePointLightGlow: 1
+  enableSparkles: 1
+  showImportantBadgeInUI: 1
   minHits: 3
   maxHits: 5
   disableAfterSuccess: 0
@@ -18337,6 +18386,12 @@ MonoBehaviour:
   onCollect:
     m_PersistentCalls:
       m_Calls: []
+  isImportantItem: 0
+  highlightTriggerMode: 1
+  glowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  enablePointLightGlow: 1
+  enableSparkles: 1
+  showImportantBadgeInUI: 1
   targetSceneName: Forest
   targetSpawnPointName: ForestCarSpawn
   fadeDuration: 0.8
@@ -18872,6 +18927,208 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 2686ddc004206034da23272601eb0c00, type: 3}
   m_PrefabInstance: {fileID: 656885254}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1078906926
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1078906931}
+  - component: {fileID: 1078906930}
+  - component: {fileID: 1078906929}
+  - component: {fileID: 1078906928}
+  - component: {fileID: 1078906927}
+  m_Layer: 0
+  m_Name: News
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1078906927
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078906926}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97144475f09d62c49a9619c6761d6e60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DailyNewsBulletin
+  itemName: "\u0E08\u0E14\u0E2B\u0E21\u0E32\u0E22\u0E23\u0E32\u0E22\u0E27\u0E31\u0E19"
+  itemIcon: {fileID: 0}
+  itemDescription: "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E44\u0E2D\u0E40\u0E17\u0E21\u0E40\u0E21\u0E37\u0E48\u0E2D\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E01\u0E23\u0E30\u0E40\u0E1B\u0E4B\u0E32..."
+  canRead: 1
+  interactionKeyText: E
+  customReadPromptText: 
+  readTitle: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E2D\u0E40\u0E17\u0E21"
+  readDescription: "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E17\u0E35\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E43\u0E2B\u0E49\u0E2D\u0E48\u0E32\u0E19..."
+  canCollect: 0
+  destroyOnCollect: 0
+  isUsable: 0
+  useSound: {fileID: 0}
+  onUse:
+    m_PersistentCalls:
+      m_Calls: []
+  worldPrefab: {fileID: 0}
+  holdOffset: {x: 0.3, y: -0.25, z: 0.5}
+  holdRotation: {x: 0, y: 0, z: 0}
+  holdScale: {x: 1, y: 1, z: 1}
+  requireHeldItem: 0
+  requiredItemName: 
+  consumeHeldItemOnUse: 1
+  isPlacementSocket: 0
+  socketAttachPoint: {fileID: 0}
+  useWithHeldItemSound: {fileID: 0}
+  onUsedWithHeldItem:
+    m_PersistentCalls:
+      m_Calls: []
+  readSound: {fileID: 0}
+  collectSound: {fileID: 0}
+  onRead:
+    m_PersistentCalls:
+      m_Calls: []
+  onCollect:
+    m_PersistentCalls:
+      m_Calls: []
+  isImportantItem: 0
+  highlightTriggerMode: 1
+  glowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  enablePointLightGlow: 1
+  enableSparkles: 1
+  showImportantBadgeInUI: 1
+  displayMode: 0
+  fixedTargetDay: 1
+  fallbackNoNewsText: "\u0E44\u0E21\u0E48\u0E21\u0E35\u0E02\u0E48\u0E32\u0E27\u0E2A\u0E32\u0E23\u0E2B\u0E23\u0E37\u0E2D\u0E1B\u0E23\u0E30\u0E01\u0E32\u0E28\u0E43\u0E2B\u0E21\u0E48\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E27\u0E31\u0E19\u0E19\u0E35\u0E49..."
+  dailyNewsList:
+  - targetDay: 1
+    publicationTitle: "\u0E2B\u0E19\u0E31\u0E07\u0E2A\u0E37\u0E2D\u0E1E\u0E34\u0E21\u0E1E\u0E4C\u0E17\u0E49\u0E2D\u0E07\u0E16\u0E34\u0E48\u0E19
+      - \u0E09\u0E1A\u0E31\u0E1A\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48 1"
+    headline: "\u0E22\u0E34\u0E19\u0E14\u0E35\u0E15\u0E49\u0E2D\u0E19\u0E23\u0E31\u0E1A\u0E2A\u0E39\u0E48\u0E15\u0E33\u0E2B\u0E19\u0E31\u0E01\u0E2A\u0E32\u0E2E\u0E32\u0E23\u0E31\u0E19"
+    newsStory: "\u0E15\u0E33\u0E2B\u0E19\u0E31\u0E01\u0E40\u0E1B\u0E34\u0E14\u0E23\u0E31\u0E1A\u0E1C\u0E39\u0E49\u0E21\u0E32\u0E40\u0E22\u0E37\u0E2D\u0E19\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E2A\u0E30\u0E2A\u0E21\u0E1A\u0E38\u0E0D\u0E1A\u0E32\u0E23\u0E21\u0E35\u0E41\u0E25\u0E30\u0E02\u0E08\u0E31\u0E14\u0E1B\u0E31\u0E14\u0E40\u0E1B\u0E48\u0E32\u0E40\u0E04\u0E23\u0E32\u0E30\u0E2B\u0E4C\u0E20\u0E31\u0E22
+      \u0E02\u0E2D\u0E43\u0E2B\u0E49\u0E1C\u0E39\u0E49\u0E14\u0E39\u0E41\u0E25\u0E15\u0E33\u0E2B\u0E19\u0E31\u0E01\u0E40\u0E15\u0E23\u0E35\u0E22\u0E21\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E1A\u0E39\u0E0A\u0E32\u0E43\u0E2B\u0E49\u0E1E\u0E23\u0E49\u0E2D\u0E21..."
+    eventAlert: "\u2728 [\u0E04\u0E33\u0E41\u0E19\u0E30\u0E19\u0E33]: \u0E2B\u0E21\u0E31\u0E48\u0E19\u0E2A\u0E31\u0E07\u0E40\u0E01\u0E15\u0E2A\u0E34\u0E48\u0E07\u0E02\u0E2D\u0E07\u0E40\u0E23\u0E37\u0E2D\u0E07\u0E41\u0E2A\u0E07\u0E43\u0E19\u0E15\u0E33\u0E2B\u0E19\u0E31\u0E01
+      \u0E41\u0E25\u0E30\u0E0A\u0E48\u0E27\u0E22\u0E41\u0E01\u0E49\u0E1B\u0E31\u0E0D\u0E2B\u0E32\u0E43\u0E2B\u0E49\u0E1C\u0E39\u0E49\u0E21\u0E32\u0E40\u0E22\u0E37\u0E2D\u0E19\u0E43\u0E2B\u0E49\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08\u0E01\u0E48\u0E2D\u0E19\u0E40\u0E02\u0E49\u0E32\u0E19\u0E2D\u0E19"
+    authorOrSource: "\u2014 \u0E1C\u0E39\u0E49\u0E43\u0E2B\u0E0D\u0E48\u0E1A\u0E49\u0E32\u0E19"
+    onFirstRead:
+      m_PersistentCalls:
+        m_Calls: []
+    hasBeenRead: 0
+  - targetDay: 2
+    publicationTitle: "\u0E2B\u0E19\u0E31\u0E07\u0E2A\u0E37\u0E2D\u0E1E\u0E34\u0E21\u0E1E\u0E4C\u0E17\u0E49\u0E2D\u0E07\u0E16\u0E34\u0E48\u0E19
+      - \u0E09\u0E1A\u0E31\u0E1A\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48 2"
+    headline: "\u0E2A\u0E31\u0E0D\u0E0D\u0E32\u0E13\u0E40\u0E15\u0E37\u0E2D\u0E19\u0E2D\u0E32\u0E16\u0E23\u0E23\u0E1E\u0E4C\u0E17\u0E27\u0E35\u0E04\u0E27\u0E32\u0E21\u0E23\u0E38\u0E19\u0E41\u0E23\u0E07!"
+    newsStory: "\u0E40\u0E01\u0E34\u0E14\u0E40\u0E2B\u0E15\u0E38\u0E01\u0E32\u0E23\u0E13\u0E4C\u0E44\u0E21\u0E48\u0E2A\u0E07\u0E1A
+      \u0E21\u0E35\u0E40\u0E2A\u0E35\u0E22\u0E07\u0E2A\u0E27\u0E14\u0E41\u0E25\u0E30\u0E04\u0E27\u0E31\u0E19\u0E1B\u0E23\u0E30\u0E2B\u0E25\u0E32\u0E14\u0E25\u0E2D\u0E22\u0E21\u0E32\u0E08\u0E32\u0E01\u0E17\u0E34\u0E28\u0E40\u0E2B\u0E19\u0E37\u0E2D
+      \u0E0A\u0E32\u0E27\u0E1A\u0E49\u0E32\u0E19\u0E1A\u0E32\u0E07\u0E04\u0E19\u0E40\u0E23\u0E34\u0E48\u0E21\u0E25\u0E49\u0E21\u0E1B\u0E48\u0E27\u0E22\u0E14\u0E49\u0E27\u0E22\u0E2A\u0E32\u0E40\u0E2B\u0E15\u0E38\u0E17\u0E35\u0E48\u0E44\u0E21\u0E48\u0E17\u0E23\u0E32\u0E1A\u0E41\u0E19\u0E48\u0E0A\u0E31\u0E14..."
+    eventAlert: "\u26A0\uFE0F [\u0E2D\u0E35\u0E40\u0E27\u0E19\u0E15\u0E4C\u0E2A\u0E33\u0E04\u0E31\u0E0D]:
+      \u0E04\u0E37\u0E19\u0E19\u0E35\u0E49\u0E08\u0E30\u0E21\u0E35\u0E1C\u0E39\u0E49\u0E21\u0E32\u0E40\u0E22\u0E37\u0E2D\u0E19\u0E08\u0E32\u0E01\u0E15\u0E48\u0E32\u0E07\u0E16\u0E34\u0E48\u0E19\u0E41\u0E25\u0E30\u0E27\u0E34\u0E0D\u0E0D\u0E32\u0E13\u0E40\u0E23\u0E48\u0E23\u0E48\u0E2D\u0E19
+      \u0E42\u0E1B\u0E23\u0E14\u0E23\u0E30\u0E21\u0E31\u0E14\u0E23\u0E30\u0E27\u0E31\u0E07\u0E43\u0E19\u0E01\u0E32\u0E23\u0E17\u0E33\u0E1E\u0E34\u0E18\u0E35!"
+    authorOrSource: "\u2014 \u0E2A\u0E33\u0E19\u0E31\u0E01\u0E02\u0E48\u0E32\u0E27\u0E2A\u0E32\u0E23\u0E2A\u0E32\u0E2E\u0E32\u0E23\u0E31\u0E19"
+    onFirstRead:
+      m_PersistentCalls:
+        m_Calls: []
+    hasBeenRead: 0
+  glowWhenHasUnreadNews: 1
+  stopGlowAfterRead: 1
+  notifyBannerOnNewDay: 1
+--- !u!65 &1078906928
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078906926}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!23 &1078906929
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078906926}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1078906930
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078906926}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!4 &1078906931
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078906926}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 8.11, y: 1.07, z: -13.01}
+  m_LocalScale: {x: 0.59695, y: 0.59695, z: 0.59695}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1083163498
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -21415,6 +21672,12 @@ MonoBehaviour:
   onCollect:
     m_PersistentCalls:
       m_Calls: []
+  isImportantItem: 0
+  highlightTriggerMode: 1
+  glowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  enablePointLightGlow: 1
+  enableSparkles: 1
+  showImportantBadgeInUI: 1
   minHits: 4
   maxHits: 6
   baseSpeed: 1.2
@@ -23800,6 +24063,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f36e8aea353d990479186e86961bf790, type: 3}
       insertIndex: -1
       addedObject: {fileID: 91687266}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f36e8aea353d990479186e86961bf790, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 91687269}
   m_SourcePrefab: {fileID: 100100000, guid: f36e8aea353d990479186e86961bf790, type: 3}
 --- !u!1 &1372680539
 GameObject:
@@ -26705,6 +26971,12 @@ MonoBehaviour:
   onCollect:
     m_PersistentCalls:
       m_Calls: []
+  isImportantItem: 0
+  highlightTriggerMode: 1
+  glowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  enablePointLightGlow: 1
+  enableSparkles: 1
+  showImportantBadgeInUI: 1
   currentLevel: 1
   costToLevel2: 450
   costToLevel3: 1200
@@ -27826,7 +28098,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 64.69319, y: 442}
+  m_AnchoredPosition: {x: -12, y: 442}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1554878122
@@ -27857,7 +28129,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 
+  m_text: "\u0E01\u0E2B\u0E01\u0E2B\u0E01\u0E2B\u0E01\u0E2B\u0E01\u0E2B"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5733287fdbe0e6744b9077a70dc04b85, type: 2}
   m_sharedMaterial: {fileID: 5785673611050665618, guid: 5733287fdbe0e6744b9077a70dc04b85, type: 2}
@@ -27891,7 +28163,7 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
-  m_HorizontalAlignment: 1
+  m_HorizontalAlignment: 2
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
@@ -29160,6 +29432,12 @@ MonoBehaviour:
   onCollect:
     m_PersistentCalls:
       m_Calls: []
+  isImportantItem: 0
+  highlightTriggerMode: 1
+  glowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  enablePointLightGlow: 1
+  enableSparkles: 1
+  showImportantBadgeInUI: 1
   fadeDuration: 0.8
   sleepSound: {fileID: 0}
   requireAllQuestsCleared: 1
@@ -29942,6 +30220,7 @@ MonoBehaviour:
     holdOffset: {x: 0.3, y: -0.25, z: 0.5}
     holdRotation: {x: 0, y: 0, z: 0}
     holdScale: {x: 1, y: 1, z: 1}
+    isImportant: 0
   selectedInventoryIndex: -1
   freezePlayerWhileReading: 1
 --- !u!1 &1652264900
@@ -31558,7 +31837,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1757861014
 RectTransform:
   m_ObjectHideFlags: 0
@@ -37782,6 +38061,12 @@ MonoBehaviour:
   onCollect:
     m_PersistentCalls:
       m_Calls: []
+  isImportantItem: 0
+  highlightTriggerMode: 1
+  glowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  enablePointLightGlow: 1
+  enableSparkles: 1
+  showImportantBadgeInUI: 1
   seatPoint: {fileID: 0}
   standUpPoint: {fileID: 0}
   seatingYOffset: 0.2
@@ -38119,6 +38404,12 @@ MonoBehaviour:
   onCollect:
     m_PersistentCalls:
       m_Calls: []
+  isImportantItem: 0
+  highlightTriggerMode: 1
+  glowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  enablePointLightGlow: 1
+  enableSparkles: 1
+  showImportantBadgeInUI: 1
   minHits: 3
   maxHits: 5
   baseSpeed: 180
@@ -39477,6 +39768,7 @@ SceneRoots:
   - {fileID: 1885207811}
   - {fileID: 171431437}
   - {fileID: 913406187}
+  - {fileID: 1078906931}
   - {fileID: 1472828149}
   - {fileID: 240417863}
   - {fileID: 312572509}

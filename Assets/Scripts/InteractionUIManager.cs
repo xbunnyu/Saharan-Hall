@@ -181,7 +181,14 @@ public class InteractionUIManager : MonoBehaviour
 
             if (promptItemNameText != null)
             {
-                promptItemNameText.text = item.itemName;
+                if (item.isImportantItem && item.showImportantBadgeInUI)
+                {
+                    promptItemNameText.text = $"<color=#FFD700>★ </color>{item.itemName} <size=75%><color=#FFD700>[ไอเทมสำคัญ]</color></size>";
+                }
+                else
+                {
+                    promptItemNameText.text = item.itemName;
+                }
             }
 
             if (promptActionText != null)

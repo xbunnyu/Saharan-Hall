@@ -31,6 +31,7 @@ public class PlayerInteraction : MonoBehaviour
 
     // สถานะภายใน
     private InteractableItem currentTarget;
+    private InteractableItem previousTarget;
     private bool isReading = false;
     private bool isInventoryOpen = false;
     private string readingTitle = "";
@@ -168,6 +169,26 @@ public class PlayerInteraction : MonoBehaviour
         {
             currentTarget = null;
         }
+
+        // จัดการสถานะ Hover Highlight เมื่อผู้เล่นเล็งเป้าใส่หรือเบนเป้าออก
+        if (previousTarget != currentTarget)
+        {
+            if (previousTarget != null)
+            {
+                var oldHighlighter = previousTarget.GetComponent<ItemHighlighter>() 
+                    ?? previousTarget.GetComponentInChildren<ItemHighlighter>();
+                if (oldHighlighter != null) oldHighlighter.SetHovered(false);
+            }
+
+            if (currentTarget != null)
+            {
+                var newHighlighter = currentTarget.GetComponent<ItemHighlighter>() 
+                    ?? currentTarget.GetComponentInChildren<ItemHighlighter>();
+                if (newHighlighter != null) newHighlighter.SetHovered(true);
+            }
+
+            previousTarget = currentTarget;
+        }
     }
 
     private void HandleInteractionInput()
@@ -249,8 +270,15 @@ public class PlayerInteraction : MonoBehaviour
 
         ShowNotification($"เก็บ [{itemData.itemName}] เรียบร้อยแล้ว! (กด Tab เพื่อดูกระเป๋า)");
 
+        if (currentTarget == item)
+        {
+            var hl = item.GetComponent<ItemHighlighter>() ?? item.GetComponentInChildren<ItemHighlighter>();
+            if (hl != null) hl.SetHovered(false);
+            currentTarget = null;
+            previousTarget = null;
+        }
+
         InteractableItem itemToCollect = item;
-        currentTarget = null;
         itemToCollect.OnCollect(this);
     }
 
@@ -476,6 +504,10 @@ public class PlayerInteraction : MonoBehaviour
         var interactScript = spawnedHeldObject.GetComponent<InteractableItem>();
         if (interactScript != null) interactScript.enabled = false;
 
+        // ปิดเอฟเฟกต์เรืองแสงขณะถืออยู่ในมือ เพื่อไม่ให้แสงบังมุมมองของผู้เล่น
+        var highlighter = spawnedHeldObject.GetComponent<ItemHighlighter>() ?? spawnedHeldObject.GetComponentInChildren<ItemHighlighter>();
+        if (highlighter != null) highlighter.SetHighlightEnabled(false);
+
         spawnedHeldObject.SetActive(true);
     }
 
@@ -513,6 +545,8 @@ public class PlayerInteraction : MonoBehaviour
         interactScript.useSound = item.useSound;
         interactScript.onUse = item.onUse;
         interactScript.worldPrefab = item.worldPrefab;
+        interactScript.isImportantItem = item.isImportant;
+        interactScript.RefreshHighlighter();
     }
 
     // ==========================================
