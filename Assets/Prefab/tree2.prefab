@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1001 &8129539523186466483
+--- !u!1001 &1103158498594312457
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -10,27 +10,27 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: eeb6e6e1446b72f498b3232802377859, type: 3}
       propertyPath: m_LocalScale.x
-      value: 96.16774
+      value: 85.2248
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: eeb6e6e1446b72f498b3232802377859, type: 3}
       propertyPath: m_LocalScale.y
-      value: 96.16774
+      value: 85.2248
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: eeb6e6e1446b72f498b3232802377859, type: 3}
       propertyPath: m_LocalScale.z
-      value: 96.16774
+      value: 85.2248
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: eeb6e6e1446b72f498b3232802377859, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -12.815233
+      value: 4.3
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: eeb6e6e1446b72f498b3232802377859, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -5.789254
+      value: -5.832
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: eeb6e6e1446b72f498b3232802377859, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -33.142178
+      value: -46.55
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: eeb6e6e1446b72f498b3232802377859, type: 3}
       propertyPath: m_LocalRotation.w
@@ -71,37 +71,27 @@ PrefabInstance:
     - target: {fileID: 1790868808166937211, guid: eeb6e6e1446b72f498b3232802377859, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 7e85892456dd0294ca9a6bf130f81208, type: 2}
+      objectReference: {fileID: 2100000, guid: f5ec83217eb821a4c9f475dc5694188b, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: eeb6e6e1446b72f498b3232802377859, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 8361562463713345949}
+      addedObject: {fileID: 6039231393338292882}
   m_SourcePrefab: {fileID: 100100000, guid: eeb6e6e1446b72f498b3232802377859, type: 3}
---- !u!23 &1437449854673456628 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: -2079761320244636857, guid: eeb6e6e1446b72f498b3232802377859, type: 3}
-  m_PrefabInstance: {fileID: 8129539523186466483}
-  m_PrefabAsset: {fileID: 0}
---- !u!23 &7497258278059576520 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 1790868808166937211, guid: eeb6e6e1446b72f498b3232802377859, type: 3}
-  m_PrefabInstance: {fileID: 8129539523186466483}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &8939791281417757666 stripped
+--- !u!1 &256244614982790232 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: eeb6e6e1446b72f498b3232802377859, type: 3}
-  m_PrefabInstance: {fileID: 8129539523186466483}
+  m_PrefabInstance: {fileID: 1103158498594312457}
   m_PrefabAsset: {fileID: 0}
---- !u!205 &8361562463713345949
+--- !u!205 &6039231393338292882
 LODGroup:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8939791281417757666}
+  m_GameObject: {fileID: 256244614982790232}
   serializedVersion: 2
   m_LocalReferencePoint: {x: 0, y: 0, z: 0}
   m_Size: 1
@@ -112,8 +102,8 @@ LODGroup:
   - screenRelativeHeight: 0.6
     fadeTransitionWidth: 0
     renderers:
-    - renderer: {fileID: 7497258278059576520}
-    - renderer: {fileID: 1437449854673456628}
+    - renderer: {fileID: 1699340842033267570}
+    - renderer: {fileID: 7812620374559048270}
   - screenRelativeHeight: 0.3
     fadeTransitionWidth: 0
     renderers: []
@@ -121,3 +111,13 @@ LODGroup:
     fadeTransitionWidth: 0
     renderers: []
   m_Enabled: 1
+--- !u!23 &1699340842033267570 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1790868808166937211, guid: eeb6e6e1446b72f498b3232802377859, type: 3}
+  m_PrefabInstance: {fileID: 1103158498594312457}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &7812620374559048270 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -2079761320244636857, guid: eeb6e6e1446b72f498b3232802377859, type: 3}
+  m_PrefabInstance: {fileID: 1103158498594312457}
+  m_PrefabAsset: {fileID: 0}
