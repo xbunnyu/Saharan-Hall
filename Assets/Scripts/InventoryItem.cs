@@ -23,9 +23,13 @@ public class InventoryItem
     public Vector3 holdRotation = Vector3.zero;
     public Vector3 holdScale = Vector3.one;
 
+    [Header("สถานะไอเทมสำคัญ")]
+    [Tooltip("เป็นไอเทมสำคัญ/เควสหรือไม่ (จะแสดงสัญลักษณ์พิเศษในกระเป๋า)")]
+    public bool isImportant = false;
+
     public InventoryItem() { }
 
-    public InventoryItem(string name, Sprite icon, string desc, bool usable, AudioClip sound, UnityEvent useEvent, GameObject prefab = null, Vector3? offset = null, Vector3? rotation = null, Vector3? scale = null)
+    public InventoryItem(string name, Sprite icon, string desc, bool usable, AudioClip sound, UnityEvent useEvent, GameObject prefab = null, Vector3? offset = null, Vector3? rotation = null, Vector3? scale = null, bool important = false)
     {
         this.itemName = name;
         this.icon = icon;
@@ -37,5 +41,6 @@ public class InventoryItem
         if (offset.HasValue) this.holdOffset = offset.Value;
         if (rotation.HasValue) this.holdRotation = rotation.Value;
         if (scale.HasValue) this.holdScale = scale.Value;
+        this.isImportant = important;
     }
 }

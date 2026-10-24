@@ -58,12 +58,63 @@ public class InteractableItem : MonoBehaviour
     public UnityEvent onRead = new UnityEvent();
     public UnityEvent onCollect = new UnityEvent();
 
+    [Header("ระบบไฮไลท์ / เรืองแสง (Highlight & Glow System)")]
+    [Tooltip("ระบุว่าเป็นไอเทมสำคัญหรือไม่ (ถ้าเปิด จะเรืองแสงในฉาก 3D และมีสัญลักษณ์ ★ สำคัญ ใน UI)")]
+    public bool isImportantItem = false;
+    [Tooltip("เงื่อนไขการเรืองแสง (ตลอดเวลา / ค่อยๆ เรืองแสงเมื่อเข้าใกล้หรือเล็งมอง)")]
+    public HighlightTriggerMode highlightTriggerMode = HighlightTriggerMode.AlwaysSubtleAndBrightOnHover;
+    [ColorUsage(true, true)]
+    [Tooltip("สีของแสงไฮไลท์ / แสงเรือง (ปรับเลือกสีและค่าความสว่าง HDR ได้ตามต้องการ)")]
+    public Color glowColor = new Color(1f, 0.85f, 0.3f, 1f);
+    [Tooltip("เปิดแสงไฟ Point Light อ่อนๆ เรืองแสงส่องกระทบพื้น/โต๊ะรอบไอเทม")]
+    public bool enablePointLightGlow = true;
+    [Tooltip("เปิดละอองประกายแสงวิบวับลอยรอบไอเทม (Sparkles)")]
+    public bool enableSparkles = true;
+    [Tooltip("แสดงป้าย ★ [สำคัญ] ในหน้าต่างโต้ตอบ")]
+    public bool showImportantBadgeInUI = true;
+
+    private ItemHighlighter cachedHighlighter;
+
+    protected virtual void Awake()
+    {
+        InitHighlighter();
+    }
+
+    /// <summary>
+    /// กำหนดค่าให้กับ ItemHighlighter อัตโนมัติ
+    /// </summary>
+    public void InitHighlighter()
+    {
+        if (cachedHighlighter == null)
+        {
+            cachedHighlighter = GetComponent<ItemHighlighter>();
+        }
+
+        if (isImportantItem)
+        {
+            if (cachedHighlighter == null)
+            {
+                cachedHighlighter = gameObject.AddComponent<ItemHighlighter>();
+            }
+            cachedHighlighter.ApplySettingsFromItem(this);
+        }
+        else if (cachedHighlighter != null)
+        {
+            cachedHighlighter.ApplySettingsFromItem(this);
+        }
+    }
+
+    public void RefreshHighlighter()
+    {
+        InitHighlighter();
+    }
+
     /// <summary>
     /// แปลงข้อมูลของไอเทมชิ้นนี้เป็นข้อมูลสำหรับใส่ในกระเป๋า (InventoryItem)
     /// </summary>
     public virtual InventoryItem GetInventoryData()
     {
-        return new InventoryItem(itemName, itemIcon, itemDescription, isUsable, useSound, onUse, worldPrefab, holdOffset, holdRotation, holdScale);
+        return new InventoryItem(itemName, itemIcon, itemDescription, isUsable, useSound, onUse, worldPrefab, holdOffset, holdRotation, holdScale, isImportantItem);
     }
 
     /// <summary>

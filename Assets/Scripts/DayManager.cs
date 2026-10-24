@@ -54,10 +54,13 @@ public class DayManager : MonoBehaviour
         }
     }
 
+    public static event System.Action<int> OnDayChanged;
+
     void Start()
     {
         EnsureHUDExists();
         UpdateDayHUD();
+        OnDayChanged?.Invoke(currentDay);
     }
 
     // ══════════════════════════════════════════════
@@ -147,6 +150,7 @@ public class DayManager : MonoBehaviour
         }
 
         UpdateDayHUD();
+        OnDayChanged?.Invoke(currentDay);
 
         if (!isShowingOverlay)
         {

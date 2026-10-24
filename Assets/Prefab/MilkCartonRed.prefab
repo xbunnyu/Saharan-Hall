@@ -137,3 +137,9 @@ MonoBehaviour:
   onCollect:
     m_PersistentCalls:
       m_Calls: []
+  isImportantItem: 1
+  highlightTriggerMode: 1
+  glowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  enablePointLightGlow: 1
+  enableSparkles: 1
+  showImportantBadgeInUI: 1

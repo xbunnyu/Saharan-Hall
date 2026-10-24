@@ -28,7 +28,16 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
 
         if (itemNameText != null)
         {
-            itemNameText.text = item != null ? item.itemName : "ไม่มีชื่อ";
+            if (item != null)
+            {
+                itemNameText.text = item.isImportant 
+                    ? $"<color=#FFD700>★</color> {item.itemName}" 
+                    : item.itemName;
+            }
+            else
+            {
+                itemNameText.text = "ไม่มีชื่อ";
+            }
         }
 
         if (itemIconImage != null)
