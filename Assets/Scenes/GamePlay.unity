@@ -4387,7 +4387,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   isImportantItem: 1
-  highlightTriggerMode: 1
+  highlightTriggerMode: 2
   glowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
   enablePointLightGlow: 1
   enableSparkles: 1
@@ -4431,7 +4431,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ItemHighlighter
   isHighlightActive: 1
-  triggerMode: 1
+  triggerMode: 2
   glowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
   enableMeshEmission: 1
   minEmissionIntensity: 0.4
@@ -4445,7 +4445,7 @@ MonoBehaviour:
   enableSparkles: 1
   sparkleRate: 5
   maxEffectDistance: 18
-  proximityDistance: 7
+  proximityDistance: 2
   enableGentleFloating: 0
   floatAmplitude: 0.05
   floatFrequency: 1.5
