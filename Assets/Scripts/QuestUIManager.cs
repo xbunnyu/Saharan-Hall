@@ -104,7 +104,64 @@ public class QuestUIManager : MonoBehaviour
             inquiryButton.gameObject.SetActive(false); // ซ่อนไว้ก่อน
         }
 
+        EnsureProperTextSettings();
         UpdateQuestTrackerCanvas();
+    }
+
+    /// <summary>
+    /// ป้องกันตัวหนังสือล้นจอ โดยบังคับเปิด Auto Size และจำกัดขนาดฟอนต์ให้พอดีกับกรอบเสมอ
+    /// </summary>
+    private void EnsureProperTextSettings()
+    {
+        if (questDescriptionText != null)
+        {
+            questDescriptionText.enableAutoSizing = true;
+            questDescriptionText.fontSizeMin = 14f;
+            questDescriptionText.fontSizeMax = 22f;
+            questDescriptionText.overflowMode = TextOverflowModes.Ellipsis;
+            questDescriptionText.textWrappingMode = TextWrappingModes.Normal;
+        }
+
+        if (questRequirementText != null)
+        {
+            questRequirementText.enableAutoSizing = true;
+            questRequirementText.fontSizeMin = 13f;
+            questRequirementText.fontSizeMax = 18f;
+            questRequirementText.overflowMode = TextOverflowModes.Ellipsis;
+        }
+
+        if (questRewardText != null)
+        {
+            questRewardText.enableAutoSizing = true;
+            questRewardText.fontSizeMin = 13f;
+            questRewardText.fontSizeMax = 18f;
+            questRewardText.overflowMode = TextOverflowModes.Ellipsis;
+        }
+
+        if (declineDialogueText != null)
+        {
+            declineDialogueText.enableAutoSizing = true;
+            declineDialogueText.fontSizeMin = 14f;
+            declineDialogueText.fontSizeMax = 22f;
+            declineDialogueText.overflowMode = TextOverflowModes.Ellipsis;
+            declineDialogueText.textWrappingMode = TextWrappingModes.Normal;
+
+            // จัดตำแหน่งและ Scale ของข้อความปฏิเสธให้เท่ากับ questDescriptionText ป้องกันตัวอักษรบิดเบี้ยว
+            if (questDescriptionText != null)
+            {
+                RectTransform decRT = declineDialogueText.GetComponent<RectTransform>();
+                RectTransform descRT = questDescriptionText.GetComponent<RectTransform>();
+                if (decRT != null && descRT != null)
+                {
+                    decRT.localScale = Vector3.one;
+                    decRT.anchorMin = descRT.anchorMin;
+                    decRT.anchorMax = descRT.anchorMax;
+                    decRT.pivot = descRT.pivot;
+                    decRT.anchoredPosition = descRT.anchoredPosition;
+                    decRT.sizeDelta = descRT.sizeDelta;
+                }
+            }
+        }
     }
 
     void Update()
@@ -187,6 +244,7 @@ public class QuestUIManager : MonoBehaviour
             if (questTitleText != null) questTitleText.text = quest.questTitle;
             if (questDescriptionText != null)
             {
+                questDescriptionText.gameObject.SetActive(true);
                 string desc = !string.IsNullOrEmpty(quest.greetingDialogue) 
                     ? $"\"{quest.greetingDialogue}\"\n\n{quest.questDescription}" 
                     : quest.questDescription;
@@ -309,6 +367,10 @@ public class QuestUIManager : MonoBehaviour
             if (questRequirementText != null) questRequirementText.gameObject.SetActive(false);
             if (questRewardText != null) questRewardText.gameObject.SetActive(false);
 
+            // ซ่อนคำอธิบายเควสเดิมเพื่อป้องกันตัวอักษรขึ้นมาแสดงซ้อนทับกัน
+            if (questDescriptionText != null && questDescriptionText != waitingDialogueText)
+                questDescriptionText.gameObject.SetActive(false);
+
             if (questTitleText != null)
                 questTitleText.text = $"<color=#00FF7F>✅ รับเควสสำเร็จ</color> — {currentQuest.npcName}";
 
@@ -352,6 +414,10 @@ public class QuestUIManager : MonoBehaviour
             if (inquiryButton != null) inquiryButton.gameObject.SetActive(false);
             if (questRequirementText != null) questRequirementText.gameObject.SetActive(false);
             if (questRewardText != null) questRewardText.gameObject.SetActive(false);
+
+            // ซ่อนคำอธิบายเควสเดิมทันที เพื่อไม่ให้ตัวอักษรขึ้นมาซ้อนทับกับข้อความปฏิเสธ
+            if (questDescriptionText != null && questDescriptionText != declineDialogueText)
+                questDescriptionText.gameObject.SetActive(false);
 
             if (questTitleText != null)
                 questTitleText.text = $"<color=#FF5555>❌ ปฏิเสธเควส</color> — {currentQuest.npcName}";
@@ -625,7 +691,11 @@ public class QuestUIManager : MonoBehaviour
         if (questDialogPanel != null) questDialogPanel.SetActive(false);
         if (responsePanel != null) responsePanel.SetActive(false);
 
-        // คืนค่าปุ่มให้กลับมาเปิดสำหรับครั้งถัดไป
+        // คืนค่าปุ่มและข้อความให้กลับมาเปิดสำหรับครั้งถัดไป
+        if (questDescriptionText != null) questDescriptionText.gameObject.SetActive(true);
+        if (questRequirementText != null) questRequirementText.gameObject.SetActive(true);
+        if (questRewardText != null) questRewardText.gameObject.SetActive(true);
+
         if (acceptButton != null) acceptButton.gameObject.SetActive(true);
         if (declineButton != null) declineButton.gameObject.SetActive(true);
         if (inquiryButton != null) inquiryButton.gameObject.SetActive(true);
