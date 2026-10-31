@@ -161,14 +161,14 @@ public class BedInteractable : InteractableItem
         if (fadeImage != null) fadeImage.color = new Color(0f, 0f, 0f, 0f);
         if (fadeCanvasGO != null) fadeCanvasGO.SetActive(false);
 
-        // 5. สั่ง DayManager ขึ้นวันใหม่ (หากเป็นวันที่ 2 DayManager จะประเมินและดึงฉากจบให้อัตโนมัติ)
+        // 5. สั่ง DayManager ขึ้นวันใหม่ (หากเป็นวันที่ 3 DayManager จะประเมินและดึงฉากจบให้อัตโนมัติ)
         if (DayManager.Instance != null)
         {
             DayManager.Instance.AdvanceDay();
         }
         else if (GameEndingManager.Instance != null)
         {
-            GameEndingManager.Instance.EvaluateDay2Ending();
+            GameEndingManager.Instance.EvaluateDay3Ending();
         }
         else if (HallManager.Instance != null)
         {

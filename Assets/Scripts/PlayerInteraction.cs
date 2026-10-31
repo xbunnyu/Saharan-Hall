@@ -98,8 +98,40 @@ public class PlayerInteraction : MonoBehaviour
         Debug.Log("[PlayerInteraction] 🎁 เพิ่มไอเทม [ขนมไทย] 1 ชิ้นเข้ากระเป๋าผู้เล่นเรียบร้อยแล้ว!");
     }
 
+    void OnDisable()
+    {
+        if (InteractionUIManager.Instance != null)
+        {
+            InteractionUIManager.Instance.UpdatePrompt(null, true, false);
+        }
+        if (currentTarget != null)
+        {
+            var h = currentTarget.GetComponent<ItemHighlighter>() ?? currentTarget.GetComponentInChildren<ItemHighlighter>();
+            if (h != null) h.SetHovered(false);
+            currentTarget = null;
+            previousTarget = null;
+        }
+    }
+
     void Update()
     {
+        // หากอยู่ในฉากจบ (Game Ending / Cutscene) ให้หยุดการทำงานทั้งหมดและปิด Prompt ทันที
+        if (GameEndingManager.Instance != null && GameEndingManager.Instance.isGameEnding)
+        {
+            if (InteractionUIManager.Instance != null)
+            {
+                InteractionUIManager.Instance.UpdatePrompt(null, true, false);
+            }
+            if (currentTarget != null)
+            {
+                var h = currentTarget.GetComponent<ItemHighlighter>() ?? currentTarget.GetComponentInChildren<ItemHighlighter>();
+                if (h != null) h.SetHovered(false);
+                currentTarget = null;
+                previousTarget = null;
+            }
+            return;
+        }
+
         var keyboard = Keyboard.current;
 
         // 1. จัดการการเปิด/ปิดกระเป๋า (Tab)

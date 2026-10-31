@@ -83,7 +83,7 @@ public class KarmaManager : MonoBehaviour
             return;
         }
 
-        GameEndingManager.Instance.EvaluateDay2Ending();
+        GameEndingManager.Instance.EvaluateDay3Ending();
     }
 
     // ──────────────────────────────────────────────────────────
