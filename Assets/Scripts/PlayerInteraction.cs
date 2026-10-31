@@ -26,6 +26,10 @@ public class PlayerInteraction : MonoBehaviour
     public int selectedInventoryIndex = -1;
     private GameObject spawnedHeldObject;
 
+    [Header("Starting Items (ไอเทมเริ่มต้น)")]
+    [Tooltip("เพิ่มขนมไทยเข้าตัวผู้เล่น 1 ชิ้นตอนเริ่มเกมอัตโนมัติ (สำหรับนำไปถวายศาลตายาย)")]
+    public bool giveThaiDessertOnStart = true;
+
     [Header("4. Settings")]
     public bool freezePlayerWhileReading = true;
 
@@ -61,6 +65,37 @@ public class PlayerInteraction : MonoBehaviour
             socketObj.transform.localRotation = Quaternion.Euler(0f, -15f, 0f);
             handSocket = socketObj.transform;
         }
+
+        // เพิ่มไอเทมขนมไทยเข้าตัวผู้เล่น 1 ชิ้นอัตโนมัติหากยังไม่มีในกระเป๋า
+        if (giveThaiDessertOnStart && !HasItem("ขนมไทย"))
+        {
+            AddThaiDessertItem();
+        }
+    }
+
+    /// <summary>
+    /// เพิ่มไอเทมขนมไทยเข้ากระเป๋าผู้เล่น 1 ชิ้น
+    /// </summary>
+    [ContextMenu("🎁 แอดไอเทมขนมไทย (Add Thai Dessert)")]
+    public void AddThaiDessertItem()
+    {
+        if (HasItem("ขนมไทย")) return;
+
+        InventoryItem dessert = new InventoryItem(
+            "ขนมไทย",
+            null,
+            "ขนมไทยโบราณกลิ่นหอมหวาน สำหรับนำไปกราบไหว้ถวายแด่ศาลตายายเพื่อขอพรคุ้มครองภัย",
+            true,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true
+        );
+        AddItem(dessert);
+        Debug.Log("[PlayerInteraction] 🎁 เพิ่มไอเทม [ขนมไทย] 1 ชิ้นเข้ากระเป๋าผู้เล่นเรียบร้อยแล้ว!");
     }
 
     void Update()
@@ -106,6 +141,16 @@ public class PlayerInteraction : MonoBehaviour
         // 2.8 หากกำลังเล่น QTE Minigame อยู่ (Skill check / Timing Bar) ให้ข้ามการโต้ตอบอื่น
         if ((QTEController.Instance != null && QTEController.Instance.IsQTEActive()) ||
             (TimingBarController.Instance != null && TimingBarController.Instance.IsActive()))
+        {
+            if (InteractionUIManager.Instance != null)
+            {
+                InteractionUIManager.Instance.UpdatePrompt(null, true, false);
+            }
+            return;
+        }
+
+        // 2.9 หากกำลังเล่น Smash Key Minigame (ดิ้นหลุดจากผีร้าย) ให้ข้ามการโต้ตอบอื่น
+        if (SmashKeyMinigame.Instance != null && SmashKeyMinigame.Instance.IsActive)
         {
             if (InteractionUIManager.Instance != null)
             {
@@ -194,13 +239,26 @@ public class PlayerInteraction : MonoBehaviour
         }
     }
 
+    private float interactionCooldown = 0f;
+
     private void HandleInteractionInput()
     {
+        // 1. ป้องกัน Input หลุดรันอัตโนมัติตอนเริ่มโหลดฉาก 0.5 วินาทีแรก (จาก Input System device polling หรือ Gamepad initial state)
+        if (Time.timeSinceLevelLoad < 0.5f) return;
+
+        // 2. จัดการ Cooldown เพื่อป้องกันการกดรัวหรือบั๊กเฟรมซ้อน
+        if (interactionCooldown > 0f)
+        {
+            interactionCooldown -= Time.deltaTime;
+        }
+
         var keyboard = Keyboard.current;
         var mouse = Mouse.current;
         var gamepad = Gamepad.current;
 
-        bool pressE = (keyboard != null && keyboard.eKey.wasPressedThisFrame) || (gamepad != null && gamepad.buttonWest.wasPressedThisFrame);
+        bool keyE = keyboard != null && keyboard.eKey.wasPressedThisFrame;
+        bool padWest = gamepad != null && gamepad.buttonWest.wasPressedThisFrame;
+        bool pressE = keyE || padWest;
         bool pressT = (keyboard != null && keyboard.tKey.wasPressedThisFrame);
         bool pressLMB = mouse != null && mouse.leftButton.wasPressedThisFrame;
         bool pressF = (keyboard != null && keyboard.fKey.wasPressedThisFrame) || (gamepad != null && gamepad.buttonNorth.wasPressedThisFrame);
@@ -219,6 +277,7 @@ public class PlayerInteraction : MonoBehaviour
         }
 
         if (currentTarget == null) return;
+        if (interactionCooldown > 0f) return;
 
         // ตรวจสอบปุ่มสำหรับโต้ตอบตาม interactionKeyText (รองรับปุ่ม T และ E)
         string targetKey = !string.IsNullOrEmpty(currentTarget.interactionKeyText) ? currentTarget.interactionKeyText.ToUpper() : "E";
@@ -235,6 +294,9 @@ public class PlayerInteraction : MonoBehaviour
         // กด [E] หรือ [T] พูดคุย / อ่าน / สลับสลับมินิเกม / อัพเกรด
         if (isInteractPressed && currentTarget.canRead)
         {
+            interactionCooldown = 0.3f;
+            Debug.Log($"[PlayerInteraction] 👆 กดโต้ตอบกับ [{currentTarget.name}] (อุปกรณ์: {(keyE ? "Keyboard [E]" : padWest ? "Gamepad [West]" : targetKey)})");
+
             bool isNPC = currentTarget.GetComponent<NPCController>() != null || currentTarget.GetComponentInParent<NPCController>() != null;
             bool isDirectAction = currentTarget is HallTrigger 
                                || currentTarget is BuddhistAltarManager 
@@ -244,6 +306,7 @@ public class PlayerInteraction : MonoBehaviour
                                || currentTarget is TimingBarInteractable
                                || currentTarget is ShopInteractable
                                || currentTarget is KumanThongInteractable
+                               || currentTarget is ForestShrineInteractable
                                || string.IsNullOrEmpty(currentTarget.readDescription) 
                                || isNPC;
 
@@ -262,6 +325,7 @@ public class PlayerInteraction : MonoBehaviour
         // กด [F] เก็บไอเทมเข้ากระเป๋า
         if (pressF && currentTarget.canCollect)
         {
+            interactionCooldown = 0.3f;
             CollectItem(currentTarget);
         }
     }
@@ -398,6 +462,11 @@ public class PlayerInteraction : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    public bool RemoveItem(string itemName)
+    {
+        return RemoveItemByName(itemName);
     }
 
     // ==========================================

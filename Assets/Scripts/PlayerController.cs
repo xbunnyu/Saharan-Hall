@@ -66,8 +66,9 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        // หากบทสนทนาเควสกำลังทำงานอยู่ ห้ามรับ Input การหันกล้องหรือเดินเด็ดขาด
+        // หากบทสนทนาเควสกำลังทำงานอยู่ หรือกำลังเล่นมินิเกม Smash Key ห้ามรับ Input การหันกล้องหรือเดิน
         if (QuestUIManager.Instance != null && QuestUIManager.Instance.IsDialogActive()) return;
+        if (SmashKeyMinigame.Instance != null && SmashKeyMinigame.Instance.IsActive) return;
 
         HandleLook();
         
