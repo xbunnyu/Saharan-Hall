@@ -68,6 +68,13 @@ public class QuestUIManager : MonoBehaviour
     private PlayerController playerController;
     private PlayerInteraction playerInteraction;
 
+    // Dialogue Pagination & Multi-step Dialogue
+    private int currentDialoguePageIndex = 0;
+    private List<string> currentDialoguePages = new List<string>();
+    private bool isChoicesPage = false;
+    private bool isSimpleDialogue = false;
+    private Action onSimpleDialogueFinished = null;
+
     void Awake()
     {
         if (Instance == null)
@@ -109,57 +116,23 @@ public class QuestUIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ป้องกันตัวหนังสือล้นจอ โดยบังคับเปิด Auto Size และจำกัดขนาดฟอนต์ให้พอดีกับกรอบเสมอ
+    /// ปรับ RectTransform ของข้อความปฏิเสธให้ตรงกับกล่องข้อความหลัก (ไม่ปรับฟอนต์ เพื่อให้ผู้ใช้กำหนดฟอนต์และขนาดได้เองใน Inspector 100%)
     /// </summary>
     private void EnsureProperTextSettings()
     {
-        if (questDescriptionText != null)
+        // จัดตำแหน่งและ Scale ของข้อความปฏิเสธให้เท่ากับ questDescriptionText โดยไม่ยุ่งกับค่าฟอนต์
+        if (declineDialogueText != null && questDescriptionText != null)
         {
-            questDescriptionText.enableAutoSizing = true;
-            questDescriptionText.fontSizeMin = 14f;
-            questDescriptionText.fontSizeMax = 22f;
-            questDescriptionText.overflowMode = TextOverflowModes.Ellipsis;
-            questDescriptionText.textWrappingMode = TextWrappingModes.Normal;
-        }
-
-        if (questRequirementText != null)
-        {
-            questRequirementText.enableAutoSizing = true;
-            questRequirementText.fontSizeMin = 13f;
-            questRequirementText.fontSizeMax = 18f;
-            questRequirementText.overflowMode = TextOverflowModes.Ellipsis;
-        }
-
-        if (questRewardText != null)
-        {
-            questRewardText.enableAutoSizing = true;
-            questRewardText.fontSizeMin = 13f;
-            questRewardText.fontSizeMax = 18f;
-            questRewardText.overflowMode = TextOverflowModes.Ellipsis;
-        }
-
-        if (declineDialogueText != null)
-        {
-            declineDialogueText.enableAutoSizing = true;
-            declineDialogueText.fontSizeMin = 14f;
-            declineDialogueText.fontSizeMax = 22f;
-            declineDialogueText.overflowMode = TextOverflowModes.Ellipsis;
-            declineDialogueText.textWrappingMode = TextWrappingModes.Normal;
-
-            // จัดตำแหน่งและ Scale ของข้อความปฏิเสธให้เท่ากับ questDescriptionText ป้องกันตัวอักษรบิดเบี้ยว
-            if (questDescriptionText != null)
+            RectTransform decRT = declineDialogueText.GetComponent<RectTransform>();
+            RectTransform descRT = questDescriptionText.GetComponent<RectTransform>();
+            if (decRT != null && descRT != null)
             {
-                RectTransform decRT = declineDialogueText.GetComponent<RectTransform>();
-                RectTransform descRT = questDescriptionText.GetComponent<RectTransform>();
-                if (decRT != null && descRT != null)
-                {
-                    decRT.localScale = Vector3.one;
-                    decRT.anchorMin = descRT.anchorMin;
-                    decRT.anchorMax = descRT.anchorMax;
-                    decRT.pivot = descRT.pivot;
-                    decRT.anchoredPosition = descRT.anchoredPosition;
-                    decRT.sizeDelta = descRT.sizeDelta;
-                }
+                decRT.localScale = Vector3.one;
+                decRT.anchorMin = descRT.anchorMin;
+                decRT.anchorMax = descRT.anchorMax;
+                decRT.pivot = descRT.pivot;
+                decRT.anchoredPosition = descRT.anchoredPosition;
+                decRT.sizeDelta = descRT.sizeDelta;
             }
         }
     }
@@ -170,60 +143,117 @@ public class QuestUIManager : MonoBehaviour
         UpdateQuestTrackerCanvas();
 
         if (!isDialogActive) return;
+
+        // บังคับให้เมาส์แสดงและผู้เล่นถูกตรึงไว้เสมอขณะที่หน้าต่างบทสนทนายังเปิดอยู่
+        if (Cursor.lockState != CursorLockMode.None)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        if (playerController != null && playerController.enabled)
+        {
+            playerController.enabled = false;
+        }
+
         if (Time.time < canAcceptInputTime) return;
 
         var keyboard = Keyboard.current;
-        if (keyboard != null)
-        {
-            // หากกำลังแสดงหน้าต่างตอบกลับ (Response UI) ผู้เล่นสามารถกดปุ่มเพื่อปิดข้ามได้ทันที
-            if (isShowingResponse)
-            {
-                if (keyboard.escapeKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame 
-                    || keyboard.enterKey.wasPressedThisFrame || keyboard.eKey.wasPressedThisFrame 
-                    || keyboard.qKey.wasPressedThisFrame)
-                {
-                    CancelInvoke(nameof(CloseDialog));
-                    CancelInvoke(nameof(FinishAcceptAndClose));
-                    CancelInvoke(nameof(FinishDeclineAndClose));
-                    if (isPendingDecline)
-                    {
-                        FinishDeclineAndClose();
-                    }
-                    else if (isPendingAccept)
-                    {
-                        FinishAcceptAndClose();
-                    }
-                    else
-                    {
-                        CloseDialog();
-                    }
-                }
-                return;
-            }
+        var mouse = Mouse.current;
+        var gamepad = Gamepad.current;
 
-            // ปุ่มลัด: กด E หรือ 1 เพื่อรับเควส
-            if (keyboard.eKey.wasPressedThisFrame || keyboard.digit1Key.wasPressedThisFrame)
+        bool isClickPressed = mouse != null && mouse.leftButton.wasPressedThisFrame;
+        bool isSpaceOrEnterPressed = keyboard != null && (keyboard.spaceKey.wasPressedThisFrame || keyboard.enterKey.wasPressedThisFrame);
+        bool isGamepadAdvance = gamepad != null && gamepad.buttonSouth.wasPressedThisFrame;
+
+        bool advanceOrClose = isClickPressed || isSpaceOrEnterPressed || isGamepadAdvance;
+
+        // 1. หากกำลังแสดงหน้าต่างตอบกลับ (Response UI) ผู้เล่นสามารถคลิกหรือกดปุ่มเพื่อจบ/ปิดได้ทันที
+        if (isShowingResponse)
+        {
+            bool anyDismissKey = (keyboard != null && (keyboard.escapeKey.wasPressedThisFrame || keyboard.eKey.wasPressedThisFrame || keyboard.qKey.wasPressedThisFrame))
+                              || (gamepad != null && gamepad.buttonEast.wasPressedThisFrame);
+
+            if (advanceOrClose || anyDismissKey)
+            {
+                CancelInvoke(nameof(CloseDialog));
+                CancelInvoke(nameof(FinishAcceptAndClose));
+                CancelInvoke(nameof(FinishDeclineAndClose));
+                if (isPendingDecline)
+                {
+                    FinishDeclineAndClose();
+                }
+                else if (isPendingAccept)
+                {
+                    FinishAcceptAndClose();
+                }
+                else
+                {
+                    CloseDialog();
+                }
+            }
+            return;
+        }
+
+        // 2. หากกำลังแสดงบทสนทนาข้อความทั่วไป (Simple Dialogue เช่น ส่งเควสสำเร็จ หรือรอรับผล)
+        if (isSimpleDialogue)
+        {
+            if (advanceOrClose)
+            {
+                if (currentDialoguePageIndex < currentDialoguePages.Count - 1)
+                {
+                    // ไปบทสนทนาถัดไป
+                    canAcceptInputTime = Time.time + 0.2f;
+                    ShowDialoguePage(currentDialoguePageIndex + 1);
+                }
+                else
+                {
+                    // หน้าสุดท้ายแล้ว -> จบบทสนทนา
+                    Action callback = onSimpleDialogueFinished;
+                    onSimpleDialogueFinished = null;
+                    isSimpleDialogue = false;
+                    CloseDialog();
+                    callback?.Invoke();
+                }
+            }
+            return;
+        }
+
+        // 3. หากอยู่หน้าตัดสินใจเลือกเควส (Choices Page - มีปุ่ม ยอมรับ / ปฏิเสธ / สอบถาม)
+        if (isChoicesPage)
+        {
+            // กด E หรือ Space หรือ Enter หรือ 1 เพื่อรับเควส
+            if (isSpaceOrEnterPressed || (keyboard != null && (keyboard.eKey.wasPressedThisFrame || keyboard.digit1Key.wasPressedThisFrame)))
             {
                 OnAcceptClicked();
             }
-            // ปุ่มลัด: กด Q หรือ 2 หรือ Escape เพื่อปฏิเสธเควส
-            else if (keyboard.qKey.wasPressedThisFrame || keyboard.digit2Key.wasPressedThisFrame || keyboard.escapeKey.wasPressedThisFrame)
+            // กด Q หรือ 2 หรือ Escape เพื่อปฏิเสธเควส
+            else if (keyboard != null && (keyboard.qKey.wasPressedThisFrame || keyboard.digit2Key.wasPressedThisFrame || keyboard.escapeKey.wasPressedThisFrame))
             {
                 OnDeclineClicked();
             }
-            // ปุ่มลัด: กด F หรือ 3 เพื่อสอบถามเพิ่มเติม
-            else if (keyboard.fKey.wasPressedThisFrame || keyboard.digit3Key.wasPressedThisFrame)
+            // กด F หรือ 3 เพื่อสอบถามเพิ่มเติม
+            else if (keyboard != null && (keyboard.fKey.wasPressedThisFrame || keyboard.digit3Key.wasPressedThisFrame))
             {
                 if (inquiryButton != null && inquiryButton.gameObject.activeInHierarchy)
                 {
                     OnInquiryClicked();
                 }
             }
+            return;
+        }
+
+        // 4. กำลังอยู่หน้าเนื้อหาบทสนทนาก่อนถึงหน้าเลือกเควส (!isChoicesPage)
+        // ผู้เล่นสามารถกดคลิก หรือ Spacebar (หรือ E / Enter) เพื่อไปบทสนทนาต่อไป
+        if (advanceOrClose || (keyboard != null && keyboard.eKey.wasPressedThisFrame))
+        {
+            canAcceptInputTime = Time.time + 0.2f;
+            ShowDialoguePage(currentDialoguePageIndex + 1);
         }
     }
 
     /// <summary>
-    /// แสดงหน้าต่างเควสเมื่อ NPC มาถึงหน้าผู้เล่น
+    /// แสดงหน้าต่างบทสนทนาเควสเมื่อ NPC มาถึงหน้าผู้เล่น
+    /// รองรับการคลิกหรือกด Spacebar เพื่อเปลี่ยนไปบทสนทนาต่อไปทีละช่วง
     /// </summary>
     public void ShowQuestDialog(NPCController npc, QuestData quest)
     {
@@ -231,77 +261,55 @@ public class QuestUIManager : MonoBehaviour
         currentQuest = quest;
         isDialogActive = true;
         isShowingResponse = false;
+        isSimpleDialogue = false;
+        onSimpleDialogueFinished = null;
         canAcceptInputTime = Time.time + 0.35f;
 
         UnlockCursorAndFreezePlayer();
 
-        // อัปเดตข้อมูลบน Canvas UI (ถ้ามี)
+        // รวบรวมหน้าบทสนทนา (Dialogue Pages)
+        currentDialoguePages.Clear();
+        currentDialoguePageIndex = 0;
+
+        // 1. บทสนทนาเปิด/ทักทาย (greetingDialogue)
+        if (!string.IsNullOrEmpty(quest.greetingDialogue))
+        {
+            string[] paragraphs = quest.greetingDialogue.Split(new string[] { "\n\n", "\r\n\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var p in paragraphs)
+            {
+                string trimmed = p.Trim();
+                if (!string.IsNullOrEmpty(trimmed) && !currentDialoguePages.Contains(trimmed))
+                {
+                    currentDialoguePages.Add(trimmed);
+                }
+            }
+        }
+
+        // 2. รายละเอียดเควสหรือเรื่องราวความเดือดร้อน (questDescription)
+        if (!string.IsNullOrEmpty(quest.questDescription))
+        {
+            string[] descParagraphs = quest.questDescription.Split(new string[] { "\n\n", "\r\n\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var dp in descParagraphs)
+            {
+                string trimmed = dp.Trim();
+                if (!string.IsNullOrEmpty(trimmed) && !currentDialoguePages.Contains(trimmed))
+                {
+                    currentDialoguePages.Add(trimmed);
+                }
+            }
+        }
+
+        if (currentDialoguePages.Count == 0)
+        {
+            currentDialoguePages.Add(quest.questTitle);
+        }
+
         if (questDialogPanel != null)
         {
             questDialogPanel.SetActive(true);
 
             if (npcNameText != null) npcNameText.text = quest.npcName;
             if (questTitleText != null) questTitleText.text = quest.questTitle;
-            if (questDescriptionText != null)
-            {
-                questDescriptionText.gameObject.SetActive(true);
-                string desc = !string.IsNullOrEmpty(quest.greetingDialogue) 
-                    ? $"\"{quest.greetingDialogue}\"\n\n{quest.questDescription}" 
-                    : quest.questDescription;
-                questDescriptionText.text = desc;
-            }
-
-            if (questRequirementText != null)
-            {
-                if (!string.IsNullOrEmpty(quest.requiredItemName))
-                {
-                    questRequirementText.text = $"สิ่งที่ต้องการ: <color=#FFD700>{quest.requiredItemName} x{quest.requiredQuantity}</color>";
-                    questRequirementText.gameObject.SetActive(true);
-                }
-                else
-                {
-                    // ไม่แสดงรายการมินิเกมล่วงหน้าในหน้าต่าง Dialog เพื่อเน้นให้เป็นคำพูดของ NPC
-                    questRequirementText.gameObject.SetActive(false);
-                }
-            }
-
-            if (questRewardText != null)
-            {
-                string rewardText = !string.IsNullOrEmpty(quest.rewardDescription) 
-                    ? quest.rewardDescription 
-                    : (quest.rewardMoney > 0 ? $"เงิน {quest.rewardMoney:N0} เหรียญ" : "");
-
-                if (!string.IsNullOrEmpty(quest.rewardItemName))
-                {
-                    rewardText += string.IsNullOrEmpty(rewardText) ? quest.rewardItemName : $" + {quest.rewardItemName}";
-                }
-
-                if (string.IsNullOrEmpty(rewardText))
-                {
-                    rewardText = quest.rewardMoney > 0 ? $"{quest.rewardMoney:N0} เหรียญ" : "-";
-                }
-
-                questRewardText.text = $"รางวัลตอบแทน: <color=#00FF7F>{rewardText}</color>";
-                questRewardText.gameObject.SetActive(true);
-            }
-
-            // เปิดปุ่มกดยอมรับ/ปฏิเสธ
-            if (acceptButton != null) acceptButton.gameObject.SetActive(true);
-            if (declineButton != null) declineButton.gameObject.SetActive(true);
-
-            // ── ปุ่ม "สอบถามเพิ่มเติม" (เปิดให้กดได้เสมอตามระดับชื่อเสียงรวม) ───────────
-            if (inquiryButton != null)
-            {
-                int repLevel = ReputationManager.Instance != null ? ReputationManager.Instance.GetLevel() : 0;
-                inquiryButton.gameObject.SetActive(true);
-
-                if (inquiryButtonText != null)
-                {
-                    inquiryButtonText.text = repLevel >= 1
-                        ? "💬 สอบถามเพิ่มเติม [F]"
-                        : "🔒 สอบถามเพิ่มเติม (ต้องมีระดับ 1)";
-                }
-            }
 
             if (npcPortraitImage != null)
             {
@@ -317,7 +325,6 @@ public class QuestUIManager : MonoBehaviour
             }
 
             if (responsePanel != null) responsePanel.SetActive(false);
-
             if (declineDialogueText != null)
             {
                 declineDialogueText.text = "";
@@ -328,13 +335,234 @@ public class QuestUIManager : MonoBehaviour
                 waitingDialogueText.text = "";
                 waitingDialogueText.gameObject.SetActive(false);
             }
+
+            // แสดงหน้าแรกของบทสนทนา
+            ShowDialoguePage(0);
         }
 
-        Debug.Log($"[QuestUIManager] 📜 เปิดหน้าต่างเควส: '{quest.questTitle}' จาก '{quest.npcName}'");
+        Debug.Log($"[QuestUIManager] 📜 เปิดบทสนทนาเควส: '{quest.questTitle}' จาก '{quest.npcName}' ({currentDialoguePages.Count} หน้า)");
+    }
+
+    /// <summary>
+    /// แสดงบทสนทนาตามหน้าที่ระบุ
+    /// </summary>
+    private void ShowDialoguePage(int pageIndex)
+    {
+        currentDialoguePageIndex = pageIndex;
+        int totalPages = currentDialoguePages.Count;
+
+        // หากเป็นบทสนทนาข้อความทั่วไป (Simple Dialogue - ไม่มีตัวเลือกเควส)
+        if (isSimpleDialogue)
+        {
+            isChoicesPage = false;
+            if (questDescriptionText != null)
+            {
+                questDescriptionText.gameObject.SetActive(true);
+                questDescriptionText.text = currentDialoguePages[pageIndex];
+            }
+            if (acceptButton != null) acceptButton.gameObject.SetActive(false);
+            if (declineButton != null) declineButton.gameObject.SetActive(false);
+            if (inquiryButton != null) inquiryButton.gameObject.SetActive(false);
+            if (questRewardText != null) questRewardText.gameObject.SetActive(false);
+
+            if (questRequirementText != null)
+            {
+                questRequirementText.gameObject.SetActive(true);
+                questRequirementText.text = pageIndex < totalPages - 1
+                    ? $"<color=#FFD700>กด [คลิก] หรือ [Space] เพื่อไปบทสนทนาต่อไป ▶ ({pageIndex + 1}/{totalPages})</color>"
+                    : "<color=#FFD700>กด [คลิก] หรือ [Space] เพื่อจบ</color>";
+            }
+            return;
+        }
+
+        // บทสนทนาเควส (มีปุ่ม ยอมรับ / ปฏิเสธ / สอบถาม)
+        // ถ้ายังไม่ถึงหน้าสุดท้าย (หน้าเลือกรับเควส)
+        if (pageIndex < totalPages - 1)
+        {
+            isChoicesPage = false;
+
+            if (questDescriptionText != null)
+            {
+                questDescriptionText.gameObject.SetActive(true);
+                questDescriptionText.text = $"\"{currentDialoguePages[pageIndex]}\"";
+            }
+
+            // แสดงปุ่มค้างไว้ตลอดตามต้องการ แต่ยังกดไม่ได้ (interactable = false) จนกว่าจะถึงหน้าสุดท้าย
+            if (acceptButton != null)
+            {
+                acceptButton.gameObject.SetActive(true);
+                acceptButton.interactable = false;
+                if (acceptButtonText != null) acceptButtonText.text = "ยอมรับ";
+            }
+            if (declineButton != null)
+            {
+                declineButton.gameObject.SetActive(true);
+                declineButton.interactable = false;
+                if (declineButtonText != null) declineButtonText.text = "ปฏิเสธ";
+            }
+            if (inquiryButton != null)
+            {
+                inquiryButton.gameObject.SetActive(true);
+                inquiryButton.interactable = false;
+                if (inquiryButtonText != null) inquiryButtonText.text = "สอบถามเพิ่มเติม";
+            }
+            if (questRewardText != null) questRewardText.gameObject.SetActive(false);
+
+            // แสดงคำแนะนำกดคลิกหรือ Spacebar เพื่อไปบทสนทนาต่อไป
+            if (questRequirementText != null)
+            {
+                questRequirementText.gameObject.SetActive(true);
+                questRequirementText.text = $"<color=#FFD700>กด [คลิก] หรือ [Space] เพื่อไปบทสนทนาต่อไป ▶ ({pageIndex + 1}/{totalPages})</color>";
+            }
+        }
+        else
+        {
+            // หน้าสุดท้าย -> แสดงหน้าเลือกเควส พร้อมเปิดให้กดปุ่มได้
+            ShowChoicesPage();
+        }
+    }
+
+    /// <summary>
+    /// แสดงหน้าตัวเลือกเควส (สิ่งที่ต้องการ, รางวัล, ปุ่มยอมรับ/ปฏิเสธ/สอบถาม)
+    /// </summary>
+    private void ShowChoicesPage()
+    {
+        isChoicesPage = true;
+
+        if (questDescriptionText != null)
+        {
+            questDescriptionText.gameObject.SetActive(true);
+            int lastIndex = currentDialoguePages.Count - 1;
+            questDescriptionText.text = currentDialoguePages[lastIndex];
+        }
+
+        if (questRequirementText != null)
+        {
+            if (currentQuest != null && !string.IsNullOrEmpty(currentQuest.requiredItemName))
+            {
+                questRequirementText.text = $"สิ่งที่ต้องการ: <color=#FFD700>{currentQuest.requiredItemName} x{currentQuest.requiredQuantity}</color>";
+                questRequirementText.gameObject.SetActive(true);
+            }
+            else
+            {
+                questRequirementText.gameObject.SetActive(false);
+            }
+        }
+
+        if (questRewardText != null && currentQuest != null)
+        {
+            string rewardText = !string.IsNullOrEmpty(currentQuest.rewardDescription) 
+                ? currentQuest.rewardDescription 
+                : (currentQuest.rewardMoney > 0 ? $"เงิน {currentQuest.rewardMoney:N0} เหรียญ" : "");
+
+            if (!string.IsNullOrEmpty(currentQuest.rewardItemName))
+            {
+                rewardText += string.IsNullOrEmpty(rewardText) ? currentQuest.rewardItemName : $" + {currentQuest.rewardItemName}";
+            }
+
+            if (string.IsNullOrEmpty(rewardText))
+            {
+                rewardText = currentQuest.rewardMoney > 0 ? $"{currentQuest.rewardMoney:N0} เหรียญ" : "-";
+            }
+
+            questRewardText.text = $"รางวัลตอบแทน: <color=#00FF7F>{rewardText}</color>";
+            questRewardText.gameObject.SetActive(true);
+        }
+
+        // เปิดปุ่มกดยอมรับ/ปฏิเสธให้กดได้แล้ว (interactable = true)
+        if (acceptButton != null)
+        {
+            acceptButton.gameObject.SetActive(true);
+            acceptButton.interactable = true;
+            if (acceptButtonText != null) acceptButtonText.text = "ยอมรับ [E/Space]";
+        }
+        if (declineButton != null)
+        {
+            declineButton.gameObject.SetActive(true);
+            declineButton.interactable = true;
+            if (declineButtonText != null) declineButtonText.text = "ปฏิเสธ [Q]";
+        }
+
+        // ปุ่ม "สอบถามเพิ่มเติม" (เปิดให้กดได้เสมอตามระดับชื่อเสียงรวม)
+        if (inquiryButton != null)
+        {
+            int repLevel = ReputationManager.Instance != null ? ReputationManager.Instance.GetLevel() : 0;
+            inquiryButton.gameObject.SetActive(true);
+            inquiryButton.interactable = true;
+
+            if (inquiryButtonText != null)
+            {
+                inquiryButtonText.text = repLevel >= 1
+                    ? "💬 สอบถามเพิ่มเติม [F]"
+                    : "🔒 สอบถามเพิ่มเติม (ต้องมีระดับ 1)";
+            }
+        }
+    }
+
+    /// <summary>
+    /// แสดงบทสนทนาข้อความแบบปิดได้ด้วยคลิกหรือ Spacebar (เช่น ตอนเตือนความจำเควส หรือตอนส่งเควสเสร็จ)
+    /// </summary>
+    public void ShowSimpleDialogue(NPCController npc, string title, string message, Sprite portrait = null, Action onFinish = null)
+    {
+        currentNPC = npc;
+        currentQuest = null;
+        isDialogActive = true;
+        isShowingResponse = false;
+        isSimpleDialogue = true;
+        isChoicesPage = false;
+        onSimpleDialogueFinished = onFinish;
+        canAcceptInputTime = Time.time + 0.35f;
+
+        UnlockCursorAndFreezePlayer();
+
+        currentDialoguePages.Clear();
+        currentDialoguePageIndex = 0;
+
+        string[] paragraphs = message.Split(new string[] { "\n\n", "\r\n\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+        if (paragraphs != null && paragraphs.Length > 0)
+        {
+            foreach (var p in paragraphs)
+            {
+                string trimmed = p.Trim();
+                if (!string.IsNullOrEmpty(trimmed)) currentDialoguePages.Add(trimmed);
+            }
+        }
+        else
+        {
+            currentDialoguePages.Add(message);
+        }
+
+        if (questDialogPanel != null)
+        {
+            questDialogPanel.SetActive(true);
+
+            if (npcNameText != null) npcNameText.text = npc != null && npc.questData != null ? npc.questData.npcName : (npc != null ? npc.name : "NPC");
+            if (questTitleText != null) questTitleText.text = title;
+
+            if (npcPortraitImage != null)
+            {
+                if (portrait != null)
+                {
+                    npcPortraitImage.sprite = portrait;
+                    npcPortraitImage.enabled = true;
+                }
+                else
+                {
+                    npcPortraitImage.enabled = false;
+                }
+            }
+
+            if (responsePanel != null) responsePanel.SetActive(false);
+            if (declineDialogueText != null) declineDialogueText.gameObject.SetActive(false);
+            if (waitingDialogueText != null) waitingDialogueText.gameObject.SetActive(false);
+
+            ShowDialoguePage(0);
+        }
     }
 
     public void OnAcceptClicked()
     {
+        if (!isChoicesPage) return; // ยังไม่ถึงหน้าสุดท้าย ไม่สามารถกดยอมรับได้
         Debug.Log($"[QuestUIManager] 🔘 OnAcceptClicked ถูกกดสำหรับเควส: '{currentQuest?.questTitle}'");
         if (currentNPC == null || currentQuest == null) return;
 
@@ -364,7 +592,6 @@ public class QuestUIManager : MonoBehaviour
             if (acceptButton != null) acceptButton.gameObject.SetActive(false);
             if (declineButton != null) declineButton.gameObject.SetActive(false);
             if (inquiryButton != null) inquiryButton.gameObject.SetActive(false);
-            if (questRequirementText != null) questRequirementText.gameObject.SetActive(false);
             if (questRewardText != null) questRewardText.gameObject.SetActive(false);
 
             // ซ่อนคำอธิบายเควสเดิมเพื่อป้องกันตัวอักษรขึ้นมาแสดงซ้อนทับกัน
@@ -377,11 +604,18 @@ public class QuestUIManager : MonoBehaviour
             waitingDialogueText.text = $"\"{waitMsg}\"";
             waitingDialogueText.gameObject.SetActive(true);
 
+            if (questRequirementText != null)
+            {
+                questRequirementText.gameObject.SetActive(true);
+                questRequirementText.text = "<color=#FFD700>กด [คลิก] หรือ [Space] เพื่อจบ</color>";
+            }
+
             isShowingResponse = true;
             isPendingAccept = true;
+            canAcceptInputTime = Time.time + 0.25f;
 
             CancelInvoke(nameof(FinishAcceptAndClose));
-            Invoke(nameof(FinishAcceptAndClose), 2.2f);
+            Invoke(nameof(FinishAcceptAndClose), 3.5f);
             return;
         }
 
@@ -399,6 +633,7 @@ public class QuestUIManager : MonoBehaviour
 
     public void OnDeclineClicked()
     {
+        if (!isChoicesPage) return; // ยังไม่ถึงหน้าสุดท้าย ไม่สามารถกดปฏิเสธได้
         Debug.Log($"[QuestUIManager] 🔘 OnDeclineClicked ถูกกดสำหรับเควส: '{currentQuest?.questTitle}'");
         if (currentNPC == null || currentQuest == null) return;
 
@@ -412,7 +647,6 @@ public class QuestUIManager : MonoBehaviour
             if (acceptButton != null) acceptButton.gameObject.SetActive(false);
             if (declineButton != null) declineButton.gameObject.SetActive(false);
             if (inquiryButton != null) inquiryButton.gameObject.SetActive(false);
-            if (questRequirementText != null) questRequirementText.gameObject.SetActive(false);
             if (questRewardText != null) questRewardText.gameObject.SetActive(false);
 
             // ซ่อนคำอธิบายเควสเดิมทันที เพื่อไม่ให้ตัวอักษรขึ้นมาซ้อนทับกับข้อความปฏิเสธ
@@ -425,14 +659,21 @@ public class QuestUIManager : MonoBehaviour
             declineDialogueText.text = $"\"{responseMessage}\"";
             declineDialogueText.gameObject.SetActive(true);
 
+            if (questRequirementText != null)
+            {
+                questRequirementText.gameObject.SetActive(true);
+                questRequirementText.text = "<color=#FFD700>กด [คลิก] หรือ [Space] เพื่อจบ</color>";
+            }
+
             if (currentNPC != null && currentNPC.declineSound != null)
                 AudioSource.PlayClipAtPoint(currentNPC.declineSound, currentNPC.transform.position);
 
             isShowingResponse = true;
             isPendingDecline = true;
+            canAcceptInputTime = Time.time + 0.25f;
 
             CancelInvoke(nameof(FinishDeclineAndClose));
-            Invoke(nameof(FinishDeclineAndClose), 2.5f);
+            Invoke(nameof(FinishDeclineAndClose), 3.5f);
             return;
         }
 
@@ -441,10 +682,11 @@ public class QuestUIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ผู้เล่นกดปุ่ม 'สอบถามเพิ่มเติม' — NPC จะเปิดเผยข้อมูลตามระดับชื่อเสียง (โดยไม่ปิด Dialog)
+    /// ผู้เล่นกดปุ่ม 'สอบถามเพิ่มเติม' — NPC จะเปิดเผยข้อมูลตามระดับชื่อเสียงในกล่องข้อความด้านล่าง (ไม่เปิดกล่องอ่านข้อมูลตรงกลางจอ)
     /// </summary>
     public void OnInquiryClicked()
     {
+        if (!isChoicesPage) return; // ยังไม่ถึงหน้าสุดท้าย ไม่สามารถกดสอบถามได้
         Debug.Log($"[QuestUIManager] 🔘 OnInquiryClicked ถูกกด");
         if (currentNPC == null || currentQuest == null) return;
 
@@ -464,19 +706,26 @@ public class QuestUIManager : MonoBehaviour
                 : "ข้ายังไม่รู้จักท่านดีพอ ขออภัยที่ยังบอกอะไรไม่ได้ (ต้องมีชื่อเสียงระดับ 1 ขึ้นไป)";
         }
 
-        // แสดงคำพูดสอบถามใน ReadingDialog (UI ของผู้เล่น) แทน Quest Dialog
+        // แสดงผลในกล่องข้อความบทสนทนาด้านล่าง (questDescriptionText)
+        if (questDescriptionText != null)
+        {
+            questDescriptionText.gameObject.SetActive(true);
+            questDescriptionText.text = repLevel >= 1
+                ? $"\"{inquiry}\""
+                : $"\"{inquiry}\"\n<size=85%><color=#FFAAAA>(ต้องการชื่อเสียงระดับ 1 ขึ้นไปเพื่อรับข้อมูลเพิ่มเติม)</color></size>";
+        }
+
+        // ซ่อนหน้าต่างอ่านข้อมูลตรงกลางจอ (ReadingDialog) หากมีเปิดอยู่
         if (InteractionUIManager.Instance != null)
         {
-            string title = repLevel >= 1
-                ? $"💬 {currentQuest.npcName} — ข้อมูลเพิ่มเติม"
-                : $"🔒 {currentQuest.npcName} — ยังไม่ไว้วางใจ";
-
-            string body = repLevel >= 1
-                ? $"\"{inquiry}\""
-                : $"\"{inquiry}\"\n\n<size=85%><color=#FFAAAA>(ต้องมีชื่อเสียงระดับ 1 ขึ้นไปก่อน)</color></size>";
-
-            InteractionUIManager.Instance.ShowReadingDialog(title, body);
+            InteractionUIManager.Instance.HideReadingDialog();
         }
+        if (playerInteraction != null && playerInteraction.IsReading())
+        {
+            playerInteraction.CloseReading();
+        }
+
+        UnlockCursorAndFreezePlayer();
 
         Debug.Log($"[QuestUIManager] 💬 สอบถาม '{currentQuest.npcName}' (ชื่อเสียงระดับ {repLevel}): '{inquiry}'");
     }
@@ -676,6 +925,11 @@ public class QuestUIManager : MonoBehaviour
         isShowingResponse = false;
         isPendingDecline = false;
         isPendingAccept = false;
+        isChoicesPage = false;
+        isSimpleDialogue = false;
+        onSimpleDialogueFinished = null;
+        currentDialoguePageIndex = 0;
+        currentDialoguePages.Clear();
 
         if (declineDialogueText != null)
         {

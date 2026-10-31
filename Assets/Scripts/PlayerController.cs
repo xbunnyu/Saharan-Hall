@@ -66,6 +66,9 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        // หากบทสนทนาเควสกำลังทำงานอยู่ ห้ามรับ Input การหันกล้องหรือเดินเด็ดขาด
+        if (QuestUIManager.Instance != null && QuestUIManager.Instance.IsDialogActive()) return;
+
         HandleLook();
         
         if (!isMovementLocked)
@@ -109,11 +112,12 @@ public class PlayerController : MonoBehaviour
         // ล็อคเมาส์กลับมาเมื่อคลิก (กรณีหลุดออกมา)
         if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && Cursor.lockState != CursorLockMode.Locked)
         {
-            // หากร้านค้า มินิเกม ศาลกุมารทอง หรือ Pause Menu เปิดอยู่ ห้ามล็อคเมาส์กลับ
+            // หากร้านค้า มินิเกม ศาลกุมารทอง Pause Menu หรือบทสนทนาเควสเปิดอยู่ ห้ามล็อคเมาส์กลับ
             if (ShopController.Instance != null && ShopController.Instance.isShopOpen) return;
             if (MinigameManager.Instance != null && MinigameManager.Instance.isMinigameActive) return;
             if (KumanThongUIController.Instance != null && KumanThongUIController.Instance.isUIOpen) return;
             if (PauseMenuManager.Instance != null && PauseMenuManager.Instance.isPaused) return;
+            if (QuestUIManager.Instance != null && QuestUIManager.Instance.IsDialogActive()) return;
 
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;

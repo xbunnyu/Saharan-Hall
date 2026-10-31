@@ -127,7 +127,10 @@ public class PlayerInteraction : MonoBehaviour
         // 4. หากกำลังเปิดหน้าต่างอ่านข้อมูลอยู่
         if (isReading)
         {
-            if (keyboard != null && (keyboard.eKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame || keyboard.escapeKey.wasPressedThisFrame))
+            var mouse = Mouse.current;
+            bool clickPressed = mouse != null && mouse.leftButton.wasPressedThisFrame;
+            bool keyDismiss = keyboard != null && (keyboard.eKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame || keyboard.escapeKey.wasPressedThisFrame || keyboard.enterKey.wasPressedThisFrame);
+            if (clickPressed || keyDismiss)
             {
                 CloseReading();
             }
@@ -577,14 +580,26 @@ public class PlayerInteraction : MonoBehaviour
         readingTitle = "";
         readingContent = "";
 
-        if (freezePlayerWhileReading && playerController != null)
-        {
-            playerController.enabled = true;
-        }
-
         if (InteractionUIManager.Instance != null)
         {
             InteractionUIManager.Instance.HideReadingDialog();
+        }
+
+        // หากกำลังอยู่ในบทสนทนาเควส (Quest Dialog Active) ห้ามเปิดการควบคุมผู้เล่น และห้ามล็อคเมาส์เด็ดขาด
+        if (QuestUIManager.Instance != null && QuestUIManager.Instance.IsDialogActive())
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            if (playerController != null)
+            {
+                playerController.enabled = false;
+            }
+            return;
+        }
+
+        if (freezePlayerWhileReading && playerController != null)
+        {
+            playerController.enabled = true;
         }
 
         if (!isInventoryOpen)
@@ -605,7 +620,11 @@ public class PlayerInteraction : MonoBehaviour
         isReading = true;
         readingTitle = title;
         readingContent = description;
-        // ไม่ freeze player เพราะ QuestUIManager เปิดและปล่อยการควบคุมกลับแล้ว
+
+        if (InteractionUIManager.Instance != null)
+        {
+            InteractionUIManager.Instance.ShowReadingDialog(title, description);
+        }
 
         if (autoCloseDuration > 0f)
         {

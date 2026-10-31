@@ -271,7 +271,7 @@ public class InteractionUIManager : MonoBehaviour
             if (readingCloseGuideText != null)
             {
                 readingCloseGuideText.text = string.IsNullOrEmpty(closeGuide)
-                    ? "กด <color=#FFD700>[E]</color> หรือ <color=#FFD700>[Esc]</color> เพื่อปิด"
+                    ? "กด <color=#FFD700>[คลิก]</color> หรือ <color=#FFD700>[Space]</color> เพื่อปิด"
                     : closeGuide;
             }
         }

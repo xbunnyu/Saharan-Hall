@@ -82,14 +82,6 @@ public class QuestUIDialogLayoutFixer : EditorWindow
                 rt.sizeDelta = new Vector2(320f, 40f);
             }
 
-            var tmp = nameTr.GetComponent<TextMeshProUGUI>();
-            if (tmp != null)
-            {
-                tmp.fontSize = 28f;
-                tmp.fontStyle = FontStyles.Bold;
-                tmp.enableAutoSizing = false;
-                tmp.alignment = TextAlignmentOptions.Left;
-            }
         }
 
         // 5. ปรับแต่งชื่อเควส (Quest Titel)
@@ -107,19 +99,9 @@ public class QuestUIDialogLayoutFixer : EditorWindow
                 rt.anchoredPosition = new Vector2(580f, -22f);
                 rt.sizeDelta = new Vector2(500f, 36f);
             }
-
-            var tmp = titleTr.GetComponent<TextMeshProUGUI>();
-            if (tmp != null)
-            {
-                tmp.fontSize = 22f;
-                tmp.color = new Color(1f, 0.85f, 0.25f, 1f);
-                tmp.enableAutoSizing = true;
-                tmp.fontSizeMin = 16f;
-                tmp.fontSizeMax = 22f;
-            }
         }
 
-        // 6. ปรับแต่งเนื้อหาบทสนทนาเควส (Quest Descriptions) - จุดสำคัญที่สุด!
+        // 6. ปรับแต่งเนื้อหาบทสนทนาเควส (Quest Descriptions)
         Transform descTr = FindChildRecursive(panelGO.transform, "Quest Descriptions");
         if (descTr == null) descTr = FindChildRecursive(panelGO.transform, "Quest Description");
         if (descTr != null)
@@ -134,19 +116,6 @@ public class QuestUIDialogLayoutFixer : EditorWindow
                 rt.pivot = new Vector2(0f, 1f);
                 rt.anchoredPosition = new Vector2(240f, -65f);
                 rt.sizeDelta = new Vector2(-280f, 115f);
-            }
-
-            var tmp = descTr.GetComponent<TextMeshProUGUI>();
-            if (tmp != null)
-            {
-                tmp.enableAutoSizing = true;
-                tmp.fontSizeMin = 14f;
-                tmp.fontSizeMax = 22f;
-                tmp.lineSpacing = 0f;
-                tmp.paragraphSpacing = 8f;
-                tmp.textWrappingMode = TextWrappingModes.Normal;
-                tmp.overflowMode = TextOverflowModes.Ellipsis;
-                tmp.alignment = TextAlignmentOptions.TopLeft;
             }
         }
 
@@ -164,16 +133,6 @@ public class QuestUIDialogLayoutFixer : EditorWindow
                 rt.anchoredPosition = new Vector2(240f, -65f);
                 rt.sizeDelta = new Vector2(-280f, 115f);
             }
-
-            var tmp = declineDiagTr.GetComponent<TextMeshProUGUI>();
-            if (tmp != null)
-            {
-                tmp.enableAutoSizing = true;
-                tmp.fontSizeMin = 14f;
-                tmp.fontSizeMax = 22f;
-                tmp.textWrappingMode = TextWrappingModes.Normal;
-                tmp.overflowMode = TextOverflowModes.Ellipsis;
-            }
         }
 
         // 8. ปรับแต่งสิ่งที่ต้องการ (QuestRequirement)
@@ -190,15 +149,6 @@ public class QuestUIDialogLayoutFixer : EditorWindow
                 rt.anchoredPosition = new Vector2(240f, 20f);
                 rt.sizeDelta = new Vector2(400f, 35f);
             }
-
-            var tmp = reqTr.GetComponent<TextMeshProUGUI>();
-            if (tmp != null)
-            {
-                tmp.enableAutoSizing = true;
-                tmp.fontSizeMin = 13f;
-                tmp.fontSizeMax = 18f;
-                tmp.overflowMode = TextOverflowModes.Ellipsis;
-            }
         }
 
         // 9. ปรับแต่งรางวัลตอบแทน (Quest Reward)
@@ -214,15 +164,6 @@ public class QuestUIDialogLayoutFixer : EditorWindow
                 rt.pivot = new Vector2(0f, 0f);
                 rt.anchoredPosition = new Vector2(660f, 20f);
                 rt.sizeDelta = new Vector2(350f, 35f);
-            }
-
-            var tmp = rewardTr.GetComponent<TextMeshProUGUI>();
-            if (tmp != null)
-            {
-                tmp.enableAutoSizing = true;
-                tmp.fontSizeMin = 13f;
-                tmp.fontSizeMax = 18f;
-                tmp.overflowMode = TextOverflowModes.Ellipsis;
             }
         }
 
@@ -304,11 +245,7 @@ public class QuestUIDialogLayoutFixer : EditorWindow
                 rt.anchorMin = Vector2.zero;
                 rt.anchorMax = Vector2.one;
                 rt.sizeDelta = Vector2.zero;
-                rt.anchoredPosition = Vector2.zero;
             }
-            textTr.enableAutoSizing = true;
-            textTr.fontSizeMin = 13f;
-            textTr.fontSizeMax = 20f;
         }
     }
 
