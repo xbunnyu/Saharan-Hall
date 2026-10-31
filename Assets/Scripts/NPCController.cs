@@ -755,7 +755,14 @@ public class NPCController : MonoBehaviour
                     ? $" (ต้องการ: {questData.requiredItemName} x{questData.requiredQuantity})"
                     : " (ภารกิจยังไม่เสร็จสิ้น)";
 
-                if (InteractionUIManager.Instance != null)
+                if (QuestUIManager.Instance != null)
+                {
+                    QuestUIManager.Instance.ShowSimpleDialogue(this,
+                        $"{questData.npcName} — รอผลภารกิจ",
+                        $"\"{waitMsg}\"\n\n<color=#FFD700>{reqText}</color>",
+                        questData.npcPortrait);
+                }
+                else if (InteractionUIManager.Instance != null)
                 {
                     InteractionUIManager.Instance.ShowNotification(
                         $"{questData.npcName}: \"{waitMsg}\"{reqText}", 3.0f);
@@ -876,13 +883,24 @@ public class NPCController : MonoBehaviour
             ? questData.completeDialogue
             : "ขอบพระคุณท่านมาก! ได้ของครบถ้วนแล้ว ข้าขอตัวลาก่อน";
 
-        if (InteractionUIManager.Instance != null)
-        {
-            InteractionUIManager.Instance.ShowNotification($"<color=#00FF7F>[ส่งเควสสำเร็จ!]</color> {questData.npcName}: \"{completeMsg}\"", 3.5f);
-        }
+        Debug.Log($"[NPCController] 🏆 ส่งมอบเควส '{questData.questTitle}' สำเร็จ!");
 
-        Debug.Log($"[NPCController] 🏆 ส่งมอบเควส '{questData.questTitle}' สำเร็จ! NPC กำลังเดินออกจากตำหนัก");
-        StartCoroutine(LeaveRoutine());
+        if (QuestUIManager.Instance != null)
+        {
+            QuestUIManager.Instance.ShowSimpleDialogue(this,
+                $"🏆 {questData.npcName} — ส่งมอบเควสสำเร็จ",
+                $"\"{completeMsg}\"",
+                questData.npcPortrait,
+                () => { StartCoroutine(LeaveRoutine()); });
+        }
+        else
+        {
+            if (InteractionUIManager.Instance != null)
+            {
+                InteractionUIManager.Instance.ShowNotification($"<color=#00FF7F>[ส่งเควสสำเร็จ!]</color> {questData.npcName}: \"{completeMsg}\"", 3.5f);
+            }
+            StartCoroutine(LeaveRoutine());
+        }
     }
 
     /// <summary>
