@@ -196,6 +196,8 @@ public class AltarUpgradeUI : MonoBehaviour
         FreezePlayer(false);
     }
 
+    public void CloseUI() => Close();
+
     private void FreezePlayer(bool freeze)
     {
         Cursor.lockState = freeze ? CursorLockMode.None  : CursorLockMode.Locked;

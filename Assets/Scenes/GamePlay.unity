@@ -64325,6 +64325,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 537a0db03b177464ab9a846a874cf948, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameEndingManager
+  useVideoCutscenes: 1
+  ghostGameOverVideo: {fileID: 32900000, guid: 69cb9da289a40f84a8d7f1da405c61d4, type: 3}
+  goodEndingVideo: {fileID: 0}
+  badEndingVideo: {fileID: 0}
+  ghostGameOverVideoPath: 
+  goodEndingVideoPath: 
+  badEndingVideoPath: 
+  videoPlayer: {fileID: 0}
   endingCanvas: {fileID: 1852376340}
   gameOverCanvas: {fileID: 0}
   goodEndingPanel: {fileID: 1426459794}
@@ -64335,6 +64343,11 @@ MonoBehaviour:
   restartButton: {fileID: 0}
   mainMenuButton: {fileID: 0}
   bgImage: {fileID: 0}
+  enableCutscenes: 1
+  typewriterSpeed: 0.032
+  customThaiFont: {fileID: 0}
+  typewriterTickSfx: {fileID: 0}
+  cutsceneSequences: []
   isGameEnding: 0
   currentEndingType: 0
 --- !u!4 &1254173246
@@ -75002,7 +75015,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 138}
+  m_AnchoredPosition: {x: -219, y: 138}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1476978534
@@ -75059,7 +75072,7 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
-  m_HorizontalAlignment: 1
+  m_HorizontalAlignment: 2
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
@@ -75091,7 +75104,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: -170.21387, w: 0}
+  m_margin: {x: -52.095787, y: 0, z: -243.67914, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -85500,6 +85513,7 @@ MonoBehaviour:
     holdScale: {x: 1, y: 1, z: 1}
     isImportant: 0
   selectedInventoryIndex: -1
+  giveThaiDessertOnStart: 1
   freezePlayerWhileReading: 1
 --- !u!1 &1652264900
 GameObject:

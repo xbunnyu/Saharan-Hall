@@ -1600,12 +1600,12 @@ public class GameEndingManager : MonoBehaviour
 
         if (AltarUpgradeUI.Instance != null)
         {
-            AltarUpgradeUI.Instance.CloseUI();
+            AltarUpgradeUI.Instance.Close();
         }
 
-        if (DailyNewsBulletin.Instance != null)
+        if (InteractionUIManager.Instance != null)
         {
-            DailyNewsBulletin.Instance.CloseBulletin();
+            InteractionUIManager.Instance.HideReadingDialog();
         }
 
         // 6. ปิด Canvas และ HUD อื่นๆ ทั้งหมดในฉาก ยกเว้น Canvas ของฉากจบ
