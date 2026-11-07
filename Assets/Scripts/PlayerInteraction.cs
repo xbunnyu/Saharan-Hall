@@ -29,6 +29,8 @@ public class PlayerInteraction : MonoBehaviour
     [Header("Starting Items (ไอเทมเริ่มต้น)")]
     [Tooltip("เพิ่มขนมไทยเข้าตัวผู้เล่น 1 ชิ้นตอนเริ่มเกมอัตโนมัติ (สำหรับนำไปถวายศาลตายาย)")]
     public bool giveThaiDessertOnStart = true;
+    [Tooltip("เพิ่มเครื่องรางเข้าตัวผู้เล่น 1 ชิ้นตอนเริ่มเกมอัตโนมัติ (สำหรับนำไปทำพิธีฝัง)")]
+    public bool giveAmuletOnStart = true;
 
     [Header("4. Settings")]
     public bool freezePlayerWhileReading = true;
@@ -71,6 +73,12 @@ public class PlayerInteraction : MonoBehaviour
         {
             AddThaiDessertItem();
         }
+
+        // เพิ่มไอเทมเครื่องรางเข้าตัวผู้เล่น 1 ชิ้นอัตโนมัติหากยังไม่มีในกระเป๋า
+        if (giveAmuletOnStart && !HasItem("เครื่องราง"))
+        {
+            AddAmuletItem();
+        }
     }
 
     /// <summary>
@@ -96,6 +104,31 @@ public class PlayerInteraction : MonoBehaviour
         );
         AddItem(dessert);
         Debug.Log("[PlayerInteraction] 🎁 เพิ่มไอเทม [ขนมไทย] 1 ชิ้นเข้ากระเป๋าผู้เล่นเรียบร้อยแล้ว!");
+    }
+
+    /// <summary>
+    /// เพิ่มไอเทมเครื่องรางเข้ากระเป๋าผู้เล่น 1 ชิ้น
+    /// </summary>
+    [ContextMenu("🎁 แอดไอเทมเครื่องราง (Add Amulet)")]
+    public void AddAmuletItem()
+    {
+        if (HasItem("เครื่องราง")) return;
+
+        InventoryItem amulet = new InventoryItem(
+            "เครื่องราง",
+            null,
+            "เครื่องรางศักดิ์สิทธิ์โบราณ สำหรับนำไปทำพิธีฝังลงดิน ณ บริเวณจุดเทียนทั้ง 4 ทิศ",
+            true,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true
+        );
+        AddItem(amulet);
+        Debug.Log("[PlayerInteraction] 🎁 เพิ่มไอเทม [เครื่องราง] 1 ชิ้นเข้ากระเป๋าผู้เล่นเรียบร้อยแล้ว!");
     }
 
     void OnDisable()
@@ -339,6 +372,8 @@ public class PlayerInteraction : MonoBehaviour
                                || currentTarget is ShopInteractable
                                || currentTarget is KumanThongInteractable
                                || currentTarget is ForestShrineInteractable
+                               || currentTarget is RitualCandleInteractable
+                               || currentTarget is AmuletBurialSpot
                                || string.IsNullOrEmpty(currentTarget.readDescription) 
                                || isNPC;
 
