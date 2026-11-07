@@ -2,7 +2,8 @@ using UnityEngine;
 
 /// <summary>
 /// วางบนโมเดลรถในซีน GamePlay (ขาไปป่า)
-/// เมื่อผู้เล่นกด [E] จะส่งคำสั่งไปยัง CarSceneFader เพื่อเล่นเสียง -> ล็อกผู้เล่น -> เฟดจอดำ -> โหลดซีน Forest -> ย้ายผู้เล่นไปยังจุดเกิดในป่า -> เฟดสว่าง
+/// - ตรวจสอบเงื่อนไข: ต้องได้รับและตอบรับจดหมายเชิญ (ForestInvitationManager) ในวันที่ 2 ก่อนจึงจะสามารถเดินทางได้
+/// - เมื่อผู้เล่นกด [E] จะส่งคำสั่งไปยัง CarSceneFader เพื่อเล่นเสียง -> ล็อกผู้เล่น -> เฟดจอดำ -> โหลดซีน Forest -> ย้ายผู้เล่นไปยังจุดเกิดในป่า -> เฟดสว่าง
 /// </summary>
 public class CarToForestInteractable : InteractableItem
 {
@@ -19,6 +20,10 @@ public class CarToForestInteractable : InteractableItem
     [Tooltip("เสียงสตาร์ทรถ / เสียงขับรถ (Optional)")]
     public AudioClip carSound;
 
+    [Header("Invitation Requirement (เงื่อนไขจดหมายเชิญ)")]
+    [Tooltip("ต้องได้รับและกดยอมรับจดหมายเชิญในวันที่ 2 ก่อนจึงจะสามารถขับรถไปป่าได้")]
+    public bool requireInvitationAccepted = true;
+
     private void Reset()
     {
         itemName = "รถยนต์";
@@ -27,17 +32,55 @@ public class CarToForestInteractable : InteractableItem
         customReadPromptText = "ขับรถไปป่า (กด E)";
         readTitle = "";
         readDescription = "";
+        requireInvitationAccepted = true;
     }
 
     private void Start()
     {
         if (string.IsNullOrEmpty(itemName)) itemName = "รถยนต์";
-        if (string.IsNullOrEmpty(customReadPromptText)) customReadPromptText = "ขับรถไปป่า (กด E)";
+        UpdatePromptState();
+    }
+
+    private void Update()
+    {
+        UpdatePromptState();
+    }
+
+    public void UpdatePromptState()
+    {
+        if (requireInvitationAccepted && ForestInvitationManager.Instance != null && !ForestInvitationManager.Instance.IsInvitationAccepted)
+        {
+            customReadPromptText = "🔒 รถยนต์ (ต้องตอบรับจดหมายเชิญก่อน)";
+        }
+        else
+        {
+            customReadPromptText = "🚗 ขับรถไปป่า (กด E)";
+        }
     }
 
     public override void OnRead(PlayerInteraction interactor)
     {
         if (CarSceneFader.Instance.IsTransitioning) return;
+
+        // ตรวจสอบเงื่อนไขการตอบรับจดหมายเชิญ
+        if (requireInvitationAccepted && ForestInvitationManager.Instance != null && !ForestInvitationManager.Instance.IsInvitationAccepted)
+        {
+            string lockReason = ForestInvitationManager.Instance.GetCarLockReason();
+            if (string.IsNullOrEmpty(lockReason))
+            {
+                lockReason = "<color=#FF4500>⚠️ ยังไม่สามารถออกเดินทางได้!</color>\nต้องได้รับและตอบรับจดหมายเชิญไปป่าก่อน";
+            }
+
+            if (interactor != null)
+            {
+                interactor.ShowNotification(lockReason, 4.0f);
+            }
+            else if (InteractionUIManager.Instance != null)
+            {
+                InteractionUIManager.Instance.ShowNotification(lockReason, 4.0f);
+            }
+            return;
+        }
 
         if (interactor != null)
         {
