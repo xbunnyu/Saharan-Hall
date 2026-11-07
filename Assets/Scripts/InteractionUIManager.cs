@@ -127,6 +127,49 @@ public class InteractionUIManager : MonoBehaviour
         {
             dropButton.onClick.AddListener(OnDropButtonClicked);
         }
+
+        // ตรวจสอบและซ่อมแซมการตั้งค่า UI อัตโนมัติ (ป้องกันบั๊กตำแหน่งหลุดนอกจอหรือตัวแปร null)
+        AutoRepairUIElements();
+    }
+
+    /// <summary>
+    /// ตรวจสอบและกู้คืนตำแหน่งของ UI Prompt และ Notification กรณีฉากตั้งค่าไว้ผิดพลาดหรือหลุดออกนอกจอ
+    /// </summary>
+    private void AutoRepairUIElements()
+    {
+        // 1. ซ่อมแซม Notification Text
+        if (notificationText == null && notificationPanel != null)
+        {
+            notificationText = notificationPanel.GetComponentInChildren<TextMeshProUGUI>(true);
+        }
+
+        // 2. ซ่อมแซม Prompt Panel Scale และ AnchoredPosition ไม่ให้หลุดนอกจอ (เช่น y = 2015)
+        if (promptPanel != null)
+        {
+            Vector3 s = promptPanel.transform.localScale;
+            if (Mathf.Abs(s.x) < 0.2f || Mathf.Abs(s.y) < 0.2f || Mathf.Abs(s.z) < 0.2f)
+            {
+                promptPanel.transform.localScale = Vector3.one;
+            }
+
+            if (promptItemNameText != null && promptItemNameText.rectTransform != null)
+            {
+                if (Mathf.Abs(promptItemNameText.rectTransform.anchoredPosition.y) > 250f)
+                {
+                    promptItemNameText.rectTransform.anchoredPosition = new Vector2(0f, 15f);
+                    promptItemNameText.rectTransform.sizeDelta = new Vector2(480f, 35f);
+                }
+            }
+
+            if (promptActionText != null && promptActionText.rectTransform != null)
+            {
+                if (Mathf.Abs(promptActionText.rectTransform.anchoredPosition.y) > 250f)
+                {
+                    promptActionText.rectTransform.anchoredPosition = new Vector2(0f, -15f);
+                    promptActionText.rectTransform.sizeDelta = new Vector2(480f, 35f);
+                }
+            }
+        }
     }
 
     void Update()
@@ -145,11 +188,20 @@ public class InteractionUIManager : MonoBehaviour
         }
     }
 
+    private InteractableItem currentPromptItem;
+    private bool currentIsReading;
+    private bool currentIsInventoryOpen;
+    private string lastNotificationMessage = "";
+
     /// <summary>
     /// อัปเดตการแสดงผล Prompt ตามไอเทมที่ผู้เล่นกำลังเล็งอยู่
     /// </summary>
     public void UpdatePrompt(InteractableItem item, bool isReading, bool isInventoryOpen = false)
     {
+        currentPromptItem = item;
+        currentIsReading = isReading;
+        currentIsInventoryOpen = isInventoryOpen;
+
         // ถ้ากำลังอ่านข้อความ หรือเปิดกระเป๋าอยู่ หรือไม่ได้เล็งไอเทม ให้ซ่อน Prompt
         if (isReading || isInventoryOpen || item == null)
         {
@@ -541,11 +593,88 @@ public class InteractionUIManager : MonoBehaviour
 
     public void ShowNotification(string message, float duration = 2.5f)
     {
-        if (notificationPanel != null && notificationText != null)
+        lastNotificationMessage = message;
+        notificationTimer = duration;
+
+        if (notificationPanel != null)
         {
-            notificationText.text = message;
+            if (notificationText == null)
+            {
+                notificationText = notificationPanel.GetComponentInChildren<TextMeshProUGUI>(true);
+            }
+
+            if (notificationText != null)
+            {
+                notificationText.text = message;
+            }
             notificationPanel.SetActive(true);
-            notificationTimer = duration;
+        }
+
+        Debug.Log($"[Notification] 🔔 {message}");
+    }
+
+    private void OnGUI()
+    {
+        // 1. Fallback Notification Banner (กรณี Canvas NotificationPanel ปิดอยู่ หรือไม่มี notificationText)
+        if (notificationTimer > 0 && !string.IsNullOrEmpty(lastNotificationMessage))
+        {
+            bool canvasNotiVisible = notificationPanel != null && notificationPanel.activeInHierarchy && notificationText != null;
+            if (!canvasNotiVisible)
+            {
+                float bannerW = Mathf.Min(600f, Screen.width * 0.9f);
+                float bannerH = 50f;
+                float bannerX = (Screen.width - bannerW) / 2f;
+                float bannerY = 40f;
+
+                GUI.color = new Color(0f, 0f, 0f, 0.85f);
+                GUI.Box(new Rect(bannerX, bannerY, bannerW, bannerH), GUIContent.none);
+                GUI.color = Color.white;
+
+                GUIStyle notiStyle = new GUIStyle(GUI.skin.label);
+                notiStyle.fontSize = 16;
+                notiStyle.fontStyle = FontStyle.Bold;
+                notiStyle.alignment = TextAnchor.MiddleCenter;
+                notiStyle.wordWrap = true;
+                notiStyle.richText = true;
+                notiStyle.normal.textColor = new Color(1f, 0.9f, 0.3f);
+
+                GUI.Label(new Rect(bannerX + 10, bannerY + 5, bannerW - 20, bannerH - 10), lastNotificationMessage, notiStyle);
+            }
+        }
+
+        // 2. Fallback Interaction Prompt (กรณี Canvas PromptPanel ปิดอยู่ หรือข้อความหลุดนอกจอ)
+        if (currentPromptItem != null && !currentIsReading && !currentIsInventoryOpen)
+        {
+            bool canvasPromptVisible = promptPanel != null && promptPanel.activeInHierarchy;
+            if (!canvasPromptVisible)
+            {
+                float promptW = Mathf.Min(400f, Screen.width * 0.8f);
+                float promptH = 50f;
+                float promptX = (Screen.width - promptW) / 2f;
+                float promptY = Screen.height * 0.72f;
+
+                GUI.color = new Color(0f, 0f, 0f, 0.75f);
+                GUI.Box(new Rect(promptX, promptY, promptW, promptH), GUIContent.none);
+                GUI.color = Color.white;
+
+                GUIStyle promptTitleStyle = new GUIStyle(GUI.skin.label);
+                promptTitleStyle.fontSize = 15;
+                promptTitleStyle.fontStyle = FontStyle.Bold;
+                promptTitleStyle.alignment = TextAnchor.UpperCenter;
+                promptTitleStyle.normal.textColor = Color.white;
+
+                GUIStyle promptKeyStyle = new GUIStyle(GUI.skin.label);
+                promptKeyStyle.fontSize = 13;
+                promptKeyStyle.alignment = TextAnchor.LowerCenter;
+                promptKeyStyle.richText = true;
+                promptKeyStyle.normal.textColor = new Color(1f, 0.85f, 0.2f);
+
+                string key = !string.IsNullOrEmpty(currentPromptItem.interactionKeyText) ? currentPromptItem.interactionKeyText.ToUpper() : "E";
+                string action = !string.IsNullOrEmpty(currentPromptItem.customReadPromptText) ? currentPromptItem.customReadPromptText : "กดเพื่อโต้ตอบ";
+
+                GUI.Label(new Rect(promptX, promptY + 4, promptW, 20), currentPromptItem.itemName, promptTitleStyle);
+                GUI.Label(new Rect(promptX, promptY + 24, promptW, 20), $"[{key}] {action}", promptKeyStyle);
+            }
         }
     }
 

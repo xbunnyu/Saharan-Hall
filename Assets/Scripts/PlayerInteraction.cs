@@ -271,17 +271,22 @@ public class PlayerInteraction : MonoBehaviour
         if (playerCamera == null) return;
 
         Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+        InteractableItem item = null;
+
         if (Physics.Raycast(ray, out RaycastHit hit, interactDistance, interactLayer))
         {
-            InteractableItem item = hit.collider.GetComponent<InteractableItem>() 
+            item = hit.collider.GetComponent<InteractableItem>() 
                 ?? hit.collider.GetComponentInParent<InteractableItem>();
+        }
 
-            currentTarget = item;
-        }
-        else
+        // หากยิง Raycast เส้นตรงไม่โดน (เช่น มองหลุมดินที่เตี้ยหรือมองเฉียดๆ) ให้ใช้ SphereCast รัศมี 25 ซม. ช่วยช่วยเล็ง
+        if (item == null && Physics.SphereCast(ray, 0.25f, out RaycastHit sphereHit, interactDistance, interactLayer))
         {
-            currentTarget = null;
+            item = sphereHit.collider.GetComponent<InteractableItem>() 
+                ?? sphereHit.collider.GetComponentInParent<InteractableItem>();
         }
+
+        currentTarget = item;
 
         // จัดการสถานะ Hover Highlight เมื่อผู้เล่นเล็งเป้าใส่หรือเบนเป้าออก
         if (previousTarget != currentTarget)

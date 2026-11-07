@@ -75,8 +75,26 @@ public class AmuletBurialSpot : InteractableItem
     {
         base.Awake();
 
-        if (Instance == null) Instance = this;
-        else if (Instance != this) Destroy(this);
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else if (Instance != this)
+        {
+            // หาก Instance เดิมเป็นเพียง dummy object ไม่มี visual แต่ตัวนี้มี visual ให้แทนที่ด้วยตัวจริงนี้
+            if (Instance.unburiedVisual == null && Instance.buriedVisual == null && (unburiedVisual != null || buriedVisual != null))
+            {
+                Debug.LogWarning($"[AmuletBurialSpot] ⚠️ พบ Instance ซ้ำซ้อนที่ไม่มี visual [{Instance.name}] — แทนที่ด้วย [{name}] ตัวจริง!");
+                Destroy(Instance.gameObject);
+                Instance = this;
+            }
+            else
+            {
+                Debug.LogWarning($"[AmuletBurialSpot] ⚠️ มี AmuletBurialSpot มากกว่า 1 ตัวในฉาก! ทำลายตัวซ้ำบน [{gameObject.name}]");
+                Destroy(this);
+                return;
+            }
+        }
 
         itemName = "หลุมพิธีฝังเครื่องราง";
         canRead = true;
@@ -109,33 +127,37 @@ public class AmuletBurialSpot : InteractableItem
     }
 
     /// <summary>
-    /// ปรับ Collider ทั้งหมดของหลุมพิธีให้เป็น IsTrigger เพื่อให้เดินผ่านได้ ไม่ติดกำแพงล่องหน
+    /// ปรับและรับประกันว่าหลุมพิธีมี Trigger Collider เสมอ เพื่อให้ผู้เล่นเดินผ่านได้ และสามารถมองเห็น/เล็งกดโต้ตอบได้ 100%
     /// </summary>
     public void EnsureTriggerColliders()
     {
-        Collider[] allCols = GetComponentsInChildren<Collider>(true);
-        if (allCols.Length > 0)
+        // 1. รับประกันว่าตัว Root GameObject มี BoxCollider ประจำตัวเสมอ
+        BoxCollider rootBox = GetComponent<BoxCollider>();
+        if (rootBox == null)
         {
-            foreach (var col in allCols)
-            {
-                if (col is MeshCollider meshCol)
-                {
-                    meshCol.convex = true;
-                }
-                col.isTrigger = true;
-            }
+            rootBox = gameObject.AddComponent<BoxCollider>();
         }
-        else
-        {
-            BoxCollider box = gameObject.AddComponent<BoxCollider>();
-            box.isTrigger = true;
+        rootBox.isTrigger = true;
+        rootBox.enabled = true;
 
-            // ชดเชย scale ของโมเดลเพื่อไม่ให้ collider พองโตผิดขนาด
-            float scaleX = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.x));
-            float scaleY = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.y));
-            float scaleZ = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.z));
-            box.size = new Vector3(1.5f / scaleX, 0.5f / scaleY, 1.5f / scaleZ);
-            box.center = new Vector3(0f, 0.25f / scaleY, 0f);
+        float scaleX = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.x));
+        float scaleY = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.y));
+        float scaleZ = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.z));
+
+        // ขนาด 2.8m x 1.4m x 2.8m กว้างพอให้เล็งง่ายเมื่อยืนอยู่รอบๆ หลุมดิน
+        rootBox.size = new Vector3(2.8f / scaleX, 1.4f / scaleY, 2.8f / scaleZ);
+        rootBox.center = new Vector3(0f, 0.45f / scaleY, 0f);
+
+        // 2. ปรับ Collider ในลูกๆ ทั้งหมดให้เป็น Trigger เพื่อไม่ให้กลายเป็นกำแพงล่องหน
+        Collider[] allCols = GetComponentsInChildren<Collider>(true);
+        foreach (var col in allCols)
+        {
+            if (col == rootBox) continue;
+            if (col is MeshCollider meshCol)
+            {
+                meshCol.convex = true;
+            }
+            col.isTrigger = true;
         }
     }
 
@@ -293,11 +315,20 @@ public class AmuletBurialSpot : InteractableItem
         bool hasAmulet = interactor.HasItem(amuletItemName);
         if (!hasAmulet)
         {
-            interactor.ShowNotification(
-                $"⚠️ <color=#FFAA00>จุดเทียนครบแล้ว แต่คุณยังไม่มี <b>[{amuletItemName}]</b> สำหรับนำมาทำพิธีฝัง!</color>",
-                4.5f
-            );
-            return;
+            if (autoGiveAmuletOnStart)
+            {
+                interactor.AddAmuletItem();
+                hasAmulet = true;
+                Debug.Log($"[AmuletBurialSpot] 🎁 แอดไอเทม [{amuletItemName}] ให้ผู้เล่นอัตโนมัติเนื่องจากกำลังเริ่มพิธีฝัง");
+            }
+            else
+            {
+                interactor.ShowNotification(
+                    $"⚠️ <color=#FFAA00>จุดเทียนครบแล้ว แต่คุณยังไม่มี <b>[{amuletItemName}]</b> สำหรับนำมาทำพิธีฝัง!</color>",
+                    4.5f
+                );
+                return;
+            }
         }
 
         // 4. เงื่อนไขครบทั้งหมด -> ทำพิธีฝังเครื่องรางทันที!

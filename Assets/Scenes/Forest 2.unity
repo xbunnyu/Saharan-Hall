@@ -2785,7 +2785,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 629472945}
-  - component: {fileID: 629472946}
   m_Layer: 0
   m_Name: point
   m_TagString: Untagged
@@ -2808,84 +2807,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &629472946
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 629472944}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9e307f1c723821942b250f6ad2189ca5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AmuletBurialSpot
-  itemName: "\u0E44\u0E2D\u0E40\u0E17\u0E21"
-  itemIcon: {fileID: 0}
-  itemDescription: "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E44\u0E2D\u0E40\u0E17\u0E21\u0E40\u0E21\u0E37\u0E48\u0E2D\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E01\u0E23\u0E30\u0E40\u0E1B\u0E4B\u0E32..."
-  canRead: 1
-  interactionKeyText: E
-  customReadPromptText: 
-  readTitle: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E2D\u0E40\u0E17\u0E21"
-  readDescription: "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E17\u0E35\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E43\u0E2B\u0E49\u0E2D\u0E48\u0E32\u0E19..."
-  canCollect: 1
-  destroyOnCollect: 1
-  isUsable: 1
-  useSound: {fileID: 0}
-  onUse:
-    m_PersistentCalls:
-      m_Calls: []
-  worldPrefab: {fileID: 0}
-  holdOffset: {x: 0.3, y: -0.25, z: 0.5}
-  holdRotation: {x: 0, y: 0, z: 0}
-  holdScale: {x: 1, y: 1, z: 1}
-  requireHeldItem: 0
-  requiredItemName: 
-  consumeHeldItemOnUse: 1
-  isPlacementSocket: 0
-  socketAttachPoint: {fileID: 0}
-  useWithHeldItemSound: {fileID: 0}
-  onUsedWithHeldItem:
-    m_PersistentCalls:
-      m_Calls: []
-  readSound: {fileID: 0}
-  collectSound: {fileID: 0}
-  onRead:
-    m_PersistentCalls:
-      m_Calls: []
-  onCollect:
-    m_PersistentCalls:
-      m_Calls: []
-  isImportantItem: 0
-  highlightTriggerMode: 1
-  glowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
-  enablePointLightGlow: 1
-  enableSparkles: 1
-  showImportantBadgeInUI: 1
-  candles: []
-  totalCandlesRequired: 4
-  unburiedVisual: {fileID: 0}
-  buriedVisual: {fileID: 794614896621457596, guid: 63ff93f64bd105b4886df4f62416cef8, type: 3}
-  amuletVisualInPit: {fileID: 0}
-  amuletItemName: "\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E23\u0E32\u0E07"
-  consumeAmuletOnBurial: 1
-  autoGiveAmuletOnStart: 1
-  ghostChaseDelay: 5
-  ghostController: {fileID: 0}
-  candleCompleteSound: {fileID: 0}
-  burialDigSound: {fileID: 0}
-  ritualCompleteSound: {fileID: 0}
-  burialParticle: {fileID: 0}
-  isBuried: 0
-  onAllCandlesLit:
-    m_PersistentCalls:
-      m_Calls: []
-  onBurialCompleted:
-    m_PersistentCalls:
-      m_Calls: []
-  onGhostChaseStarted:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!1 &653631506
 GameObject:
   m_ObjectHideFlags: 0
