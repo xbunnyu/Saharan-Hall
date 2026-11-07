@@ -112,7 +112,31 @@ public class QuestUIManager : MonoBehaviour
         }
 
         EnsureProperTextSettings();
+        SetupButtonBounces();
         UpdateQuestTrackerCanvas();
+    }
+
+    /// <summary>
+    /// ติดตั้งเอฟเฟกต์เด้งดึ๋ง (Bounce Feedback) ให้กับปุ่มรับงาน ปุ่มปฏิเสธ และปุ่มสอบถามเพิ่มเติมอัตโนมัติ
+    /// </summary>
+    private void SetupButtonBounces()
+    {
+        AttachBounceEffect(acceptButton);
+        AttachBounceEffect(declineButton);
+        AttachBounceEffect(inquiryButton);
+    }
+
+    private void AttachBounceEffect(Button btn)
+    {
+        if (btn == null) return;
+        if (!btn.TryGetComponent<UIButtonBounce>(out var bounce))
+        {
+            bounce = btn.gameObject.AddComponent<UIButtonBounce>();
+            bounce.hoverScale = 1.08f;
+            bounce.clickScale = 0.95f;
+            bounce.useElasticBounce = true;
+            bounce.bounceOvershoot = 1.12f;
+        }
     }
 
     /// <summary>
