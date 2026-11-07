@@ -1,10 +1,24 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
 /// <summary>
-/// ระบบโต๊ะหมู่บูชา — Singleton จัดการระดับและ QTE Assist
+/// รูปแบบการแสดงผลโมเดลตามระดับการอัพเกรด
+/// </summary>
+public enum AltarVisualMode
+{
+    [Tooltip("แสดงเฉพาะโมเดลของระดับปัจจุบันเท่านั้น (เช่น Lv 2 แสดง level2, ซ่อน level1, 3, 4)")]
+    SingleActiveLevel,
+
+    [Tooltip("แสดงโมเดลสะสมตามระดับ (เช่น Lv 2 แสดงทั้ง level1 และ level2)")]
+    CumulativeLevels
+}
+
+/// <summary>
+/// ระบบโต๊ะหมู่บูชา — Singleton จัดการระดับ, รูปลักษณ์ตามการอัพเกรด และ QTE Assist
 /// วิธีใช้: วางบน GameObject ที่เป็นโต๊ะหมู่บูชาในฉาก
-/// ผู้เล่นเดินมากด [E] เพื่อดูข้อมูลหรืออัพเกรด
+/// ผู้เล่นเดินมากด [T] หรือ [E] เพื่อดูข้อมูลหรืออัพเกรด
 /// </summary>
 public class BuddhistAltarManager : InteractableItem
 {
@@ -20,6 +34,25 @@ public class BuddhistAltarManager : InteractableItem
     [Tooltip("ระดับปัจจุบันของโต๊ะหมู่บูชา (1–4)")]
     [Range(1, 4)]
     public int currentLevel = 1;
+
+    [Header("=== รูปลักษณ์ตามระดับการอัพเกรด (Level Visuals) ===")]
+    [Tooltip("รูปแบบการแสดงผล: SingleActiveLevel = แสดงเฉพาะเลเวลปัจจุบัน, CumulativeLevels = แสดงสะสม")]
+    public AltarVisualMode visualMode = AltarVisualMode.SingleActiveLevel;
+
+    [Tooltip("โมเดลสำหรับ Level 1 (ถ้าเว้นว่างจะค้นหาลูกชื่อ 'level1' อัตโนมัติ)")]
+    public GameObject level1Visual;
+    [Tooltip("โมเดลสำหรับ Level 2 (ถ้าเว้นว่างจะค้นหาลูกชื่อ 'level2' อัตโนมัติ)")]
+    public GameObject level2Visual;
+    [Tooltip("โมเดลสำหรับ Level 3 (ถ้าเว้นว่างจะค้นหาลูกชื่อ 'level3' อัตโนมัติ)")]
+    public GameObject level3Visual;
+    [Tooltip("โมเดลสำหรับ Level 4 (ถ้าเว้นว่างจะค้นหาลูกชื่อ 'level4' อัตโนมัติ)")]
+    public GameObject level4Visual;
+
+    [Header("เอฟเฟกต์การอัพเกรด (Upgrade FX - Optional)")]
+    [Tooltip("Particle System เล่นเมื่ออัพเกรดสำเร็จ (ถ้ามี)")]
+    public ParticleSystem upgradeEffect;
+    [Tooltip("เสียงเมื่ออัพเกรดสำเร็จ (AudioClip - Optional)")]
+    public AudioClip upgradeSound;
 
     [Header("ค่าอัพเกรด (Upgrade Cost)")]
     [Tooltip("ค่าอัพเกรดจาก L1 → L2 (บาท)")]
@@ -115,17 +148,19 @@ public class BuddhistAltarManager : InteractableItem
     // ──────────────────────────────────────────────────────────
     // Unity Lifecycle
     // ──────────────────────────────────────────────────────────
-    void Awake()
+    protected override void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
         }
-        else
+        else if (Instance != this)
         {
             Destroy(gameObject);
             return;
         }
+
+        base.Awake();
 
         // ตั้งค่า InteractableItem base
         itemName             = "โต๊ะหมู่บูชา";
@@ -142,6 +177,10 @@ public class BuddhistAltarManager : InteractableItem
 
         // ตรวจสอบและสร้าง AltarUpgradeUI หากยังไม่มีใน Scene
         EnsureUpgradeUIExists();
+
+        // ตรวจหาและแสดงโมเดลตามระดับปัจจุบัน
+        AutoFindLevelVisualsIfMissing();
+        UpdateVisualsForLevel(currentLevel);
     }
 
     private void EnsureUpgradeUIExists()
@@ -231,6 +270,13 @@ public class BuddhistAltarManager : InteractableItem
         currentLevel++;
 
         RefreshPrompt();
+
+        // อัปเดตรูปลักษณ์โมเดลของโต๊ะหมู่บูชาทันที
+        UpdateVisualsForLevel(currentLevel);
+
+        // เล่นเอฟเฟกต์และเสียงอัพเกรด
+        PlayUpgradeEffects();
+
         onUpgraded?.Invoke(currentLevel);
 
         // ชำระล้างวิญญาณชั่วร้ายด้วยบารมีโต๊ะหมู่บูชา
@@ -244,21 +290,192 @@ public class BuddhistAltarManager : InteractableItem
                      $"ใช้ {cost:N0} บาท | {benefitText}";
         interactor?.ShowNotification(msg, 4.0f);
 
-        Debug.Log($"[BuddhistAltar] ✨ Lv.{prevLevel}→Lv.{currentLevel} | " +
+        Debug.Log($"[BuddhistAltar] ✨ อัพเกรด Lv.{prevLevel}→Lv.{currentLevel} | " +
                   $"QteWindow={ActiveQteWindow:F2}s | Speed={ActiveQteSpeed:F1} | " +
                   $"VisualAid={ActiveVisualAid} | AutoCatch={ActiveAutoCatch}");
     }
 
-    private void ShowStatus(PlayerInteraction interactor)
-    {
-        string line1 = $"⛩️ โต๊ะหมู่บูชา <color=#FFD700>Lv.{currentLevel}</color>";
-        string line2 = GetLevelBenefitText(currentLevel);
-        string line3 = currentLevel < 4
-            ? $"อัพเกรดครั้งถัดไป: <color=#FFD700>{GetUpgradeCost():N0} บาท</color> → Lv.{currentLevel + 1}"
-            : "<color=#4ADE80>★ ระดับสูงสุดแล้ว!</color>";
+    // ──────────────────────────────────────────────────────────
+    // ระบบการเปลี่ยนแปลงรูปลักษณ์โมเดล (Visual Level System)
+    // ──────────────────────────────────────────────────────────
 
-        interactor?.ShowNotification($"{line1}\n{line2}\n{line3}", 4.0f);
+    /// <summary>
+    /// อัปเดตการแสดงผลโมเดลตามระดับปัจจุบัน
+    /// </summary>
+    public void UpdateVisuals()
+    {
+        UpdateVisualsForLevel(currentLevel);
     }
+
+    /// <summary>
+    /// อัปเดตเปิด/ปิดโมเดล GameObject ตามระดับที่กำหนด
+    /// </summary>
+    public void UpdateVisualsForLevel(int targetLevel)
+    {
+        AutoFindLevelVisualsIfMissing();
+
+        GameObject[] visuals = new GameObject[] { level1Visual, level2Visual, level3Visual, level4Visual };
+
+        for (int i = 0; i < visuals.Length; i++)
+        {
+            if (visuals[i] == null) continue;
+
+            int visualLevel = i + 1;
+            bool shouldBeActive = false;
+
+            if (visualMode == AltarVisualMode.SingleActiveLevel)
+            {
+                // เปิดเฉพาะระดับปัจจุบันเท่านั้น
+                shouldBeActive = (visualLevel == targetLevel);
+            }
+            else
+            {
+                // แสดงสะสมทุกระดับที่ผ่านมา
+                shouldBeActive = (visualLevel <= targetLevel);
+            }
+
+            if (visuals[i].activeSelf != shouldBeActive)
+            {
+                visuals[i].SetActive(shouldBeActive);
+            }
+        }
+
+        Debug.Log($"[BuddhistAltar] ⛩️ อัปเดตรูปลักษณ์โต๊ะหมู่บูชาตาม Lv.{targetLevel} (โหมด: {visualMode}) เรียบร้อยแล้ว");
+    }
+
+    /// <summary>
+    /// ค้นหา GameObject โมเดล level1, level2, level3, level4 อัตโนมัติหากยังไม่ได้ลากใส่ใน Inspector
+    /// </summary>
+    public void AutoFindLevelVisualsIfMissing()
+    {
+        if (level1Visual != null && level2Visual != null && level3Visual != null && level4Visual != null)
+        {
+            return;
+        }
+
+        // 1. ตรวจสอบใน Transform ของตัวเอง
+        FindInTransform(transform);
+
+        // 2. ตรวจสอบใน Transform ของ Parent (เช่น table group)
+        if (transform.parent != null)
+        {
+            FindInTransform(transform.parent);
+        }
+
+        // 3. ตรวจสอบใน GameObject ชื่อ "table group" หรือค้นหาในฉาก
+        if (level1Visual == null || level2Visual == null || level3Visual == null || level4Visual == null)
+        {
+            GameObject tableGroup = GameObject.Find("table group") ?? GameObject.Find("Table Group") ?? GameObject.Find("TableGroup");
+            if (tableGroup != null)
+            {
+                FindInTransform(tableGroup.transform);
+            }
+        }
+    }
+
+    private void FindInTransform(Transform root)
+    {
+        if (root == null) return;
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform child = root.GetChild(i);
+            string n = child.name.Trim().ToLower();
+
+            if (level1Visual == null && IsMatchLevel(n, 1)) level1Visual = child.gameObject;
+            if (level2Visual == null && IsMatchLevel(n, 2)) level2Visual = child.gameObject;
+            if (level3Visual == null && IsMatchLevel(n, 3)) level3Visual = child.gameObject;
+            if (level4Visual == null && IsMatchLevel(n, 4)) level4Visual = child.gameObject;
+        }
+    }
+
+    private bool IsMatchLevel(string nameLower, int lvl)
+    {
+        return nameLower == $"level{lvl}" 
+            || nameLower == $"level {lvl}" 
+            || nameLower == $"level_{lvl}" 
+            || nameLower == $"lv{lvl}" 
+            || nameLower == $"lv {lvl}"
+            || nameLower == $"lv_{lvl}"
+            || nameLower.EndsWith($"level{lvl}")
+            || nameLower.EndsWith($"lv{lvl}");
+    }
+
+    /// <summary>
+    /// เล่นเอฟเฟกต์อนุภาคและแสงเรืองเมื่ออัพเกรดสำเร็จ
+    /// </summary>
+    private void PlayUpgradeEffects()
+    {
+        // 1. เล่นเสียง
+        if (upgradeSound != null)
+        {
+            AudioSource.PlayClipAtPoint(upgradeSound, transform.position);
+        }
+
+        // 2. เล่น Particle System
+        if (upgradeEffect != null)
+        {
+            upgradeEffect.Play();
+        }
+        else
+        {
+            // Fallback: แสงเรืองแสงสีทองสว่างวาบ (Divine Flash Light)
+            StartCoroutine(FlashUpgradeGlowRoutine());
+        }
+    }
+
+    private IEnumerator FlashUpgradeGlowRoutine()
+    {
+        GameObject lightObj = new GameObject("AltarUpgrade_FlashLight");
+        lightObj.transform.position = transform.position + Vector3.up * 0.8f;
+        Light pointLight = lightObj.AddComponent<Light>();
+        pointLight.type = LightType.Point;
+        pointLight.color = new Color(1.0f, 0.85f, 0.3f);
+        pointLight.range = 6.0f;
+        pointLight.intensity = 3.5f;
+
+        float elapsed = 0f;
+        float duration = 0.8f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            if (pointLight != null)
+            {
+                pointLight.intensity = Mathf.Lerp(3.5f, 0f, t);
+            }
+            yield return null;
+        }
+
+        if (lightObj != null)
+        {
+            Destroy(lightObj);
+        }
+    }
+
+    /// <summary>
+    /// กำหนดระดับของโต๊ะหมู่บูชาโดยตรง พร้อมอัปเดตรูปลักษณ์และ Prompt
+    /// </summary>
+    public void SetLevel(int newLevel)
+    {
+        currentLevel = Mathf.Clamp(newLevel, 1, 4);
+        RefreshPrompt();
+        UpdateVisualsForLevel(currentLevel);
+        onUpgraded?.Invoke(currentLevel);
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        currentLevel = Mathf.Clamp(currentLevel, 1, 4);
+        RefreshPrompt();
+        if (!Application.isPlaying)
+        {
+            AutoFindLevelVisualsIfMissing();
+            UpdateVisualsForLevel(currentLevel);
+        }
+    }
+#endif
 
     // ──────────────────────────────────────────────────────────
     // Public Helpers
@@ -299,4 +516,19 @@ public class BuddhistAltarManager : InteractableItem
     {
         customReadPromptText = GetUpgradePrompt();
     }
+
+    // ──────────────────────────────────────────────────────────
+    // ContextMenu สำหรับทดสอบเปลี่ยนเลเวลใน Inspector
+    // ──────────────────────────────────────────────────────────
+    [ContextMenu("⛩️ [ทดสอบ] แสดงโมเดล Level 1")]
+    public void ContextSetLevel1() => SetLevel(1);
+
+    [ContextMenu("⛩️ [ทดสอบ] แสดงโมเดล Level 2")]
+    public void ContextSetLevel2() => SetLevel(2);
+
+    [ContextMenu("⛩️ [ทดสอบ] แสดงโมเดล Level 3")]
+    public void ContextSetLevel3() => SetLevel(3);
+
+    [ContextMenu("⛩️ [ทดสอบ] แสดงโมเดล Level 4")]
+    public void ContextSetLevel4() => SetLevel(4);
 }

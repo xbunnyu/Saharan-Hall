@@ -32,6 +32,18 @@ public class HallManager : MonoBehaviour
     [Tooltip("รายการเควสและบทสนทนาที่จะสุ่ม/วนส่ง NPC เข้ามา")]
     public List<QuestData> questList = new List<QuestData>();
 
+    [Header("3.5 ระบบป้องกันเควสออกซ้ำ (No-Repeat Quest System)")]
+    [Tooltip("ป้องกันไม่ให้สุ่มได้เควสที่เคยออกไปแล้วในวันเดียวกัน (จะไม่ซ้ำจนกว่าเควสทั้งหมดจะถูกใช้ครบ)")]
+    public bool preventDuplicateQuests = true;
+    [Tooltip("ห้ามสุ่มได้เควสเดิมซ้ำทันทีติดกันกับคนก่อนหน้า (No consecutive duplicate)")]
+    public bool avoidConsecutiveRepeat = true;
+    [Tooltip("เติมเควสพื้นฐานเพิ่มอัตโนมัติหากมีเควสในรายการน้อยกว่าจำนวน NPC ต่อวัน")]
+    public bool autoSupplementDefaultQuests = true;
+
+    // Runtime tracking สำหรับป้องกันเควสซ้ำ
+    private HashSet<string> usedQuestIdsThisSession = new HashSet<string>();
+    private string lastPickedQuestId = string.Empty;
+
     [Header("5.5 Difficulty Weight (น้ำหนักการสุ่มระดับความยาก)")]
     [Tooltip("น้ำหนักการสุ่มเควสแต่ละระดับ (ผลรวมไม่จำเป็นต้องเท่ากับ 100)")]
     [Range(0, 100)] public int weightEasy     = 40;   // 40% ง่าย
@@ -191,10 +203,10 @@ public class HallManager : MonoBehaviour
 
     private void PopulateDefaultQuestsIfEmpty()
     {
-        if (questList.Count == 0)
+        List<QuestData> defaultQuests = new List<QuestData>()
         {
             // ─── EASY ─────────────────────────────────────────────────────────────
-            questList.Add(new QuestData
+            new QuestData
             {
                 questId          = "quest_easy_chant",
                 problemType      = "ดวงตก / เคราะห์ร้าย",
@@ -210,10 +222,27 @@ public class HallManager : MonoBehaviour
                 rewardDescription= "เงิน 150 เหรียญ",
                 rewardMoney      = 150,
                 karmaReward      = 15
-            });
+            },
+            new QuestData
+            {
+                questId          = "quest_timing_cleanse",
+                problemType      = "เคราะห์ซ้ำกรรมซัด",
+                difficulty       = QuestDifficulty.Easy,
+                requiredMinigameSequence = new List<MinigameType> { MinigameType.TimingBarQTE },
+                questTitle       = "โปรยข้าวสารเสกปัดรังควาน",
+                npcName          = "ยายบัว (คนแก่ท้ายซอย)",
+                greetingDialogue = "ยายรู้สึกเหมือนมีอะไรจ้องมองตลอดเวลา เดินสะดุดหกล้มทุกวัน ช่วยทำพิธีโปรยข้าวสารเสกให้ยายทีเถอะ",
+                questDescription = "กะจังหวะโปรยข้าวสารเสก (Timing Bar QTE) เพื่อปัดเป่าเสนียดจัญไรและเสริมสิริมงคล",
+                waitingDialogue  = "ยายจะนั่งพนมมือรอนะจ๊ะ",
+                completeDialogue = "รู้สึกอุ่นวาบและสบายใจขึ้นมากเลย ขอบน้ำใจพ่อหนุ่มมากนะจ๊ะ",
+                declineDialogue  = "ไม่เป็นไรจ้ะลูก ยายกลับบ้านก่อนนะ",
+                rewardDescription= "เงิน 180 เหรียญ",
+                rewardMoney      = 180,
+                karmaReward      = 20
+            },
 
             // ─── MEDIUM ───────────────────────────────────────────────────────────
-            questList.Add(new QuestData
+            new QuestData
             {
                 questId          = "quest_medium_chant",
                 problemType      = "โดนทำของ / คุณไสย",
@@ -229,10 +258,27 @@ public class HallManager : MonoBehaviour
                 rewardDescription= "เงิน 350 เหรียญ",
                 rewardMoney      = 350,
                 karmaReward      = 25
-            });
+            },
+            new QuestData
+            {
+                questId          = "quest_talisman_protect",
+                problemType      = "บ้านร้อนรน / อาถรรพ์ที่อยู่อาศัย",
+                difficulty       = QuestDifficulty.Medium,
+                requiredMinigameSequence = new List<MinigameType> { MinigameType.TalismanDrawing },
+                questTitle       = "เขียนยันต์โสฬสมหามงคล",
+                npcName          = "กำนันบุญ",
+                greetingDialogue = "ท่านอาจารย์... บ้านข้ามีเสียงดังบนหลังคาทุกคืน คนในบ้านเจ็บป่วยไม่สร่าง อยากให้ช่วยเขียนยันต์คุ้มบ้านให้ที",
+                questDescription = "ช่วยเขียนยันต์โสฬสมงคล (Talisman Drawing QTE) เพื่อนำไปติดหน้าประตูบ้านขจัดอวมงคล",
+                waitingDialogue  = "ขอบารมีครูบาอาจารย์ช่วยลงอักขระให้เข้มขลังด้วยเถิด",
+                completeDialogue = "สาธุ! เส้นอักขระเปล่งรัศมีงดงาม ข้าจะรีบนำไปปิดบูชาที่บ้านทันที ขอบคุณท่านอาจารย์มาก!",
+                declineDialogue  = "ถ้าท่านไม่ว่าง ข้าคงต้องหาเกจิท่านอื่นต่อไป",
+                rewardDescription= "เงิน 400 เหรียญ",
+                rewardMoney      = 400,
+                karmaReward      = 25
+            },
 
             // ─── HARD ─────────────────────────────────────────────────────────────
-            questList.Add(new QuestData
+            new QuestData
             {
                 questId          = "quest_hard_chant",
                 problemType      = "โดนวิญญาณอาฆาตตามรังควาน",
@@ -248,10 +294,27 @@ public class HallManager : MonoBehaviour
                 rewardDescription= "เงิน 800 เหรียญ",
                 rewardMoney      = 800,
                 karmaReward      = 40
-            });
+            },
+            new QuestData
+            {
+                questId          = "quest_slash_curse",
+                problemType      = "เงาดำตามสิงสู่",
+                difficulty       = QuestDifficulty.Hard,
+                requiredMinigameSequence = new List<MinigameType> { MinigameType.SequentialSlashQTE },
+                questTitle       = "ตวัดมีดหมอปราบเงาอัปมงคล",
+                npcName          = "หมอเขียว (หมอยาสมุนไพร)",
+                greetingDialogue = "ช่วยด้วยท่าน! ข้าเดินเก็บยาสมุนไพรในป่าช้าแล้วมีเงาดำเกาะติดไหล่ไม่ยอมปล่อย แน่นหน้าอกหายใจไม่ออกแล้ว!",
+                questDescription = "ใช้มีดหมอตวัดฟันตัดเงาอาถรรพ์ (Sequential Slash QTE) เพื่อตัดขาดพันธนาการของวิญญาณ",
+                waitingDialogue  = "ระวังด้วยนะพ่อหนุ่ม มันเริ่มขยายเงาครอบร่างข้าแล้ว!",
+                completeDialogue = "หลุดแล้ว! ข้ารู้สึกโล่งเบาตัวทันที มีดหมอของท่านช่างฉมังนัก ขอบคุณมาก!",
+                declineDialogue  = "โอ๊ย... ข้าคงต้องทนทุกข์ต่อไป",
+                rewardDescription= "เงิน 750 เหรียญ",
+                rewardMoney      = 750,
+                karmaReward      = 35
+            },
 
             // ─── VERY HARD ────────────────────────────────────────────────────────
-            questList.Add(new QuestData
+            new QuestData
             {
                 questId          = "quest_veryhard_chant",
                 problemType      = "พญามารเข้าครอบงำ",
@@ -267,7 +330,38 @@ public class HallManager : MonoBehaviour
                 rewardDescription= "เงิน 2,000 เหรียญ",
                 rewardMoney      = 2000,
                 karmaReward      = 60
-            });
+            }
+        };
+
+        if (questList == null) questList = new List<QuestData>();
+
+        if (questList.Count == 0)
+        {
+            questList.AddRange(defaultQuests);
+            Debug.Log($"[HallManager] 📜 เพิ่มเควสเริ่มต้น {questList.Count} เควสเรียบร้อยแล้ว");
+        }
+        else if (autoSupplementDefaultQuests)
+        {
+            // หากมีเควสเดิมอยู่ในรายการ แต่น้อยกว่าจำนวน NPC สูงสุดต่อวัน ให้เสริมเควสมาตรฐานที่ไม่ซ้ำเข้าไป
+            int targetNeeded = Mathf.Max(maxNpcPerSession, 6);
+            if (questList.Count < targetNeeded)
+            {
+                int added = 0;
+                foreach (var defQ in defaultQuests)
+                {
+                    if (questList.Count >= targetNeeded) break;
+                    string defId = !string.IsNullOrEmpty(defQ.questId) ? defQ.questId : defQ.problemType;
+                    if (!questList.Exists(q => (!string.IsNullOrEmpty(q.questId) && q.questId == defId) || q.problemType == defQ.problemType))
+                    {
+                        questList.Add(defQ);
+                        added++;
+                    }
+                }
+                if (added > 0)
+                {
+                    Debug.Log($"[HallManager] ➕ เติมเควสเสริม {added} เควส เพื่อป้องกันการสุ่มเควสซ้ำในแต่ละวัน (รวมทั้งหมด {questList.Count} เควส)");
+                }
+            }
         }
     }
 
@@ -311,6 +405,11 @@ public class HallManager : MonoBehaviour
 
         // ดึง Story NPC ที่พร้อมสำหรับวันนี้เข้าคิว
         pendingStoryNPCQueue.Clear();
+        if (npcsServedThisSession == 0)
+        {
+            usedQuestIdsThisSession.Clear();
+            lastPickedQuestId = string.Empty;
+        }
         if (ReturnNPCScheduler.Instance != null)
         {
             var readyStories = ReturnNPCScheduler.Instance.GetReadyStoryNPCs(currentDay);
@@ -418,6 +517,8 @@ public class HallManager : MonoBehaviour
         }
 
         pendingStoryNPCQueue.Clear();
+        usedQuestIdsThisSession.Clear();
+        lastPickedQuestId = string.Empty;
 
         // แจ้ง ReturnNPCScheduler ให้ reset ด้วย
         if (ReturnNPCScheduler.Instance != null)
@@ -658,18 +759,123 @@ public class HallManager : MonoBehaviour
     }
 
     /// <summary>
-    /// เลือกเควสจาก questList โดยใช้ Weighted Random ตามระดับความยาก
-    /// Easy: weightEasy%, Medium: weightMedium%, Hard: weightHard%, VeryHard: weightVeryHard%
+    /// ได้รับคีย์ระบุตัวตนของเควสที่ไม่ซ้ำกัน
+    /// </summary>
+    private string GetQuestIdentifier(QuestData q)
+    {
+        if (q == null) return string.Empty;
+        if (!string.IsNullOrEmpty(q.questId)) return q.questId.Trim();
+        if (!string.IsNullOrEmpty(q.questTitle)) return q.questTitle.Trim();
+        if (!string.IsNullOrEmpty(q.problemType)) return q.problemType.Trim();
+        return q.npcName != null ? q.npcName.Trim() : string.Empty;
+    }
+
+    /// <summary>
+    /// ตรวจสอบว่าเควสนี้กำลังค้างอยู่ในรายการเควสที่ผู้เล่นรับไว้แล้วหรือไม่ (Active in Quest Tracker)
+    /// </summary>
+    private bool IsQuestActiveInTracker(QuestData q)
+    {
+        if (q == null) return false;
+        if (QuestUIManager.Instance != null && QuestUIManager.Instance.activeQuests != null)
+        {
+            string targetId = GetQuestIdentifier(q);
+            foreach (var active in QuestUIManager.Instance.activeQuests)
+            {
+                if (active != null && GetQuestIdentifier(active) == targetId)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// ตรวจสอบว่าเควสนี้ถูกสุ่มไปแล้วในรอบนี้ หรือกำลังเปิดทำอยู่หรือไม่
+    /// </summary>
+    private bool IsQuestUsedOrActive(QuestData q)
+    {
+        if (q == null) return true;
+        string id = GetQuestIdentifier(q);
+        if (!string.IsNullOrEmpty(id) && usedQuestIdsThisSession.Contains(id)) return true;
+        if (IsQuestActiveInTracker(q)) return true;
+        return false;
+    }
+
+    /// <summary>
+    /// เลือกเควสจาก questList โดยใช้ Weighted Random และป้องกันการออกซ้ำ (No-Repeat Weighted Randomizer)
     /// </summary>
     private QuestData PickQuestByWeight()
     {
-        // แยก pool เควสตามระดับ
-        var easy     = questList.FindAll(q => q.difficulty == QuestDifficulty.Easy);
-        var medium   = questList.FindAll(q => q.difficulty == QuestDifficulty.Medium);
-        var hard     = questList.FindAll(q => q.difficulty == QuestDifficulty.Hard);
-        var veryHard = questList.FindAll(q => q.difficulty == QuestDifficulty.VeryHard);
+        if (questList == null || questList.Count == 0) return null;
 
-        // สร้าง Weighted pool (ใส่เฉพาะระดับที่มีเควสอยู่)
+        // 1. คัดกรองเควสที่ยังไม่ได้ออกในรอบนี้ และไม่ได้กำลัง Active อยู่ใน Quest Tracker
+        List<QuestData> eligiblePool = new List<QuestData>();
+
+        if (preventDuplicateQuests)
+        {
+            eligiblePool = questList.FindAll(q => q != null && !IsQuestUsedOrActive(q));
+        }
+        else
+        {
+            eligiblePool = new List<QuestData>(questList);
+        }
+
+        // 2. หากเควสทั้งหมดถูกใช้ไปจนหมดแล้วในรอบนี้ -> รีเซ็ต Pool ใหม่เพื่อวนรอบถัดไป
+        if (eligiblePool.Count == 0)
+        {
+            Debug.Log("[HallManager] 🔄 เควสทั้งหมดในคลังถูกสุ่มใช้งานครบ 1 รอบแล้ว — ทำการรีเซ็ตคลังเควสสำหรับรอบใหม่");
+            usedQuestIdsThisSession.Clear();
+
+            // กรองใหม่ โดยห้ามซ้ำกับเควสที่เพิ่งออกไปล่าสุด (avoidConsecutiveRepeat) และห้ามซ้ำกับเควสที่กำลัง Active
+            if (avoidConsecutiveRepeat && questList.Count > 1)
+            {
+                eligiblePool = questList.FindAll(q => q != null && GetQuestIdentifier(q) != lastPickedQuestId && !IsQuestActiveInTracker(q));
+            }
+
+            // Fallback ถ้ายังไม่มีตัวเลือก
+            if (eligiblePool.Count == 0)
+            {
+                eligiblePool = questList.FindAll(q => q != null && !IsQuestActiveInTracker(q));
+            }
+            if (eligiblePool.Count == 0)
+            {
+                eligiblePool = new List<QuestData>(questList);
+            }
+        }
+
+        // 3. สุ่มเลือกเควสจาก eligiblePool โดยใช้ Weighted Random ตามระดับความยาก
+        QuestData selectedQuest = SelectWeightedFromPool(eligiblePool);
+
+        if (selectedQuest != null)
+        {
+            string id = GetQuestIdentifier(selectedQuest);
+            if (!string.IsNullOrEmpty(id))
+            {
+                usedQuestIdsThisSession.Add(id);
+                lastPickedQuestId = id;
+            }
+            Debug.Log($"[HallManager] 🎯 สุ่มเควสสำเร็จ (ไม่ซ้ำ): '{selectedQuest.problemType}' โดย {selectedQuest.npcName} [ID: {id}] (ออกไปแล้ว {usedQuestIdsThisSession.Count}/{questList.Count} เควส)");
+        }
+
+        return selectedQuest;
+    }
+
+    /// <summary>
+    /// สุ่มเควสจาก Pool ที่ส่งเข้ามาตามน้ำหนักระดับความยาก
+    /// </summary>
+    private QuestData SelectWeightedFromPool(List<QuestData> pool)
+    {
+        if (pool == null || pool.Count == 0) return null;
+        if (pool.Count == 1) return pool[0];
+
+        // แยกตามระดับความยากจาก pool ที่กรองแล้ว
+        var easy     = pool.FindAll(q => q.difficulty == QuestDifficulty.Easy);
+        var medium   = pool.FindAll(q => q.difficulty == QuestDifficulty.Medium);
+        var hard     = pool.FindAll(q => q.difficulty == QuestDifficulty.Hard);
+        var veryHard = pool.FindAll(q => q.difficulty == QuestDifficulty.VeryHard);
+
+        // สร้าง Weighted pool เฉพาะระดับที่มีเควสอยู่จริงใน eligible pool
         int totalWeight = 0;
         if (easy.Count     > 0) totalWeight += weightEasy;
         if (medium.Count   > 0) totalWeight += weightMedium;
@@ -678,8 +884,7 @@ public class HallManager : MonoBehaviour
 
         if (totalWeight <= 0)
         {
-            // Fallback: วนตามลำดับเดิม
-            return questList[currentQueueIndex % questList.Count];
+            return pool[Random.Range(0, pool.Count)];
         }
 
         int roll = Random.Range(0, totalWeight);
@@ -705,7 +910,15 @@ public class HallManager : MonoBehaviour
             return veryHard[Random.Range(0, veryHard.Count)];
         }
 
-        return questList[currentQueueIndex % questList.Count];
+        return pool[Random.Range(0, pool.Count)];
+    }
+
+    [ContextMenu("🔄 ล้างประวัติเควสที่เคยออก (Reset Used Quests)")]
+    public void ResetUsedQuests()
+    {
+        usedQuestIdsThisSession.Clear();
+        lastPickedQuestId = string.Empty;
+        Debug.Log("[HallManager] 🔄 รีเซ็ตประวัติเควสที่เคยออกเรียบร้อยแล้ว");
     }
 
     /// <summary>

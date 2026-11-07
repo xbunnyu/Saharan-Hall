@@ -42450,7 +42450,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &847867666
 Transform:
   m_ObjectHideFlags: 0
@@ -43737,7 +43737,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &887081772
 Transform:
   m_ObjectHideFlags: 0
@@ -44907,6 +44907,9 @@ MonoBehaviour:
     currentMinigameFails: 0
     ownerStoryData: {fileID: 0}
     ownerPhaseIndex: -1
+  preventDuplicateQuests: 1
+  avoidConsecutiveRepeat: 1
+  autoSupplementDefaultQuests: 1
   weightEasy: 60
   weightMedium: 40
   weightHard: 20
@@ -51637,6 +51640,7 @@ MonoBehaviour:
   targetSpawnPointName: ForestCarSpawn
   fadeDuration: 0.8
   carSound: {fileID: 0}
+  requireInvitationAccepted: 1
 --- !u!65 &1037529668
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -61674,7 +61678,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1204579478
 Transform:
   m_ObjectHideFlags: 0
@@ -77192,7 +77196,8 @@ MonoBehaviour:
   itemDescription: "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E44\u0E2D\u0E40\u0E17\u0E21\u0E40\u0E21\u0E37\u0E48\u0E2D\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E01\u0E23\u0E30\u0E40\u0E1B\u0E4B\u0E32..."
   canRead: 1
   interactionKeyText: E
-  customReadPromptText: 
+  customReadPromptText: "\u0E2D\u0E31\u0E1E\u0E40\u0E01\u0E23\u0E14\u0E42\u0E15\u0E4A\u0E30\u0E2B\u0E21\u0E39\u0E48\u0E1A\u0E39\u0E0A\u0E32
+    Lv.1\u21922 (450 \u0E1A\u0E32\u0E17)"
   readTitle: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E2D\u0E40\u0E17\u0E21"
   readDescription: "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E17\u0E35\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E43\u0E2B\u0E49\u0E2D\u0E48\u0E32\u0E19..."
   canCollect: 1
@@ -77230,6 +77235,13 @@ MonoBehaviour:
   enableSparkles: 1
   showImportantBadgeInUI: 1
   currentLevel: 1
+  visualMode: 1
+  level1Visual: {fileID: 423897018}
+  level2Visual: {fileID: 887081771}
+  level3Visual: {fileID: 1204579477}
+  level4Visual: {fileID: 847867665}
+  upgradeEffect: {fileID: 0}
+  upgradeSound: {fileID: 0}
   costToLevel2: 450
   costToLevel3: 1200
   costToLevel4: 3000
