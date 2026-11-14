@@ -469,7 +469,8 @@ public class HallManager : MonoBehaviour
         Debug.Log("[HallManager] 🚪 ปิดตำหนักเรียบร้อยแล้ว");
         if (InteractionUIManager.Instance != null)
         {
-            InteractionUIManager.Instance.ShowNotification($"<color=#00FF7F>🚪 ปิดตำหนักเรียบร้อยแล้ว!</color> (ให้บริการผู้มาเยือนครบ {npcsServedThisSession}/{target} คน)", 3.5f);
+            // ข้อความเดียวที่ยังโชว์บนจอ: บอกว่างานวันนี้จบแล้ว ลุกจากเก้าอี้ได้
+            InteractionUIManager.Instance.ShowImportantMessage("งานของวันนี้เสร็จสิ้น\n<size=80%><color=#A8977A>กด <color=#FFB35C>[Q]</color> เพื่อลุกจากเก้าอี้</color></size>", 4.5f);
         }
 
         return true;
@@ -646,10 +647,11 @@ public class HallManager : MonoBehaviour
 
         GameObject npcObj = null;
 
-        // สร้าง NPC จาก Prefab หรือสร้างตัวละครจำลอง (Capsule Humanoid)
-        if (defaultNpcPrefab != null)
+        // สร้าง NPC จาก Prefab ของเควสนั้น (หน้าตาตัวละครตามชื่อ) → ถ้าไม่มีใช้ Default → ถ้าไม่มีอีกสร้างตัวจำลอง
+        GameObject npcPrefabToUse = (currentQuest != null && currentQuest.npcPrefab != null) ? currentQuest.npcPrefab : defaultNpcPrefab;
+        if (npcPrefabToUse != null)
         {
-            npcObj = Instantiate(defaultNpcPrefab, spawnPoint.position, spawnPoint.rotation);
+            npcObj = Instantiate(npcPrefabToUse, spawnPoint.position, spawnPoint.rotation);
         }
         else
         {

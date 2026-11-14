@@ -137,8 +137,10 @@ public class ReturnNPCScheduler : MonoBehaviour
             }
         }
 
-        // ขยับ Phase ถัดไป
-        bool hasMore = storyData.AdvancePhase();
+        // ทำพิธีสำเร็จ = แก้ปัญหาได้แล้ว → เรื่องของ NPC คนนี้จบ ไม่กลับมาอีก (วันถัดไปจะเป็นคนอื่นแทน)
+        // (เคสต่อเนื่องจะกลับมาเฉพาะตอนที่ทำไม่สำเร็จ — ดู OnStoryPhaseFailed)
+        storyData.CompleteStory();
+        bool hasMore = false;
 
         if (hasMore)
         {
@@ -173,7 +175,9 @@ public class ReturnNPCScheduler : MonoBehaviour
     public void OnStoryPhaseFailed(NPCStoryData storyData)
     {
         if (storyData == null) return;
-        storyData.FailCurrentPhase();
+        // ทำไม่สำเร็จ → ปัญหายังอยู่ NPC จะกลับมาวันถัดไปพร้อมบทพูดเคสต่อเนื่อง (Phase ถัดไป)
+        // ถ้าเป็น Phase สุดท้ายแล้ว เรื่องจบแบบล้มเหลว
+        storyData.FailAndContinue();
 
         string groupId = storyData.npcGroupId;
         // เสียชื่อเสียงเล็กน้อยเมื่อล้มเหลว

@@ -159,6 +159,94 @@ public class QuestUIManager : MonoBehaviour
                 decRT.sizeDelta = descRT.sizeDelta;
             }
         }
+
+        // บทพูดตัวใหญ่จนแน่นกล่อง → ย่อลงตาม dialogueFontScale
+        foreach (var t in new[] { questDescriptionText, declineDialogueText, waitingDialogueText, responseDialogueText })
+        {
+            if (t == null) continue;
+            t.enableAutoSizing = false;
+            t.fontSize = Mathf.Round(t.fontSize * dialogueFontScale);
+        }
+
+        // คำแนะนำ "กด [คลิก]..." อยู่ต่ำจนเลยขอบกระดาษ → ยกขึ้นมาอยู่ในกระดาษ
+        if (questRequirementText != null)
+        {
+            RectTransform reqRT = questRequirementText.rectTransform;
+            reqRT.anchoredPosition += new Vector2(0f, hintRaise);
+        }
+    }
+
+    [Tooltip("ยกข้อความคำแนะนำ (กด [คลิก]...) ขึ้นกี่พิกเซล ให้อยู่ในกระดาษ")]
+    public float hintRaise = 0f;
+
+    [Tooltip("ขนาดตัวหนังสือบทพูด เทียบกับขนาดเดิมในฉาก (0.8 = เล็กลง 20%)")]
+    [Range(0.5f, 1.2f)]
+    public float dialogueFontScale = 0.8f;
+
+    // ปุ่ม "คลิกเพื่อไปต่อ" (สร้างจากกรอบปุ่มปฏิเสธ) แทนข้อความคำแนะนำสีเหลืองที่ลอยเลยกระดาษ
+    private GameObject continueButtonObj;
+    private TextMeshProUGUI continueButtonText;
+
+    private void EnsureContinueButton()
+    {
+        if (continueButtonObj != null || declineButton == null) return;
+        continueButtonObj = Instantiate(declineButton.gameObject, declineButton.transform.parent);
+        continueButtonObj.name = "ContinueButton";
+        // เป็นแค่หน้าตาปุ่ม — การคลิกที่ไหนก็ได้ในบทสนทนาจะไปต่ออยู่แล้ว (ไม่ผูกคำสั่งปฏิเสธที่ติดมากับปุ่มต้นแบบ)
+        foreach (var b in continueButtonObj.GetComponentsInChildren<Button>(true)) Destroy(b);
+        foreach (var bounce in continueButtonObj.GetComponentsInChildren<UIButtonBounce>(true)) Destroy(bounce);
+        continueButtonText = continueButtonObj.GetComponentInChildren<TextMeshProUGUI>(true);
+        continueButtonObj.SetActive(false);
+    }
+
+    private void UpdateContinueButton()
+    {
+        if (questRequirementText == null || questDialogPanel == null || !questDialogPanel.activeInHierarchy)
+        {
+            if (continueButtonObj != null && continueButtonObj.activeSelf) continueButtonObj.SetActive(false);
+            return;
+        }
+
+        // หน้าเลือกรับ/ปฏิเสธเควสไม่ต้องมีปุ่มไปต่อ (ยกเว้นตอนแสดงคำตอบหลังเลือกแล้ว)
+        string hint = questRequirementText.text;
+        bool pageNeedsContinue = isShowingResponse || !isChoicesPage;
+        bool isHint = pageNeedsContinue && !string.IsNullOrEmpty(hint) && hint.Contains("กด [คลิก]");
+        if (!isHint)
+        {
+            if (continueButtonObj != null && continueButtonObj.activeSelf) continueButtonObj.SetActive(false);
+            return;
+        }
+
+        EnsureContinueButton();
+        if (continueButtonObj == null) return;
+
+        string label;
+        if (hint.Contains("เพื่อจบ")) label = "คลิกเพื่อจบ";
+        else
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(hint, @"\((\d+/\d+)\)");
+            label = m.Success ? $"คลิกเพื่อไปต่อ  <size=75%>({m.Groups[1].Value})</size>" : "คลิกเพื่อไปต่อ";
+        }
+
+        questRequirementText.gameObject.SetActive(false);
+        if (continueButtonText != null && continueButtonText.text != label) continueButtonText.text = label;
+        if (!continueButtonObj.activeSelf) continueButtonObj.SetActive(true);
+    }
+
+    void LateUpdate()
+    {
+        UpdateContinueButton();
+
+        // ปุ่มรับงานอยู่ในกรอบไม้อีกชั้น (Accept / Accept) — ซ่อนปุ่มแล้วกรอบยังค้าง เป็นกล่องว่างกลางกล่องบทสนทนา
+        // ให้กรอบโผล่/หายตามปุ่มเสมอ
+        if (acceptButton != null && questDialogPanel != null)
+        {
+            Transform frame = acceptButton.transform.parent;
+            if (frame != null && frame != questDialogPanel.transform && frame.gameObject.activeSelf != acceptButton.gameObject.activeSelf)
+            {
+                frame.gameObject.SetActive(acceptButton.gameObject.activeSelf);
+            }
+        }
     }
 
     void Update()
@@ -393,8 +481,8 @@ public class QuestUIManager : MonoBehaviour
             {
                 questRequirementText.gameObject.SetActive(true);
                 questRequirementText.text = pageIndex < totalPages - 1
-                    ? $"<color=#FFD700>กด [คลิก] หรือ [Space] เพื่อไปบทสนทนาต่อไป ▶ ({pageIndex + 1}/{totalPages})</color>"
-                    : "<color=#FFD700>กด [คลิก] หรือ [Space] เพื่อจบ</color>";
+                    ? $"<size=80%><color=#A8977A>กด [คลิก] หรือ [Space] เพื่อไปบทสนทนาต่อไป ▶ ({pageIndex + 1}/{totalPages})</color>"
+                    : "<size=80%><color=#A8977A>กด [คลิก] หรือ [Space] เพื่อจบ</color>";
             }
             return;
         }
@@ -411,32 +499,17 @@ public class QuestUIManager : MonoBehaviour
                 questDescriptionText.text = $"\"{currentDialoguePages[pageIndex]}\"";
             }
 
-            // แสดงปุ่มค้างไว้ตลอดตามต้องการ แต่ยังกดไม่ได้ (interactable = false) จนกว่าจะถึงหน้าสุดท้าย
-            if (acceptButton != null)
-            {
-                acceptButton.gameObject.SetActive(true);
-                acceptButton.interactable = false;
-                if (acceptButtonText != null) acceptButtonText.text = "ยอมรับ";
-            }
-            if (declineButton != null)
-            {
-                declineButton.gameObject.SetActive(true);
-                declineButton.interactable = false;
-                if (declineButtonText != null) declineButtonText.text = "ปฏิเสธ";
-            }
-            if (inquiryButton != null)
-            {
-                inquiryButton.gameObject.SetActive(true);
-                inquiryButton.interactable = false;
-                if (inquiryButtonText != null) inquiryButtonText.text = "สอบถามเพิ่มเติม";
-            }
+            // ระหว่างอ่านบทสนทนายังไม่โชว์ปุ่ม (ปุ่มทับกับคำแนะนำ "กด [คลิก]...") — โผล่ตอนหน้าสุดท้าย
+            if (acceptButton != null) acceptButton.gameObject.SetActive(false);
+            if (declineButton != null) declineButton.gameObject.SetActive(false);
+            if (inquiryButton != null) inquiryButton.gameObject.SetActive(false);
             if (questRewardText != null) questRewardText.gameObject.SetActive(false);
 
             // แสดงคำแนะนำกดคลิกหรือ Spacebar เพื่อไปบทสนทนาต่อไป
             if (questRequirementText != null)
             {
                 questRequirementText.gameObject.SetActive(true);
-                questRequirementText.text = $"<color=#FFD700>กด [คลิก] หรือ [Space] เพื่อไปบทสนทนาต่อไป ▶ ({pageIndex + 1}/{totalPages})</color>";
+                questRequirementText.text = $"<size=80%><color=#A8977A>กด [คลิก] หรือ [Space] เพื่อไปบทสนทนาต่อไป ▶ ({pageIndex + 1}/{totalPages})</color>";
             }
         }
         else
@@ -517,8 +590,8 @@ public class QuestUIManager : MonoBehaviour
             if (inquiryButtonText != null)
             {
                 inquiryButtonText.text = repLevel >= 1
-                    ? "💬 สอบถามเพิ่มเติม [F]"
-                    : "🔒 สอบถามเพิ่มเติม (ต้องมีระดับ 1)";
+                    ? "สอบถามเพิ่มเติม [F]"
+                    : "สอบถามเพิ่มเติม\n<size=75%>(ต้องมีชื่อเสียงระดับ 1)</size>";
             }
         }
     }
@@ -623,7 +696,7 @@ public class QuestUIManager : MonoBehaviour
                 questDescriptionText.gameObject.SetActive(false);
 
             if (questTitleText != null)
-                questTitleText.text = $"<color=#00FF7F>✅ รับเควสสำเร็จ</color> — {currentQuest.npcName}";
+                questTitleText.text = $"<color=#00FF7F>รับเควสสำเร็จ</color> — {currentQuest.npcName}";
 
             waitingDialogueText.text = $"\"{waitMsg}\"";
             waitingDialogueText.gameObject.SetActive(true);
@@ -631,7 +704,7 @@ public class QuestUIManager : MonoBehaviour
             if (questRequirementText != null)
             {
                 questRequirementText.gameObject.SetActive(true);
-                questRequirementText.text = "<color=#FFD700>กด [คลิก] หรือ [Space] เพื่อจบ</color>";
+                questRequirementText.text = "<size=80%><color=#A8977A>กด [คลิก] หรือ [Space] เพื่อจบ</color>";
             }
 
             isShowingResponse = true;
@@ -650,7 +723,7 @@ public class QuestUIManager : MonoBehaviour
 
         if (InteractionUIManager.Instance != null)
         {
-            string title = $"✅ {currentQuest?.npcName ?? "NPC"} — รับงานแล้ว";
+            string title = $"{currentQuest?.npcName ?? "NPC"} — รับงานแล้ว";
             InteractionUIManager.Instance.ShowReadingDialog(title, $"\"{waitMsg}\"");
         }
     }
@@ -673,20 +746,27 @@ public class QuestUIManager : MonoBehaviour
             if (inquiryButton != null) inquiryButton.gameObject.SetActive(false);
             if (questRewardText != null) questRewardText.gameObject.SetActive(false);
 
-            // ซ่อนคำอธิบายเควสเดิมทันที เพื่อไม่ให้ตัวอักษรขึ้นมาซ้อนทับกับข้อความปฏิเสธ
-            if (questDescriptionText != null && questDescriptionText != declineDialogueText)
-                questDescriptionText.gameObject.SetActive(false);
-
             if (questTitleText != null)
-                questTitleText.text = $"<color=#FF5555>❌ ปฏิเสธเควส</color> — {currentQuest.npcName}";
+                questTitleText.text = $"<color=#FF5555>ปฏิเสธเควส</color> — {currentQuest.npcName}";
 
-            declineDialogueText.text = $"\"{responseMessage}\"";
-            declineDialogueText.gameObject.SetActive(true);
+            // แสดงคำพูดตอนปฏิเสธในกล่องข้อความหลัก (ขนาด/ฟอนต์เดียวกับบทสนทนาปกติ)
+            // กล่อง declineDialogueText เดิมตั้งขนาดไว้ไม่ตรงกัน ทำให้ตัวหนังสือยืดและทับคำแนะนำ
+            if (questDescriptionText != null)
+            {
+                declineDialogueText.gameObject.SetActive(false);
+                questDescriptionText.gameObject.SetActive(true);
+                questDescriptionText.text = $"\"{responseMessage}\"";
+            }
+            else
+            {
+                declineDialogueText.text = $"\"{responseMessage}\"";
+                declineDialogueText.gameObject.SetActive(true);
+            }
 
             if (questRequirementText != null)
             {
                 questRequirementText.gameObject.SetActive(true);
-                questRequirementText.text = "<color=#FFD700>กด [คลิก] หรือ [Space] เพื่อจบ</color>";
+                questRequirementText.text = "<size=80%><color=#A8977A>กด [คลิก] หรือ [Space] เพื่อจบ</color>";
             }
 
             if (currentNPC != null && currentNPC.declineSound != null)
@@ -808,7 +888,7 @@ public class QuestUIManager : MonoBehaviour
         if (questRewardText != null) questRewardText.gameObject.SetActive(false);
 
         if (questTitleText != null)
-            questTitleText.text = $"<color=#00FF7F>✅ รับเควสสำเร็จ</color> — {currentQuest.npcName}";
+            questTitleText.text = $"<color=#00FF7F>รับเควสสำเร็จ</color> — {currentQuest.npcName}";
 
         if (questDescriptionText != null)
             questDescriptionText.text = $"<b>{currentQuest.npcName}</b> กล่าวว่า:\n\n<size=115%><color=#FFD700>\"{responseMessage}\"</color></size>\n\n<size=85%><color=#A0E6FF>(บันทึกภารกิจลงสมุดเควสแล้ว...)</color></size>";
@@ -1027,6 +1107,9 @@ public class QuestUIManager : MonoBehaviour
     }
 
     public bool IsDialogActive() => isDialogActive;
+    /// <summary>เควสที่กำลังคุยอยู่ (ใช้โดย HorrorUIStyle เพื่อแสดงค่าตอบแทนบนปุ่ม)</summary>
+    public QuestData CurrentQuest => currentQuest;
+    public bool IsChoicesPage => isChoicesPage;
 
     // ==========================================
     // อัปเดตข้อมูลบน Canvas Quest Tracker
@@ -1042,7 +1125,8 @@ public class QuestUIManager : MonoBehaviour
 
         if (trackerHeaderText != null)
         {
-            trackerHeaderText.text = "📌 ภารกิจที่กำลังทำ";
+            // ใช้ตัวอักษรธรรมดาเท่านั้น — อีโมจิไม่มีในฟอนต์ไทย จะขึ้นเป็นกล่อง □
+            trackerHeaderText.text = "ภารกิจที่กำลังทำ";
         }
 
         if (trackerContentText != null)
@@ -1052,7 +1136,7 @@ public class QuestUIManager : MonoBehaviour
             {
                 var q = activeQuests[i];
                 string titleText = !string.IsNullOrEmpty(q.problemType) ? q.problemType : q.questTitle;
-                trackerText += $"<b><color=#FFD700>• ปัญหา: {titleText}</color></b> ({q.npcName})\n";
+                trackerText += $"<color=#E8DCC4>{titleText}</color>\n<size=85%><color=#A8977A>{q.npcName}</color></size>\n";
 
                 if (!string.IsNullOrEmpty(q.requiredItemName))
                 {
@@ -1061,31 +1145,32 @@ public class QuestUIManager : MonoBehaviour
                     string countColor = isReady ? "#00FF7F" : "#FF6347";
                     string statusTag = isReady ? " <color=#00FF7F>[พร้อมส่ง]</color>" : "";
 
-                    trackerText += $"   - หา: {q.requiredItemName} (<color={countColor}>{currentCount}/{q.requiredQuantity}</color>){statusTag}\n";
+                    trackerText += $"  หา {q.requiredItemName} (<color={countColor}>{currentCount}/{q.requiredQuantity}</color>){statusTag}\n";
                 }
                 else if (q.requiredMinigameSequence != null && q.requiredMinigameSequence.Count > 0)
                 {
                     int compCount = q.completedMinigameSequence != null ? q.completedMinigameSequence.Count : 0;
                     int totalCount = q.requiredMinigameSequence.Count;
                     bool isReady = q.isTaskCompleted;
-                    string statusTag = isReady ? " <color=#00FF7F>[ทำครบแล้ว! พร้อมส่ง]</color>" : $" ({compCount}/{totalCount})";
-
-                    trackerText += $"   - ลำดับพิธีกรรม{statusTag}:\n";
-                    for (int j = 0; j < totalCount; j++)
+                    if (isReady)
+                    {
+                        trackerText += "  <color=#9FBF8F>พิธีครบแล้ว กลับไปส่งงาน</color>\n";
+                    }
+                    for (int j = 0; j < totalCount && !isReady; j++)
                     {
                         var mType = q.requiredMinigameSequence[j];
                         string mName = QuestData.GetMinigameNameThai(mType);
                         if (j < compCount)
                         {
-                            trackerText += $"     <color=#00FF7F>✓ {j + 1}. {mName} (สำเร็จ)</color>\n";
+                            trackerText += $"  <color=#6E6658><s>{j + 1}. {mName}</s></color>\n";
                         }
                         else if (j == compCount)
                         {
-                            trackerText += $"     <color=#FFD700>👉 {j + 1}. {mName} (กำลังทำ)</color>\n";
+                            trackerText += $"  <color=#FFB35C>{j + 1}. {mName}</color>\n";
                         }
                         else
                         {
-                            trackerText += $"     <color=#778899>🔒 {j + 1}. {mName}</color>\n";
+                            trackerText += $"  <color=#6E6658>{j + 1}. {mName}</color>\n";
                         }
                     }
                 }
@@ -1096,7 +1181,7 @@ public class QuestUIManager : MonoBehaviour
 
                 if (!string.IsNullOrEmpty(q.rewardDescription))
                 {
-                    trackerText += $"   <color=#A0E6FF>🎁 รางวัล: {q.rewardDescription}</color>\n";
+                    trackerText += $"  <size=85%><color=#A8977A>ค่าตอบแทน {q.rewardDescription} บาท</color></size>\n";
                 }
 
                 if (i < activeQuests.Count - 1) trackerText += "\n";
@@ -1264,7 +1349,7 @@ public class QuestUIManager : MonoBehaviour
                 alignment = TextAnchor.UpperCenter
             };
             respHeader.normal.textColor = isAccepted ? new Color(0.2f, 1f, 0.4f) : new Color(1f, 0.4f, 0.4f);
-            string header = isAccepted ? "✅ รับเควสสำเร็จ" : "❌ ปฏิเสธเควส";
+            string header = isAccepted ? "รับเควสสำเร็จ" : "❌ ปฏิเสธเควส";
             GUI.Label(new Rect(posX + 20, posY + 15, boxWidth - 40, 28), $"{header} ({currentQuest?.npcName})", respHeader);
 
             GUIStyle respStyle = new GUIStyle(GUI.skin.label)
@@ -1318,7 +1403,7 @@ public class QuestUIManager : MonoBehaviour
         float btnY = posY + boxHeight - 60f;
 
         GUI.backgroundColor = new Color(0.2f, 0.8f, 0.3f);
-        if (GUI.Button(new Rect(posX + 25, btnY, btnWidth, btnHeight), "✅ รับเควส [E]"))
+        if (GUI.Button(new Rect(posX + 25, btnY, btnWidth, btnHeight), "รับเควส [E]"))
         {
             OnAcceptClicked();
         }

@@ -39,6 +39,9 @@ public class DayManager : MonoBehaviour
     // ─────────────────────────────────────────────
     private bool isShowingOverlay = false;
 
+    [Tooltip("โชว์ข้อความเหลือง 'เช้าวันที่ X' ตอนขึ้นวันใหม่ (ปิดไว้ ใช้การ์ดวันที่ของ HorrorUIStyle แทน)")]
+    public bool showNewDayOverlay = false;
+
     // ══════════════════════════════════════════════
     void Awake()
     {
@@ -152,7 +155,8 @@ public class DayManager : MonoBehaviour
         UpdateDayHUD();
         OnDayChanged?.Invoke(currentDay);
 
-        if (!isShowingOverlay)
+        // ปิดไว้: การ์ด "วันที่ ๒" ของ HorrorUIStyle แสดงแทนแล้ว (ข้อความเหลือง "เช้าวันที่ X" ซ้อนกันอยู่)
+        if (showNewDayOverlay && !isShowingOverlay)
         {
             StartCoroutine(ShowNewDayOverlay());
         }

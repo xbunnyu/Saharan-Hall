@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2218842172041241339
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3789224826433380173}
+  m_Layer: 0
+  m_Name: FacePoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3789224826433380173
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2218842172041241339}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.0750022, y: -0.87421453, z: -0.21994752, w: -0.42631766}
+  m_LocalPosition: {x: -0.000000010591862, y: 0.0000000020652826, z: 0.000000017498612}
+  m_LocalScale: {x: 0.023218997, y: 0.023219004, z: 0.023219004}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 729383715797470377}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &5326428588541223408
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -74,6 +105,14 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: bc52595d402f51e4d9183829a933cac2, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 4896552115027848537, guid: 2ae66fe1d33ad2140811be2967e294b3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3789224826433380173}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2ae66fe1d33ad2140811be2967e294b3, type: 3}
+--- !u!4 &729383715797470377 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4896552115027848537, guid: 2ae66fe1d33ad2140811be2967e294b3, type: 3}
+  m_PrefabInstance: {fileID: 5326428588541223408}
+  m_PrefabAsset: {fileID: 0}

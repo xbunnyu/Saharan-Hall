@@ -267,6 +267,8 @@ public class NPCController : MonoBehaviour
         }
         interactItem.onRead.RemoveAllListeners();
         interactItem.onRead.AddListener(TriggerQuestDialogue);
+        // ระหว่างเดินเข้ามายังกดคุยไม่ได้ (ไม่ขึ้นชื่อ/ป้าย [E]) — เปิดตอนมาถึงและนั่งเสร็จ
+        interactItem.enabled = false;
 
         // มั่นใจว่าความเร็วเดินไม่เป็น 0
         if (walkSpeed <= 0.1f) walkSpeed = 1.4f;
@@ -548,6 +550,13 @@ public class NPCController : MonoBehaviour
         if (!HasSitAnimation())
         {
             sittingHeightCoroutine = StartCoroutine(AdjustSittingHeightRoutine());
+            if (interactItem != null) interactItem.enabled = true; // ไม่มีท่านั่ง → คุยได้ทันทีที่มาถึง
+        }
+        else if (interactItem != null)
+        {
+            // ยังกดคุยไม่ได้จนกว่าจะนั่งลงเสร็จ
+            interactItem.enabled = false;
+            StartCoroutine(EnableTalkAfterSitRoutine());
         }
     }
 
@@ -732,6 +741,26 @@ public class NPCController : MonoBehaviour
         }
     }
 
+    private IEnumerator EnableTalkAfterSitRoutine()
+    {
+        float sitLength = 1.5f;
+        if (animator != null && animator.runtimeAnimatorController != null)
+        {
+            foreach (var clip in animator.runtimeAnimatorController.animationClips)
+            {
+                if (clip != null && clip.name == "sit") { sitLength = clip.length; break; }
+            }
+        }
+        yield return new WaitForSeconds(sitLength + 0.3f); // + เวลาเบลนด์เข้าท่านั่ง
+        if (interactItem != null && (currentState == NPCState.WaitingAtReception || currentState == NPCState.WaitingForDelivery))
+        {
+            interactItem.enabled = true;
+        }
+    }
+
+    [Tooltip("หันหลังให้ผู้เล่น (ตอนทำพิธีตวัดดาบ/ท่องคาถาใส่หลัง)")]
+    public bool showBackToPlayer = false;
+
     private void HandleWaitingAtReception()
     {
         FacePlayer();
@@ -765,6 +794,7 @@ public class NPCController : MonoBehaviour
 
         Vector3 lookDir = playerTransform.position - transform.position;
         lookDir.y = 0;
+        if (showBackToPlayer) lookDir = -lookDir;
         if (lookDir.sqrMagnitude > 0.001f)
         {
             Quaternion targetRot = Quaternion.LookRotation(lookDir);

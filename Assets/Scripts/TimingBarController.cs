@@ -206,6 +206,7 @@ public class TimingBarController : MonoBehaviour
         if (isSuccess)
         {
             // กดโดนโซน PERFECT
+            SpawnRiceBurst(true);
             currentHits++;
             currentSpeed += speedIncrement;
 
@@ -224,6 +225,7 @@ public class TimingBarController : MonoBehaviour
         else
         {
             // กดพลาดนอกโซน PERFECT
+            SpawnRiceBurst(false);
             currentFailures++;
 
             PlaySound(hitMissSound, 180f, 0.25f);
@@ -280,11 +282,11 @@ public class TimingBarController : MonoBehaviour
         {
             if (BuddhistAltarManager.Instance != null && BuddhistAltarManager.Instance.ActiveVisualAid)
             {
-                targetZoneImage.color = new Color(1f, 0.85f, 0.2f, 0.95f);
+                targetZoneImage.color = new Color(0.95f, 0.78f, 0.45f, 0.95f); // ข้าวสารเรือง (บารมีโต๊ะหมู่)
             }
             else
             {
-                targetZoneImage.color = new Color(1f, 0.92f, 0.4f, 0.92f);
+                targetZoneImage.color = new Color(0.86f, 0.80f, 0.66f, 0.9f); // แถบข้าวสาร
             }
         }
     }
@@ -295,25 +297,25 @@ public class TimingBarController : MonoBehaviour
         {
             string header = !string.IsNullOrEmpty(customTitle)
                 ? customTitle
-                : "🌾 พิธีโปรยข้าวสารไล่ผี (EXORCISM RICE TOSSING) 👻";
+                : "พิธีโปรยข้าวสาร";
 
             string altarAidTag = "";
             if (BuddhistAltarManager.Instance != null && BuddhistAltarManager.Instance.currentLevel > 1)
             {
-                altarAidTag = $"\n<size=80%><color=#FFD700>⛩️ บารมีโต๊ะหมู่บูชา Lv.{BuddhistAltarManager.Instance.currentLevel}: {BuddhistAltarManager.GetLevelBenefitText(BuddhistAltarManager.Instance.currentLevel)}</color></size>";
+                altarAidTag = $"\n<size=70%><color=#A8977A>บารมีโต๊ะหมู่บูชา Lv.{BuddhistAltarManager.Instance.currentLevel}: {BuddhistAltarManager.GetLevelBenefitText(BuddhistAltarManager.Instance.currentLevel)}</color></size>";
             }
 
-            titleText.text = $"<color=#FFD700>{header}</color>{altarAidTag}";
+            titleText.text = $"<color=#E8DCC4>{header}</color>{altarAidTag}";
         }
 
         if (promptText != null)
         {
-            promptText.text = "กด <color=#00FFFF>[ SPACEBAR / BUTTON ]</color> ให้ตัวชี้หยุดตรงโซน PERFECT!";
+            promptText.text = "<color=#A8977A>กด <color=#FFB35C>Spacebar</color> โปรยข้าวสารเมื่อเปลวเทียนอยู่ในแถบข้าว</color>";
         }
 
         if (progressText != null)
         {
-            progressText.text = $"<color=#00FF88>ลงจังหวะสำเร็จ: {currentHits}/{requiredHits}</color>  |  <color=#FF3555>หลุดจังหวะ: {currentFailures}/{maxFailures}</color>";
+            progressText.text = $"<color=#E8DCC4>โปรยถูกจังหวะ {currentHits}/{requiredHits}</color>" + (currentFailures > 0 ? $"   <color=#B0473A>พลาด {currentFailures}/{maxFailures}</color>" : "");
         }
 
         if (nodesText != null)
@@ -456,8 +458,11 @@ public class TimingBarController : MonoBehaviour
             GameObject glassBg = new GameObject("GlassBG");
             glassBg.transform.SetParent(mainPanel.transform, false);
             Image bgImg = glassBg.AddComponent<Image>();
-            bgImg.color = new Color(0.04f, 0.05f, 0.08f, 0.88f);
+            bgImg.color = new Color(0.07f, 0.04f, 0.03f, 0.9f); // แผ่นไม้ดำเก่า
+            AddThinFrame(glassBg.transform, new Vector2(680, 300));
             bgImg.rectTransform.sizeDelta = new Vector2(680, 300);
+            riceSprite = circleSprite;
+            AddRiceDecor(mainPanel.transform);
 
             // 1. Title Text
             GameObject titleObj = new GameObject("TitleText");
@@ -475,7 +480,7 @@ public class TimingBarController : MonoBehaviour
             promptText = promptObj.AddComponent<TextMeshProUGUI>();
             promptText.fontSize = 16;
             promptText.alignment = TextAlignmentOptions.Center;
-            promptText.color = Color.white;
+            promptText.color = new Color32(0xE8, 0xDC, 0xC4, 0xFF);
             promptText.rectTransform.anchoredPosition = new Vector2(0, 60);
             promptText.rectTransform.sizeDelta = new Vector2(650, 30);
 
@@ -496,13 +501,13 @@ public class TimingBarController : MonoBehaviour
             barFrameRect.anchoredPosition = new Vector2(0, -15);
 
             Image barFrameImg = barFrameObj.AddComponent<Image>();
-            barFrameImg.color = new Color(0.1f, 0.12f, 0.16f, 0.95f);
+            barFrameImg.color = new Color(0.16f, 0.10f, 0.07f, 0.95f); // รางไม้
 
             // Left & Right Arrow Badges ◀ ▶
             GameObject leftArrow = new GameObject("LeftArrow");
             leftArrow.transform.SetParent(barFrameObj.transform, false);
             var leftText = leftArrow.AddComponent<TextMeshProUGUI>();
-            leftText.text = "◀";
+            leftText.text = "";
             leftText.fontSize = 20;
             leftText.alignment = TextAlignmentOptions.Center;
             leftText.color = new Color(1f, 0.85f, 0.2f);
@@ -512,7 +517,7 @@ public class TimingBarController : MonoBehaviour
             GameObject rightArrow = new GameObject("RightArrow");
             rightArrow.transform.SetParent(barFrameObj.transform, false);
             var rightText = rightArrow.AddComponent<TextMeshProUGUI>();
-            rightText.text = "▶";
+            rightText.text = "";
             rightText.fontSize = 20;
             rightText.alignment = TextAlignmentOptions.Center;
             rightText.color = new Color(1f, 0.85f, 0.2f);
@@ -527,17 +532,17 @@ public class TimingBarController : MonoBehaviour
             targetZoneRect.anchoredPosition = Vector2.zero;
 
             targetZoneImage = targetZoneObj.AddComponent<Image>();
-            targetZoneImage.color = new Color(1f, 0.92f, 0.4f, 0.92f);
+            targetZoneImage.color = new Color(0.86f, 0.80f, 0.66f, 0.9f); // แถบข้าวสาร
 
             // Target Zone Label "PERFECT"
             GameObject perfectLabel = new GameObject("PerfectLabel");
             perfectLabel.transform.SetParent(targetZoneObj.transform, false);
             var perfText = perfectLabel.AddComponent<TextMeshProUGUI>();
-            perfText.text = "PERFECT";
+            perfText.text = "ข้าวสาร";
             perfText.fontSize = 14;
             perfText.fontStyle = FontStyles.Bold;
             perfText.alignment = TextAlignmentOptions.Center;
-            perfText.color = new Color(0.1f, 0.08f, 0f, 0.95f);
+            perfText.color = new Color(0.25f, 0.17f, 0.10f, 0.95f);
             perfText.rectTransform.sizeDelta = new Vector2(120, 30);
 
             // 6. Indicator Pointer (Triangle ▼)
@@ -551,7 +556,7 @@ public class TimingBarController : MonoBehaviour
             indicatorText.text = "▼";
             indicatorText.fontSize = 26;
             indicatorText.alignment = TextAlignmentOptions.Center;
-            indicatorText.color = new Color(1f, 0.2f, 0.3f, 1f);
+            indicatorText.color = new Color(1f, 0.70f, 0.36f, 1f); // เปลวเทียน
 
             // 7. Progress Text
             GameObject progressObj = new GameObject("ProgressText");
@@ -573,6 +578,99 @@ public class TimingBarController : MonoBehaviour
             statusText.rectTransform.anchoredPosition = new Vector2(0, -105);
             statusText.rectTransform.sizeDelta = new Vector2(250, 45);
         }
+    }
+
+    // ── องค์ประกอบ "โปรยข้าวสาร": ขันข้าวสาร เม็ดข้าวกระจายบนพื้น และข้าวที่ถูกโปรยออกไปตอนกด ──
+    private Sprite riceSprite;
+    private static readonly Color RiceColor = new Color(0.93f, 0.89f, 0.78f, 1f);
+
+    private Image MakeImg(Transform parent, string name, Vector2 size, Vector2 pos, Color c, Sprite sprite = null, float rot = 0f)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var img = go.AddComponent<Image>();
+        img.sprite = sprite;
+        img.color = c;
+        img.raycastTarget = false;
+        img.rectTransform.sizeDelta = size;
+        img.rectTransform.anchoredPosition = pos;
+        img.rectTransform.localRotation = Quaternion.Euler(0, 0, rot);
+        return img;
+    }
+
+    /// <summary>ขันลงหินใส่ข้าวสารที่มุมซ้ายล่าง + เม็ดข้าวหกกระจายบนแผ่นไม้</summary>
+    private void AddRiceDecor(Transform panel)
+    {
+        var rng = new System.Random(7);
+        // (เอาเม็ดข้าวที่หกเปรอะบนแผ่นไม้ออกแล้ว — เหลือแค่ขันข้าวสาร + ข้าวที่พุ่งตอนกด)
+
+        // ขันลงหิน (ตัวขัน + ขอบปาก + กองข้าว + ฐาน)
+        Vector2 bowl = new Vector2(-268, -112);
+        MakeImg(panel, "BowlBase", new Vector2(40, 10), bowl + new Vector2(0, -24), new Color(0.30f, 0.20f, 0.10f, 1f), riceSprite);
+        MakeImg(panel, "BowlBody", new Vector2(86, 52), bowl + new Vector2(0, -6), new Color(0.45f, 0.30f, 0.14f, 1f), riceSprite);
+        MakeImg(panel, "RicePile", new Vector2(76, 26), bowl + new Vector2(0, 14), RiceColor, riceSprite);
+        MakeImg(panel, "BowlRim", new Vector2(90, 6), bowl + new Vector2(0, 8), new Color(0.62f, 0.45f, 0.22f, 1f));
+        for (int i = 0; i < 14; i++)
+        {
+            float x = (float)(rng.NextDouble() * 56 - 28);
+            float y = 16 + (float)(rng.NextDouble() * 10);
+            MakeImg(panel, "PileGrain", new Vector2(6, 3), bowl + new Vector2(x, y), new Color(0.8f, 0.76f, 0.64f, 1f), riceSprite, (float)(rng.NextDouble() * 180));
+        }
+    }
+
+    /// <summary>กดแล้วโปรยข้าว: โดนจังหวะ = ข้าวพุ่งกระจายเป็นวง / พลาด = ข้าวร่วงลงพื้นจางๆ</summary>
+    private void SpawnRiceBurst(bool success)
+    {
+        if (barFrameRect == null || indicatorRect == null || riceSprite == null) return;
+        Vector2 origin = new Vector2(indicatorRect.anchoredPosition.x, 0f);
+        int count = success ? 22 : 8;
+        for (int i = 0; i < count; i++)
+        {
+            var img = MakeImg(barFrameRect, "ThrownRice", new Vector2(7, 3), origin, success ? RiceColor : new Color(0.6f, 0.56f, 0.48f, 0.8f), riceSprite, UnityEngine.Random.Range(0f, 180f));
+            Vector2 vel = success
+                ? new Vector2(UnityEngine.Random.Range(-260f, 260f), UnityEngine.Random.Range(160f, 380f))
+                : new Vector2(UnityEngine.Random.Range(-60f, 60f), UnityEngine.Random.Range(20f, 80f));
+            StartCoroutine(AnimateGrain(img, vel, success ? 0.9f : 0.6f));
+        }
+    }
+
+    private IEnumerator AnimateGrain(Image img, Vector2 velocity, float life)
+    {
+        float t = 0f;
+        float spin = UnityEngine.Random.Range(-540f, 540f);
+        Color c0 = img.color;
+        while (t < life && img != null)
+        {
+            float dt = Time.unscaledDeltaTime;
+            t += dt;
+            velocity += new Vector2(0f, -900f) * dt; // ตกลงตามแรงโน้มถ่วง
+            img.rectTransform.anchoredPosition += velocity * dt;
+            img.rectTransform.localRotation *= Quaternion.Euler(0, 0, spin * dt);
+            img.color = new Color(c0.r, c0.g, c0.b, c0.a * (1f - t / life));
+            yield return null;
+        }
+        if (img != null) Destroy(img.gameObject);
+    }
+
+    /// <summary>ขอบเส้นบางสีทองหม่น 2 ชั้นรอบแผ่นไม้ (แทนกล่องกระจกสีน้ำเงินแบบเดิม)</summary>
+    private void AddThinFrame(Transform parent, Vector2 size)
+    {
+        Color line = new Color(0.55f, 0.42f, 0.25f, 0.6f);
+        void Line(Vector2 s, Vector2 p)
+        {
+            var go = new GameObject("FrameLine");
+            go.transform.SetParent(parent, false);
+            var img = go.AddComponent<Image>();
+            img.color = line;
+            img.raycastTarget = false;
+            img.rectTransform.sizeDelta = s;
+            img.rectTransform.anchoredPosition = p;
+        }
+        float w = size.x - 16f, h = size.y - 16f;
+        Line(new Vector2(w, 2), new Vector2(0, h / 2f));
+        Line(new Vector2(w, 2), new Vector2(0, -h / 2f));
+        Line(new Vector2(2, h), new Vector2(-w / 2f, 0));
+        Line(new Vector2(2, h), new Vector2(w / 2f, 0));
     }
 
     // ==========================================
@@ -602,7 +700,7 @@ public class TimingBarController : MonoBehaviour
             alignment = TextAnchor.MiddleCenter
         };
         titleSt.normal.textColor = new Color(1f, 0.85f, 0.2f);
-        string header = !string.IsNullOrEmpty(customTitle) ? customTitle : "🌾 พิธีโปรยข้าวสารไล่ผี (EXORCISM RICE TOSSING) 👻";
+        string header = !string.IsNullOrEmpty(customTitle) ? customTitle : "พิธีโปรยข้าวสาร";
         GUI.Label(new Rect(centerX - 320f, centerY - 130f, 640f, 30f), header, titleSt);
 
         GUIStyle promptSt = new GUIStyle(GUI.skin.label)

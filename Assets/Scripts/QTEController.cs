@@ -252,7 +252,7 @@ public class QTEController : MonoBehaviour
 
         if (statusText != null)
         {
-            statusText.text = success ? "<color=#00FF7F>สำเร็จ!</color>" : "<color=#FF4500>ล้มเหลว!</color>";
+            statusText.text = success ? "<color=#3B2A12>ยันต์สำเร็จ</color>" : "<color=#8E1B12>ยันต์ขาด</color>";
         }
 
         PlaySound(success ? qteWinSound : qteFailSound, success ? 880f : 130f, success ? 0.4f : 0.5f);
@@ -289,11 +289,11 @@ public class QTEController : MonoBehaviour
             // ปรับสีหากมี Visual Aid จากโต๊ะหมู่บูชา
             if (BuddhistAltarManager.Instance != null && BuddhistAltarManager.Instance.ActiveVisualAid)
             {
-                targetZoneImage.color = new Color(1f, 0.85f, 0.2f, 0.98f); // Golden glow aid
+                targetZoneImage.color = new Color(0.85f, 0.55f, 0.15f, 1f); // ชาดทอง (บารมีโต๊ะหมู่)
             }
             else
             {
-                targetZoneImage.color = new Color(1f, 0.95f, 0.85f, 0.98f);
+                targetZoneImage.color = YantraVermilion;
             }
 
             // หมุนภาพหลอดขาวไปยังมุมเริ่มต้นของโซน
@@ -328,26 +328,65 @@ public class QTEController : MonoBehaviour
     private readonly string[] sacredYantraRunes = { "นะ", "โม", "พุธ", "ธา", "ยะ", "ฤ", "ฤา", "ฦ", "ฦา", "อะ", "อุ", "มะ" };
     private TextMeshProUGUI centerRuneText;
 
+    // ── สีธีม "เขียนยันต์": กระดาษสา / หมึกดำ / ชาดแดง ──
+    private static readonly Color YantraPaper = new Color(0.86f, 0.78f, 0.61f, 0.97f);
+    private static readonly Color YantraInk = new Color(0.16f, 0.10f, 0.07f, 1f);
+    private static readonly Color YantraVermilion = new Color(0.66f, 0.18f, 0.12f, 0.95f);
+
+    /// <summary>กรอบยันต์: ขอบสี่เหลี่ยมสองชั้น + เส้นทแยง จางๆ บนกระดาษ</summary>
+    private void BuildYantraFrame(Transform parent)
+    {
+        Color faint = new Color(YantraInk.r, YantraInk.g, YantraInk.b, 0.55f);
+        Color fainter = new Color(YantraInk.r, YantraInk.g, YantraInk.b, 0.18f);
+        void Line(string name, Vector2 size, Vector2 pos, float rot, Color c)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            var img = go.AddComponent<Image>();
+            img.color = c;
+            img.raycastTarget = false;
+            img.rectTransform.sizeDelta = size;
+            img.rectTransform.anchoredPosition = pos;
+            img.rectTransform.localRotation = Quaternion.Euler(0f, 0f, rot);
+        }
+        Line("FrameTop", new Vector2(450, 4), new Vector2(0, 245), 0, faint);
+        Line("FrameBottom", new Vector2(450, 4), new Vector2(0, -245), 0, faint);
+        Line("FrameLeft", new Vector2(4, 494), new Vector2(-223, 0), 0, faint);
+        Line("FrameRight", new Vector2(4, 494), new Vector2(223, 0), 0, faint);
+        Line("InnerTop", new Vector2(420, 2), new Vector2(0, 232), 0, faint);
+        Line("InnerBottom", new Vector2(420, 2), new Vector2(0, -232), 0, faint);
+        Line("InnerLeft", new Vector2(2, 466), new Vector2(-210, 0), 0, faint);
+        Line("InnerRight", new Vector2(2, 466), new Vector2(210, 0), 0, faint);
+        Line("Diag1", new Vector2(2, 600), Vector2.zero, 41f, fainter);
+        Line("Diag2", new Vector2(2, 600), Vector2.zero, -41f, fainter);
+        Line("Cross1", new Vector2(420, 2), Vector2.zero, 0, fainter);
+        Line("Cross2", new Vector2(2, 466), Vector2.zero, 0, fainter);
+    }
+
     private void UpdateUI()
     {
         if (promptText != null)
         {
-            string header = !string.IsNullOrEmpty(customTitleText) 
-                ? customTitleText 
-                : "📜 พิธีเขียนยันต์มหาเวทย์ (YANTRA DRAWING) ✨";
+            string header = !string.IsNullOrEmpty(customTitleText)
+                ? customTitleText
+                : "พิธีเขียนยันต์";
 
             string altarAidTag = "";
             if (BuddhistAltarManager.Instance != null && BuddhistAltarManager.Instance.currentLevel > 1)
             {
-                altarAidTag = $"\n<size=80%><color=#FFD700>⛩️ บารมีโต๊ะหมู่บูชา Lv.{BuddhistAltarManager.Instance.currentLevel}: {BuddhistAltarManager.GetLevelBenefitText(BuddhistAltarManager.Instance.currentLevel)}</color></size>";
+                altarAidTag = $"\n<size=75%><color=#6B4A1E>บารมีโต๊ะหมู่บูชา Lv.{BuddhistAltarManager.Instance.currentLevel}: {BuddhistAltarManager.GetLevelBenefitText(BuddhistAltarManager.Instance.currentLevel)}</color></size>";
             }
 
-            promptText.text = $"<color=#FFD700>{header}</color>\nกด <color=#00FFFF>[ SPACEBAR / BUTTON ]</color> ตวัดพู่กันหยุดตรงช่วงอักขระสว่าง!{altarAidTag}";
+            promptText.text = $"<size=120%>{header}</size>\n<size=80%>กด <color=#8E1B12>Spacebar</color> ตวัดพู่กันเมื่อเข็มอยู่ในช่องชาด</size>{altarAidTag}";
         }
 
         if (progressText != null)
         {
-            progressText.text = $"<color=#00FF88>ลงยันต์สำเร็จ: {currentHits}/{requiredHits}</color>  |  <color=#FF3555>หลุดจังหวะ: {currentFailures}/{maxFailures}</color>";
+            // อักขระที่ลงไปแล้วเรียงต่อกันเหมือนเขียนจริง
+            string written = "";
+            for (int i = 0; i < currentHits && i < sacredYantraRunes.Length; i++) written += sacredYantraRunes[i] + " ";
+            string misses = currentFailures > 0 ? $"   <color=#8E1B12>หมึกหยด {currentFailures}/{maxFailures}</color>" : "";
+            progressText.text = $"{written.Trim()}\n<size=75%>ลงอักขระ {currentHits}/{requiredHits}{misses}</size>";
         }
 
         if (statusText != null)
@@ -517,16 +556,17 @@ public class QTEController : MonoBehaviour
             GameObject bgCardObj = new GameObject("GlassBG");
             bgCardObj.transform.SetParent(qtePanel.transform, false);
             Image bgCard = bgCardObj.AddComponent<Image>();
-            bgCard.color = new Color(0.04f, 0.05f, 0.08f, 0.85f);
-            bgCard.rectTransform.sizeDelta = new Vector2(440, 440);
-            bgCard.sprite = circleSprite;
+            bgCard.color = YantraPaper; // กระดาษยันต์
+            bgCard.rectTransform.sizeDelta = new Vector2(480, 520);
+            bgCard.sprite = null; // แผ่นสี่เหลี่ยม
+            BuildYantraFrame(qtePanel.transform);
 
             // 1. วงแหวนขอบนอก (Outer Ring Frame)
             GameObject outerRingObj = new GameObject("OuterRing");
             outerRingObj.transform.SetParent(qtePanel.transform, false);
             Image outerRing = outerRingObj.AddComponent<Image>();
             outerRing.sprite = circleSprite;
-            outerRing.color = new Color(0.2f, 0.25f, 0.35f, 0.85f);
+            outerRing.color = YantraInk;
             outerRing.rectTransform.sizeDelta = new Vector2(280, 280);
 
             // 2. วงกลมพื้นหลังรางล้อ (Track Background)
@@ -534,7 +574,7 @@ public class QTEController : MonoBehaviour
             ringObj.transform.SetParent(qtePanel.transform, false);
             ringBgImage = ringObj.AddComponent<Image>();
             ringBgImage.sprite = circleSprite;
-            ringBgImage.color = new Color(0.1f, 0.12f, 0.16f, 0.95f);
+            ringBgImage.color = new Color(0.74f, 0.64f, 0.46f, 1f);
             ringBgImage.rectTransform.sizeDelta = new Vector2(265, 265);
 
             // 3. หลอดขาว Target Zone (Radial Fill)
@@ -546,7 +586,7 @@ public class QTEController : MonoBehaviour
             targetZoneImage.fillMethod = Image.FillMethod.Radial360;
             targetZoneImage.fillOrigin = (int)Image.Origin360.Top;
             targetZoneImage.fillClockwise = true;
-            targetZoneImage.color = new Color(1f, 0.95f, 0.85f, 0.98f); // Bright warm white
+            targetZoneImage.color = YantraVermilion; // ช่องชาด
             targetZoneImage.rectTransform.sizeDelta = new Vector2(265, 265);
 
             // 4. วงกลมทับด้านในสร้างทรงวงแหวน (Inner Ring Mask)
@@ -554,7 +594,7 @@ public class QTEController : MonoBehaviour
             innerObj.transform.SetParent(ringObj.transform, false);
             Image innerImage = innerObj.AddComponent<Image>();
             innerImage.sprite = circleSprite;
-            innerImage.color = new Color(0.06f, 0.07f, 0.1f, 0.98f);
+            innerImage.color = YantraPaper;
             innerImage.rectTransform.sizeDelta = new Vector2(195, 195);
 
             // 5. ขอบวงแหวนในสุด (Inner Ring Outline)
@@ -562,7 +602,7 @@ public class QTEController : MonoBehaviour
             innerOutlineObj.transform.SetParent(ringObj.transform, false);
             Image innerOutline = innerOutlineObj.AddComponent<Image>();
             innerOutline.sprite = circleSprite;
-            innerOutline.color = new Color(0.25f, 0.3f, 0.4f, 0.6f);
+            innerOutline.color = new Color(YantraInk.r, YantraInk.g, YantraInk.b, 0.6f);
             innerOutline.rectTransform.sizeDelta = new Vector2(198, 198);
             innerOutline.transform.SetAsFirstSibling();
 
@@ -575,14 +615,14 @@ public class QTEController : MonoBehaviour
             needleTransform.anchoredPosition = Vector2.zero;
 
             Image needleImage = needleObj.AddComponent<Image>();
-            needleImage.color = new Color(1f, 0.15f, 0.25f, 1f); // Neon crimson red
+            needleImage.color = YantraInk; // ด้ามพู่กันหมึก
 
             // 7. หัวเข็มเรืองแสง (Needle Pointer Tip)
             GameObject tipObj = new GameObject("NeedleTip");
             tipObj.transform.SetParent(needleObj.transform, false);
             Image tipImage = tipObj.AddComponent<Image>();
             tipImage.sprite = circleSprite;
-            tipImage.color = new Color(1f, 0.4f, 0.4f, 1f);
+            tipImage.color = YantraInk;
             tipImage.rectTransform.sizeDelta = new Vector2(12, 12);
             tipImage.rectTransform.anchoredPosition = new Vector2(0, 120);
 
@@ -591,7 +631,7 @@ public class QTEController : MonoBehaviour
             capObj.transform.SetParent(ringObj.transform, false);
             Image capImage = capObj.AddComponent<Image>();
             capImage.sprite = circleSprite;
-            capImage.color = new Color(0.85f, 0.15f, 0.25f, 1f);
+            capImage.color = YantraInk;
             capImage.rectTransform.sizeDelta = new Vector2(28, 28);
 
             GameObject runeObj = new GameObject("CenterRuneText");
@@ -600,7 +640,7 @@ public class QTEController : MonoBehaviour
             centerRuneText.fontSize = 46;
             centerRuneText.alignment = TextAlignmentOptions.Center;
             centerRuneText.fontStyle = FontStyles.Bold;
-            centerRuneText.color = new Color(1f, 0.85f, 0.2f, 0.9f); // Golden glow rune
+            centerRuneText.color = new Color(YantraInk.r, YantraInk.g, YantraInk.b, 0.92f); // อักขระหมึก
             centerRuneText.rectTransform.anchoredPosition = new Vector2(0, 48);
             centerRuneText.rectTransform.sizeDelta = new Vector2(100, 60);
 
@@ -610,9 +650,9 @@ public class QTEController : MonoBehaviour
             promptText = promptObj.AddComponent<TextMeshProUGUI>();
             promptText.fontSize = 22;
             promptText.alignment = TextAlignmentOptions.Center;
-            promptText.color = Color.white;
-            promptText.rectTransform.anchoredPosition = new Vector2(0, 175);
-            promptText.rectTransform.sizeDelta = new Vector2(480, 70);
+            promptText.color = YantraInk;
+            promptText.rectTransform.anchoredPosition = new Vector2(0, 192);
+            promptText.rectTransform.sizeDelta = new Vector2(420, 90);
 
             // 10. ข้อความนับจำนวน (Progress Counter Text)
             GameObject progressObj = new GameObject("ProgressText");
@@ -621,9 +661,9 @@ public class QTEController : MonoBehaviour
             progressText.fontSize = 20;
             progressText.alignment = TextAlignmentOptions.Center;
             progressText.fontStyle = FontStyles.Bold;
-            progressText.color = Color.white;
-            progressText.rectTransform.anchoredPosition = new Vector2(0, -175);
-            progressText.rectTransform.sizeDelta = new Vector2(480, 50);
+            progressText.color = YantraInk;
+            progressText.rectTransform.anchoredPosition = new Vector2(0, -192);
+            progressText.rectTransform.sizeDelta = new Vector2(420, 90);
 
             // 11. ข้อความบอกผลลัพธ์ (Status Text ในกลางวงแหวน)
             GameObject statusObj = new GameObject("StatusText");

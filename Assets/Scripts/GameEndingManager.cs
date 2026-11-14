@@ -5,6 +5,7 @@ using UnityEngine.SceneManagement;
 using TMPro;
 using UnityEngine.UI;
 using UnityEngine.Video;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// ประเภทฉากจบทั้งหมดของเกม Saharan Hall (3 ฉากจบ)
@@ -345,6 +346,13 @@ public class GameEndingManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
+        // ขอบจอแดงของผีวาดด้วย OnGUI (ทับทุก Canvas) → ปิดไว้ ไม่งั้นติดอยู่บนหน้าจอดำ
+        if (GhostCurseManager.Instance != null)
+        {
+            GhostCurseManager.Instance.enableScreenEffects = false;
+            GhostCurseManager.Instance.showNumberBadgeOnUI = false;
+        }
+
         // ปิดการแสดงผล UI, มินิเกม, เป้าเล็ง, กล่อง Prompt และ HUD อื่นๆ ทั้งหมดที่ไม่เกี่ยวข้อง
         HideAllGameplayAndIrrelevantUI();
 
@@ -454,6 +462,10 @@ public class GameEndingManager : MonoBehaviour
         videoPlayer.Stop();
         if (cutsceneAudioSource != null) cutsceneAudioSource.Stop();
 
+        // หน้าแพ้: เปิดหน้าจอดำไว้ข้างหลังก่อนเฟด → วิดีโอจางไปเป็นจอดำเลย ไม่แว้บเห็นฉากเกม
+        bool shownBehind = endingType == GameEndingType.GhostGameOver;
+        if (shownBehind) ShowFinalEndingUI(endingType);
+
         float fadeDuration = 0.5f;
         float elapsed = 0f;
         while (elapsed < fadeDuration)
@@ -466,7 +478,7 @@ public class GameEndingManager : MonoBehaviour
         if (videoCanvasGO != null) videoCanvasGO.SetActive(false);
         isVideoPlaying = false;
 
-        ShowFinalEndingUI(endingType);
+        if (!shownBehind) ShowFinalEndingUI(endingType);
     }
 
     public void SkipVideoCutscene()
@@ -898,6 +910,71 @@ public class GameEndingManager : MonoBehaviour
         {
             descriptionText.text = $"<color=#{ColorUtility.ToHtmlStringRGBA(seq.themeColor)}>{seq.endingBadge}</color>\n\n{seq.epilogueSummary}";
         }
+
+        // หน้าแพ้: จอมืดสนิทหลังวิดีโอจบ + ปุ่ม "เริ่มวันแรกใหม่" / "กลับเมนูหลัก" + ใช้เมาส์ได้
+        if (isGhostGameOver && gameOverCanvas != null)
+        {
+            EnsureGameOverBlackout(gameOverCanvas);
+            // ไม่เอาภาพผีพื้นหลัง (รูปที่ตั้งไว้ในฉาก) → ซ่อนทุกรูปที่ไม่ใช่ปุ่ม เหลือพื้นดำ + ข้อความ + ปุ่ม
+            foreach (var img in gameOverCanvas.GetComponentsInChildren<Image>(true))
+            {
+                if (img.gameObject.name == "GameOver_Blackout") continue;
+                if (img.GetComponentInParent<Button>(true) != null) continue;
+                img.enabled = false;
+            }
+            foreach (var raw in gameOverCanvas.GetComponentsInChildren<RawImage>(true)) raw.enabled = false;
+            SetButtonLabel(restartButton, "เริ่มวันแรกใหม่");
+            SetButtonLabel(mainMenuButton, "กลับเมนูหลัก");
+            if (restartButton != null)
+            {
+                restartButton.onClick.RemoveListener(RestartGame);
+                restartButton.onClick.RemoveListener(RestartFromDayOne);
+                restartButton.onClick.AddListener(RestartFromDayOne);
+            }
+        }
+
+        if (EventSystem.current == null)
+            new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+        endingUIShown = true;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    private bool endingUIShown;
+
+    void LateUpdate()
+    {
+        // ระบบอื่นอาจล็อกเมาส์กลับ → ปลดไว้ตลอดตอนอยู่หน้าจบ
+        if (endingUIShown && (Cursor.lockState != CursorLockMode.None || !Cursor.visible))
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+    }
+
+    /// <summary>พื้นดำเต็มจอ วางไว้หลังสุดของหน้าแพ้ (ไม่เห็นฉากเกมข้างหลัง)</summary>
+    private void EnsureGameOverBlackout(GameObject root)
+    {
+        if (root.transform.Find("GameOver_Blackout") != null) return;
+        var go = new GameObject("GameOver_Blackout", typeof(RectTransform));
+        go.transform.SetParent(root.transform, false);
+        go.transform.SetAsFirstSibling();
+        var img = go.AddComponent<Image>();
+        img.color = Color.black;
+        img.raycastTarget = false;
+        var rt = img.rectTransform;
+        rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
+        // ขยายเกินขอบไว้เผื่อแผงหน้าแพ้ไม่ได้เต็มจอ
+        rt.offsetMin = new Vector2(-4000f, -4000f); rt.offsetMax = new Vector2(4000f, 4000f);
+    }
+
+    private static void SetButtonLabel(Button b, string label)
+    {
+        if (b == null) return;
+        var t = b.GetComponentInChildren<TMP_Text>(true);
+        if (t != null) { t.text = label; return; }
+        var legacy = b.GetComponentInChildren<Text>(true);
+        if (legacy != null) legacy.text = label;
     }
 
     // ==========================================
@@ -1626,7 +1703,8 @@ public class GameEndingManager : MonoBehaviour
             if (endingCanvas != null && c.transform.IsChildOf(endingCanvas.transform)) continue;
             if (gameOverCanvas != null && c.transform.IsChildOf(gameOverCanvas.transform)) continue;
 
-            // ปิด Canvas อื่นๆ ที่ไม่เกี่ยวข้อง
+            // ปิด Canvas อื่นๆ ที่ไม่เกี่ยวข้อง (จำไว้ เพื่อเปิดคืนตอนเริ่มใหม่ — บางอันอยู่ข้ามฉาก)
+            if (c.enabled) disabledByEnding.Add(c);
             c.enabled = false;
         }
     }
@@ -1650,17 +1728,37 @@ public class GameEndingManager : MonoBehaviour
     // การนำทางและเริ่มเกมใหม่
     // ==========================================
 
-    public void RestartGame()
+    private static readonly List<Canvas> disabledByEnding = new List<Canvas>();
+
+    /// <summary>เปิด Canvas ที่หน้าจบปิดไว้คืน (Canvas ของมินิเกม/วันที่ อยู่ข้ามฉาก ถ้าไม่เปิดคืนจะหายไปหลังเริ่มใหม่)</summary>
+    private void RestoreCanvasesAndTime()
     {
+        foreach (var c in disabledByEnding) if (c != null) c.enabled = true;
+        disabledByEnding.Clear();
+        endingUIShown = false;
         Time.timeScale = 1f;
         isGameEnding = false;
+    }
+
+    public void RestartGame()
+    {
+        RestoreCanvasesAndTime();
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    /// <summary>
+    /// เริ่มวันที่ 1 ใหม่: ตัวจัดการที่อยู่ข้ามฉาก (วัน / ชื่อเสียง / กรรม) ไม่ถูกรีเซ็ตตอนโหลดฉาก → ตั้งค่ากลับเอง แล้วโหลดฉาก GamePlay
+    /// </summary>
+    public void RestartFromDayOne()
+    {
+        RestoreCanvasesAndTime();
+        GameSessionReset.ResetRun();
+        SceneManager.LoadScene("GamePlay");
     }
 
     public void GoToMainMenu()
     {
-        Time.timeScale = 1f;
-        isGameEnding = false;
+        RestoreCanvasesAndTime();
         SceneManager.LoadScene("MainMenu");
     }
 

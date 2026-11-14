@@ -315,6 +315,7 @@ public class GhostCurseManager : MonoBehaviour
             activeIndices.Add(chosenIndex);
 
             Debug.Log($"[GhostCurseManager] 👻 เกิดผี Index {chosenIndex}: '{prefab.name}' ที่ตำแหน่ง '{spawnPt.name}' (Active: {instance.activeSelf})");
+            GhostRevealCamera.Reveal(instance); // หันกล้องซูมไปที่หน้าผีที่เพิ่งโผล่
         }
 
         // หากต้องลดจำนวนผี (กรณีชำระล้าง: activeIndices.Count > targetCount)
@@ -339,6 +340,24 @@ public class GhostCurseManager : MonoBehaviour
 
             activeIndices.RemoveAt(removePos);
         }
+    }
+
+    /// <summary>ผีที่กำลังปรากฏอยู่ในตำหนักตอนนี้ (ใช้ซ่อนภาพชั่วคราวตอนผู้เล่นลุกจากเก้าอี้)</summary>
+    public List<GameObject> GetShownGhostObjects()
+    {
+        var list = new List<GameObject>();
+        foreach (var go in activeGhostMap.Values)
+        {
+            if (go != null) list.Add(go);
+        }
+        if (sceneGhostObjects != null)
+        {
+            foreach (var go in sceneGhostObjects)
+            {
+                if (go != null && go.activeInHierarchy && !list.Contains(go)) list.Add(go);
+            }
+        }
+        return list;
     }
 
     private bool chosenIndexIsSceneObject(int index)
@@ -367,6 +386,7 @@ public class GhostCurseManager : MonoBehaviour
             int pickIndex = (shuffle && inactiveObjects.Count > 1) ? Random.Range(0, inactiveObjects.Count) : 0;
             GameObject toEnable = inactiveObjects[pickIndex];
             toEnable.SetActive(true);
+            GhostRevealCamera.Reveal(toEnable); // หันกล้องซูมไปที่หน้าผีที่เพิ่งโผล่
             inactiveObjects.RemoveAt(pickIndex);
             activeObjects.Add(toEnable);
         }

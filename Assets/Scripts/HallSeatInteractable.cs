@@ -105,6 +105,10 @@ public class HallSeatInteractable : InteractableItem
 
         playerController = activePlayer.GetComponent<PlayerController>();
 
+        // จอดำแล้วค่อยๆ สว่าง (กลบตอนวาร์ปขึ้นเก้าอี้) + Anomaly กลับมาระหว่างจอดำ
+        ScreenFader.Dip(0.25f, 0.7f);
+        ScreenFader.RestoreAnomalies();
+
         // 1. จัดตำแหน่งตัวละครให้อยู่บนเก้าอี้
         CharacterController charController = activePlayer.GetComponent<CharacterController>();
         if (charController != null) charController.enabled = false;
@@ -178,6 +182,9 @@ public class HallSeatInteractable : InteractableItem
         if (activePlayer == null) activePlayer = FindFirstObjectByType<PlayerInteraction>();
         if (playerController == null && activePlayer != null) playerController = activePlayer.GetComponent<PlayerController>();
 
+        // จอดำแล้วค่อยๆ สว่าง (กลบตอนลุก) — Anomaly ยังอยู่ให้เห็นตามปกติ ไม่ซ่อน
+        ScreenFader.Dip(0.25f, 0.7f);
+
         // 1. ย้ายตัวละครไปยังจุดยืนลุก
         if (activePlayer != null)
         {
@@ -213,5 +220,9 @@ public class HallSeatInteractable : InteractableItem
         }
 
         Debug.Log("[HallSeat] 🚪 ลุกขึ้นยืนเรียบร้อยแล้ว");
+        OnPlayerStoodUp?.Invoke();
     }
+
+    /// <summary>ผู้เล่นลุกจากเก้าอี้แล้ว (EveningAtmosphere ใช้เปลี่ยนเป็นบรรยากาศตอนค่ำ)</summary>
+    public static event System.Action OnPlayerStoodUp;
 }

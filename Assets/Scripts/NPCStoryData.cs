@@ -154,6 +154,26 @@ public class NPCStoryData : ScriptableObject
         if (phase != null) phase.isFailed = true;
     }
 
+    /// <summary>แก้ปัญหาสำเร็จ → จบเรื่องทันที (ข้าม Phase ที่เหลือ)</summary>
+    public void CompleteStory()
+    {
+        if (phases == null || phases.Count == 0) return;
+        for (int i = currentPhaseIndex; i < phases.Count; i++) phases[i].isCompleted = true;
+        currentPhaseIndex = phases.Count;
+        Debug.Log($"[NPCStory] '{npcName}' แก้ปัญหาสำเร็จ — จบเรื่อง ไม่กลับมาอีก");
+    }
+
+    /// <summary>ทำไม่สำเร็จ → ไป Phase ถัดไป (กลับมาวันหลัง) / ถ้าไม่มี Phase ถัดไป เรื่องจบ</summary>
+    public void FailAndContinue()
+    {
+        StoryPhase phase = GetCurrentPhase();
+        if (phase == null) return;
+        phase.isFailed = true;
+        phase.isCompleted = true; // ผ่านด่าน "Phase ก่อนหน้าต้องจบ" ให้ Phase ถัดไปมาได้
+        currentPhaseIndex++;
+        Debug.Log($"[NPCStory] '{npcName}' ทำไม่สำเร็จ → จะกลับมาด้วย Phase {currentPhaseIndex} (ถ้ามี)");
+    }
+
     /// <summary>ตรวจว่าจบทุก Phase เรียบร้อยแล้วหรือยัง</summary>
     public bool IsFullyCompleted()
     {

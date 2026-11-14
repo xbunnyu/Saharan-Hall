@@ -152,11 +152,8 @@ public class ForestInvitationManager : MonoBehaviour
             return;
         }
 
-        // ตรวจสอบว่าเควส NPC ประจำวันเสร็จสิ้นแล้วหรือไม่
-        if (AreDayQuestsFinished())
-        {
-            DeliverLetter();
-        }
+        // จดหมายมาถึงตั้งแต่เช้าวันที่ 2 เลย (เดิมต้องรอทำเควส NPC ของวันให้เสร็จก่อน)
+        DeliverLetter();
     }
 
     /// <summary>
@@ -215,8 +212,9 @@ public class ForestInvitationManager : MonoBehaviour
                 "<color=#FFD700>✉️ [อีเวนต์พิเศษ]: มีจดหมายเชิญปริศนาส่งมาถึงตำหนัก!</color>\n(ตรวจดูจดหมายที่โต๊ะรับแขกเพื่อเปิดรับภารกิจ)", 5.0f);
         }
 
-        // สร้างโมเดลจดหมายในฉาก
-        SpawnLetterInScene();
+        // สร้างโมเดลจดหมายในฉาก (ถ้าตอนขึ้นวันใหม่ไม่ได้อยู่ฉากตำหนัก จะวางให้ตอนกลับมาฉาก GamePlay)
+        if (SceneManager.GetActiveScene().name == "GamePlay")
+            SpawnLetterInScene();
     }
 
     /// <summary>
@@ -245,10 +243,21 @@ public class ForestInvitationManager : MonoBehaviour
         Quaternion spawnRot = Quaternion.identity;
 
         // 1. ถ้ามี customLetterSpawnPoint ที่ผู้ใช้กำหนด
+        // 1.5 วัตถุเปล่าชื่อ "LetterSpawnPoint" ในฉาก (วางเองบนโต๊ะได้ เพราะ manager นี้สร้างตอนรัน ใส่ใน Inspector ไม่ได้)
+        GameObject namedPoint = customLetterSpawnPoint == null ? GameObject.Find("LetterSpawnPoint") : null;
         if (customLetterSpawnPoint != null)
         {
             spawnPos = customLetterSpawnPoint.position;
             spawnRot = customLetterSpawnPoint.rotation;
+        }
+        else if (namedPoint != null)
+        {
+            spawnPos = namedPoint.transform.position;
+            spawnRot = namedPoint.transform.rotation;
+        }
+        else if (TryFindDeskSpot(out spawnPos, out spawnRot))
+        {
+            // วางบนโต๊ะทำพิธีของผู้เล่น ข้างถาดเขียนยันต์
         }
         else
         {
@@ -277,10 +286,35 @@ public class ForestInvitationManager : MonoBehaviour
                 }
             }
 
-            // ยิง Raycast ลงพื้น/ผิวโต๊ะเพื่อให้จดหมายวางทาบผิวโต๊ะพอดี
-            if (Physics.Raycast(spawnPos + Vector3.up * 1.5f, Vector3.down, out RaycastHit hit, 3.5f))
+            // หาผิวโต๊ะใต้จุดวาง: ยิงลงจากความสูงประมาณหน้าอก แล้วเลือกผิวที่สูงระดับโต๊ะ (ไม่เอาคาน/เพดาน/ตัว NPC/ผู้เล่น/ทริกเกอร์)
+            // เดิมยิงจากสูง 1.5 ม. แล้วเอาอันแรกที่โดน → บางทีโดนคาน/กล่องใต้หลังคา จดหมายเลยลอยกลางอากาศ
+            float baseY = spawnPos.y;
+            Vector3 from = new Vector3(spawnPos.x, baseY + 1.3f, spawnPos.z);
+            var hits = Physics.RaycastAll(from, Vector3.down, 3f, ~0, QueryTriggerInteraction.Ignore);
+            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+            bool placed = false;
+            foreach (var h in hits)
             {
-                spawnPos = hit.point + Vector3.up * 0.015f; // ยกขึ้น 1.5 ซม. ไม่ให้ติด z-fighting กับโต๊ะ
+                if (h.collider.GetComponentInParent<PlayerController>() != null) continue;
+                if (h.collider.GetComponentInParent<NPCController>() != null) continue;
+                if (h.collider.GetComponentInParent<CharacterController>() != null) continue;
+                float rise = h.point.y - baseY;
+                if (rise < 0.3f || rise > 1.25f) continue; // ระดับโต๊ะ (30 ซม. – 1.25 ม. จากพื้น)
+                spawnPos = h.point + Vector3.up * 0.015f; // ยกขึ้น 1.5 ซม. ไม่ให้ติด z-fighting กับโต๊ะ
+                placed = true;
+                break;
+            }
+            if (!placed)
+            {
+                // ไม่เจอผิวโต๊ะ → วางบนพื้น (ดีกว่าลอยกลางอากาศ)
+                foreach (var h in hits)
+                {
+                    if (h.collider.GetComponentInParent<PlayerController>() != null) continue;
+                    if (h.point.y > baseY + 0.3f) continue;
+                    spawnPos = h.point + Vector3.up * 0.015f;
+                    break;
+                }
+                Debug.LogWarning("[ForestInvitationManager] หาโต๊ะใต้จุดวางจดหมายไม่เจอ → ลากวัตถุเปล่ามาใส่ช่อง customLetterSpawnPoint เพื่อกำหนดตำแหน่งเองได้");
             }
         }
 
@@ -306,6 +340,42 @@ public class ForestInvitationManager : MonoBehaviour
         letterInteract.UpdatePromptState();
 
         Debug.Log($"[ForestInvitationManager] 📜 วางจดหมายเชิญลงที่ {spawnPos} เรียบร้อยแล้ว!");
+    }
+
+    /// <summary>
+    /// หาที่ว่างบนโต๊ะทำพิธีของผู้เล่น: ถาดเขียนยันต์ (QTEInteractable) ตั้งอยู่บนโต๊ะนี้
+    /// ลองวางข้างถาดฝั่งผู้เล่น / ซ้าย / ขวา แล้วเช็กว่าใต้จุดนั้นเป็นผิวโต๊ะระดับเดียวกับฐานถาด
+    /// </summary>
+    private bool TryFindDeskSpot(out Vector3 pos, out Quaternion rot)
+    {
+        pos = Vector3.zero; rot = Quaternion.identity;
+        var tray = FindFirstObjectByType<QTEInteractable>();
+        if (tray == null) return false;
+        var rends = tray.GetComponentsInChildren<Renderer>();
+        if (rends.Length == 0) return false;
+        Bounds b = rends[0].bounds;
+        for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+
+        Vector3 viewer = Camera.main != null ? Camera.main.transform.position : b.center - Vector3.forward;
+        Vector3 toPlayer = viewer - b.center; toPlayer.y = 0f;
+        if (toPlayer.sqrMagnitude < 1e-4f) toPlayer = Vector3.back;
+        toPlayer.Normalize();
+        Vector3 side = Vector3.Cross(Vector3.up, toPlayer);
+        float reach = Mathf.Max(b.extents.x, b.extents.z) + 0.18f;
+
+        Vector3[] dirs = { toPlayer, -side, side, (toPlayer - side).normalized, (toPlayer + side).normalized };
+        foreach (var d in dirs)
+        {
+            Vector3 p = b.center + d * reach;
+            Vector3 from = new Vector3(p.x, b.max.y + 0.3f, p.z);
+            if (!Physics.Raycast(from, Vector3.down, out RaycastHit hit, (b.max.y - b.min.y) + 0.6f, ~0, QueryTriggerInteraction.Ignore)) continue;
+            if (Mathf.Abs(hit.point.y - b.min.y) > 0.12f) continue; // ต้องเป็นผิวโต๊ะ ไม่ใช่พื้นหรือของที่วางอยู่
+            if (hit.collider.GetComponentInParent<InteractableItem>() != null) continue;
+            pos = hit.point + Vector3.up * 0.015f;
+            rot = Quaternion.LookRotation(-toPlayer, Vector3.up); // หันหน้าจดหมายเข้าหาผู้เล่น
+            return true;
+        }
+        return false;
     }
 
     /// <summary>

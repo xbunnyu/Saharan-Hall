@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -286,6 +287,9 @@ public class PlayerInteraction : MonoBehaviour
                 ?? sphereHit.collider.GetComponentInParent<InteractableItem>();
         }
 
+        // วัตถุที่ถูกปิดการโต้ตอบ (เช่น NPC ที่จบเควสแล้วกำลังเดินออก หรือยังนั่งไม่เสร็จ) ไม่ต้องขึ้นป้าย [E]
+        if (item != null && !item.enabled) item = null;
+
         currentTarget = item;
 
         // จัดการสถานะ Hover Highlight เมื่อผู้เล่นเล็งเป้าใส่หรือเบนเป้าออก
@@ -300,13 +304,67 @@ public class PlayerInteraction : MonoBehaviour
 
             if (currentTarget != null)
             {
-                var newHighlighter = currentTarget.GetComponent<ItemHighlighter>() 
+                var newHighlighter = currentTarget.GetComponent<ItemHighlighter>()
                     ?? currentTarget.GetComponentInChildren<ItemHighlighter>();
+                if (newHighlighter == null) newHighlighter = AddHoverGlow(currentTarget);
                 if (newHighlighter != null) newHighlighter.SetHovered(true);
             }
 
             previousTarget = currentTarget;
         }
+    }
+
+    /// <summary>
+    /// ไอเท็มที่ยังไม่มี ItemHighlighter: เพิ่มให้แบบเรืองแสงเฉพาะตอนเล็งมองใกล้ๆ (glow อย่างเดียว ไม่มีไฟส่อง/ประกาย)
+    /// ไม่ใส่ให้ NPC (ตัวคนเรืองแสงดูแปลก)
+    /// </summary>
+    private ItemHighlighter AddHoverGlow(InteractableItem target)
+    {
+        if (target == null) return null;
+        if (target.GetComponent<NPCController>() != null || target.GetComponentInParent<NPCController>() != null) return null;
+
+        // จุดกด E บางอันเป็นกล่องชนที่มองไม่เห็น วางทับโมเดลจริง → หาโมเดลที่ซ้อนอยู่ตรงนั้นมาเรืองแสงแทน
+        List<Renderer> nearby = null;
+        bool hasOwnRenderer = target.GetComponentsInChildren<Renderer>().Any(r => r.enabled && !(r is ParticleSystemRenderer));
+        if (!hasOwnRenderer)
+        {
+            nearby = FindRenderersOverlapping(target);
+            if (nearby.Count == 0) return null;
+        }
+
+        var hl = target.gameObject.AddComponent<ItemHighlighter>();
+        if (nearby != null) hl.SetTargetRenderers(nearby);
+        hl.triggerMode = HighlightTriggerMode.HoverOnly;
+        hl.enablePointLight = false;
+        hl.enableSparkles = false;
+        hl.enableGentleFloating = false;
+        hl.glowColor = new Color(1f, 0.62f, 0.25f, 1f); // สีเทียน
+        hl.minEmissionIntensity = 0.25f;
+        hl.maxEmissionIntensity = 0.9f;
+        hl.pulseSpeed = 0.8f;
+        return hl;
+    }
+
+    /// <summary>โมเดลชิ้นเล็กๆ (ไม่เกิน 3 ม.) ที่ซ้อนอยู่ในพื้นที่ของกล่องชน</summary>
+    private static List<Renderer> FindRenderersOverlapping(InteractableItem target)
+    {
+        var result = new List<Renderer>();
+        var cols = target.GetComponentsInChildren<Collider>();
+        if (cols.Length == 0) return result;
+        Bounds area = cols[0].bounds;
+        for (int i = 1; i < cols.Length; i++) area.Encapsulate(cols[i].bounds);
+        area.Expand(0.05f);
+
+        foreach (var r in FindObjectsByType<Renderer>(FindObjectsSortMode.None))
+        {
+            if (r == null || !r.enabled || r is ParticleSystemRenderer || r is TrailRenderer) continue;
+            if (r.GetComponentInParent<NPCController>() != null || r.GetComponentInParent<PlayerController>() != null) continue;
+            Bounds b = r.bounds;
+            if (b.size.x > 3f || b.size.y > 3f || b.size.z > 3f) continue;   // ไม่เอาพื้น/ผนัง/บ้าน
+            if (area.Contains(b.center) || (area.Intersects(b) && b.size.magnitude < area.size.magnitude * 2f))
+                result.Add(r);
+        }
+        return result;
     }
 
     private float interactionCooldown = 0f;
@@ -384,6 +442,16 @@ public class PlayerInteraction : MonoBehaviour
 
             if (isDirectAction)
             {
+                // วัตถุทำพิธี/มินิเกม: หันกล้องเข้าหา NPC ที่มาขอให้ช่วย แล้วล็อคไว้จนเล่นจบ
+                // ตวัดดาบ / ท่องคาถา: NPC หันหลังให้ เหมือนทำพิธีใส่หลังจริงๆ
+                if (currentTarget is QTEInteractable || currentTarget is RhythmInteractable
+                    || currentTarget is SlashInteractable || currentTarget is TimingBarInteractable)
+                {
+                    NPCController npc = HallManager.Instance != null ? HallManager.Instance.currentActiveNPC : null;
+                    Transform focus = npc != null ? npc.transform : currentTarget.transform;
+                    bool showBack = npc != null && currentTarget is SlashInteractable; // หันหลังเฉพาะตวัดดาบ
+                    MinigameCameraFocus.Watch(gameObject, focus, showBack ? npc : null);
+                }
                 currentTarget.OnRead(this);
             }
             else

@@ -165,6 +165,20 @@ public class ItemHighlighter : MonoBehaviour
     }
 
     /// <summary>
+    /// ใช้ Renderer ที่กำหนดเอง (กรณีจุดกด E เป็นกล่องชนที่มองไม่เห็น แยกจากโมเดลจริง)
+    /// </summary>
+    public void SetTargetRenderers(IEnumerable<Renderer> renderers)
+    {
+        targetRenderers.Clear();
+        foreach (var rend in renderers)
+        {
+            if (rend == null || rend is ParticleSystemRenderer || rend is TrailRenderer) continue;
+            if (!targetRenderers.Contains(rend)) targetRenderers.Add(rend);
+        }
+        EnableEmissionKeywordOnMaterials();
+    }
+
+    /// <summary>
     /// เปิดการใช้งานคีย์เวิร์ด _EMISSION บน Material เพื่อให้ URP Lit แสดงผลแสงเรืองได้อย่างถูกต้อง
     /// </summary>
     private void EnableEmissionKeywordOnMaterials()
@@ -199,6 +213,24 @@ public class ItemHighlighter : MonoBehaviour
 
     private void Update()
     {
+        // ปิดไฮไลท์ไว้ แต่ผู้เล่นกำลังเล็งมอง → ยังเรืองแสงตอนเล็ง (ไม่มีไฟส่อง/ประกาย)
+        if (!isHighlightActive && (isHovered || currentHoverFactor > 0.001f))
+        {
+            currentHoverFactor = Mathf.MoveTowards(currentHoverFactor, isHovered ? 1f : 0f, Time.deltaTime * 6f);
+            if (currentHoverFactor <= 0.001f) { ResetEmission(); return; }
+            float pulse = (Mathf.Sin(Time.time * pulseSpeed * Mathf.PI * 2f) + 1f) * 0.5f;
+            Color c = glowColor * (Mathf.Lerp(minEmissionIntensity, maxEmissionIntensity, pulse) * currentHoverFactor);
+            for (int i = 0; i < targetRenderers.Count; i++)
+            {
+                var rend = targetRenderers[i];
+                if (rend == null) continue;
+                rend.GetPropertyBlock(propBlock);
+                propBlock.SetColor(EmissionColorID, c);
+                rend.SetPropertyBlock(propBlock);
+            }
+            return;
+        }
+
         if (!isHighlightActive)
         {
             if (glowLight != null && glowLight.gameObject.activeSelf) glowLight.gameObject.SetActive(false);

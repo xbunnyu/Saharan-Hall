@@ -254,6 +254,58 @@ public static class NPCWalkSetupTool
         EditorUtility.DisplayDialog("จัดตัวละครเสร็จแล้ว", report.ToString(), "ตกลง");
     }
 
+    /// <summary>ตัวละครที่อยู่นอก Models_Animation_Charecter (เช่น NPC เคสต่อเนื่อง)</summary>
+    static readonly string[] ExtraCharacterFolders = { "Assets/Models/ป้าติ๋ม" };
+
+    static System.Collections.Generic.List<string> AllCharacterFolders()
+    {
+        var list = AssetDatabase.GetSubFolders(CharacterRoot).ToList();
+        list.AddRange(ExtraCharacterFolders.Where(AssetDatabase.IsValidFolder));
+        return list;
+    }
+
+    /// <summary>
+    /// หา controller ของตัวละคร — ถ้าในโฟลเดอร์มีหลายไฟล์ เลือกตัวที่ชื่อตรงกับไฟล์ท่าเดิน
+    /// (เช่น โฟลเดอร์ป้าติ๋มมีทั้ง Men1.controller และ patim_walk.controller)
+    /// </summary>
+    static string FindControllerPath(string folder, string fbxPath)
+    {
+        var paths = AssetDatabase.FindAssets("t:AnimatorController", new[] { folder })
+            .Select(AssetDatabase.GUIDToAssetPath).ToList();
+        if (paths.Count <= 1) return paths.FirstOrDefault();
+        string key = Path.GetFileNameWithoutExtension(fbxPath).ToLower();
+        int cut = key.IndexOf("_walk");
+        if (cut > 0) key = key.Substring(0, cut);
+        key = key.Replace("_", "");
+        return paths.FirstOrDefault(p => Path.GetFileNameWithoutExtension(p).ToLower().Replace("_", "").Contains(key))
+            ?? paths.FirstOrDefault();
+    }
+
+    /// <summary>เตรียม prefab ตัวละครทุกตัว (ขนาด + texture + controller) โดยไม่วางในฉาก — ใช้โดยตัวนำเข้า NPC</summary>
+    public static string PrepareAllPrefabs()
+    {
+        float targetHeight = MeasureReferenceHeight();
+        var template = AssetDatabase.FindAssets(TemplateMaterialName + " t:Material")
+            .Select(g => AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(g)))
+            .FirstOrDefault(m => m != null);
+        var sb = new StringBuilder();
+        foreach (var folder in AllCharacterFolders())
+        {
+            try
+            {
+                GameObject _;
+                sb.AppendLine(ArrangeCharacter(folder, targetHeight, template, out _));
+            }
+            catch (System.Exception e)
+            {
+                sb.AppendLine("❌ " + Path.GetFileName(folder) + ": " + e.Message);
+                Debug.LogException(e);
+            }
+        }
+        AssetDatabase.SaveAssets();
+        return sb.ToString();
+    }
+
     static string ArrangeCharacter(string folder, float targetHeight, Material template, out GameObject prefabAsset)
     {
         prefabAsset = null;
@@ -264,9 +316,8 @@ public static class NPCWalkSetupTool
             .FirstOrDefault(p => p.ToLower().EndsWith(".fbx") && Path.GetFileName(p).ToLower().Contains("walk"));
         if (fbxPath == null) return "⚠️ " + name + ": ไม่เจอไฟล์ .fbx — ข้ามไป";
 
-        var ctrl = AssetDatabase.FindAssets("t:AnimatorController", new[] { folder })
-            .Select(g => AssetDatabase.LoadAssetAtPath<AnimatorController>(AssetDatabase.GUIDToAssetPath(g)))
-            .FirstOrDefault(c => c != null);
+        string foundCtrl = FindControllerPath(folder, fbxPath);
+        var ctrl = foundCtrl != null ? AssetDatabase.LoadAssetAtPath<AnimatorController>(foundCtrl) : null;
         if (ctrl == null) return "⚠️ " + name + ": ยังไม่มี controller (กดเมนู 'ตั้งค่าท่าเดิน NPC ทุกตัว' ก่อน) — ข้ามไป";
 
         // ── Material: ใช้ของเดิมในโฟลเดอร์ ถ้าไม่มีให้สร้างจากแบบของหนูแดง
@@ -423,7 +474,7 @@ public static class NPCWalkSetupTool
     [MenuItem("Tools/Saharan/เดินวนตลอดทาง + นั่งเมื่อถึง (ทุกตัว)")]
     public static void WalkLoopSitAll()
     {
-        var folders = AssetDatabase.GetSubFolders(CharacterRoot).ToList();
+        var folders = AllCharacterFolders();
         if (AssetDatabase.IsValidFolder(DefaultNpcFolder)) folders.Add(DefaultNpcFolder);
 
         string list = string.Join("\n", folders.Select(f => "• " + Path.GetFileName(f)));
@@ -519,8 +570,7 @@ public static class NPCWalkSetupTool
         var sitClip = clips.FirstOrDefault(c => c.name == "sit");
         if (walkClip == null) return "⚠️ " + name + ": สร้างคลิป walk ไม่สำเร็จ — ข้ามไป";
 
-        string ctrlPath = AssetDatabase.FindAssets("t:AnimatorController", new[] { folder })
-            .Select(AssetDatabase.GUIDToAssetPath).FirstOrDefault();
+        string ctrlPath = FindControllerPath(folder, fbxPath);
         if (ctrlPath == null)
             ctrlPath = folder + "/" + Path.GetFileNameWithoutExtension(fbxPath).Replace("_walk", "") + "_controller.controller";
         var ctrl = AssetDatabase.LoadAssetAtPath<AnimatorController>(ctrlPath);

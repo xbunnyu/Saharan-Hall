@@ -189,6 +189,8 @@ public class InteractionUIManager : MonoBehaviour
     }
 
     private InteractableItem currentPromptItem;
+    /// <summary>ไอเทมที่ผู้เล่นเล็งอยู่ตอนนี้ (HorrorUIStyle ใช้วางป้ายลอยเหนือของ)</summary>
+    public InteractableItem CurrentPromptItem => currentPromptItem;
     private bool currentIsReading;
     private bool currentIsInventoryOpen;
     private string lastNotificationMessage = "";
@@ -222,6 +224,8 @@ public class InteractionUIManager : MonoBehaviour
         {
             crosshairImage.color = interactCrosshairColor;
         }
+
+        EnsureFloatingTextStyle();
 
         // แสดงผลกล่อง Prompt
         if (promptPanel != null)
@@ -591,8 +595,121 @@ public class InteractionUIManager : MonoBehaviour
         }
     }
 
+    private bool floatingStyleApplied = false;
+
+    /// <summary>
+    /// ป้าย [E] และข้อความแจ้งเตือน → ตัวหนังสือลอยมีขอบดำ (ไม่มีกล่อง) อ่านออกบนทุกพื้นหลัง
+    /// แจ้งเตือนย้ายจากด้านบน (ทับป้ายวันที่) มาไว้เหนือกล่องบทสนทนา
+    /// </summary>
+    private void EnsureFloatingTextStyle()
+    {
+        if (floatingStyleApplied) return;
+        floatingStyleApplied = true;
+
+        if (notificationPanel != null)
+        {
+            // ในฉากตั้ง NotificationPanel ไว้เป็นรูปเปล่าๆ ไม่มีตัวหนังสือ → เกมเลยไปใช้ OnGUI วาดที่ขอบบนจอ (ทับป้ายวันที่)
+            // สร้างตัวหนังสือให้ panel เอง ใช้ฟอนต์เดียวกับป้าย [E] (รองรับภาษาไทย)
+            if (notificationText == null) notificationText = notificationPanel.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (notificationText == null)
+            {
+                var textGo = new GameObject("NotificationText", typeof(RectTransform));
+                textGo.transform.SetParent(notificationPanel.transform, false);
+                notificationText = textGo.AddComponent<TextMeshProUGUI>();
+                var src = promptActionText != null ? promptActionText : promptItemNameText;
+                if (src != null && src.font != null) notificationText.font = src.font;
+                else if (TMP_Settings.defaultFontAsset != null) notificationText.font = TMP_Settings.defaultFontAsset;
+                notificationText.fontSize = 26;
+                notificationText.color = new Color32(0xE8, 0xDC, 0xC4, 0xFF);
+                notificationText.richText = true;
+                notificationText.raycastTarget = false;
+                var trt = notificationText.rectTransform;
+                trt.anchorMin = Vector2.zero; trt.anchorMax = Vector2.one;
+                trt.offsetMin = Vector2.zero; trt.offsetMax = Vector2.zero;
+            }
+
+            foreach (var img in notificationPanel.GetComponentsInChildren<Image>(true)) img.enabled = false;
+            var rt = notificationPanel.GetComponent<RectTransform>();
+            if (rt != null)
+            {
+                rt.anchorMin = new Vector2(0.15f, 0.42f);
+                rt.anchorMax = new Vector2(0.85f, 0.42f);
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = Vector2.zero;
+                rt.sizeDelta = new Vector2(0f, 110f);
+                rt.localScale = Vector3.one; // ในฉาก panel ถูกย่อไว้ ตัวหนังสือเลยเล็กจิ๋ว
+            }
+            if (notificationText != null) notificationText.fontSize = 32;
+            foreach (var t in notificationPanel.GetComponentsInChildren<TextMeshProUGUI>(true)) StyleFloating(t, TextAlignmentOptions.Center);
+        }
+
+        if (promptPanel != null)
+        {
+            foreach (var img in promptPanel.GetComponentsInChildren<Image>(true)) img.enabled = false;
+            foreach (var t in promptPanel.GetComponentsInChildren<TextMeshProUGUI>(true)) StyleFloating(t, t.alignment);
+        }
+    }
+
+    private static void StyleFloating(TextMeshProUGUI t, TextAlignmentOptions align)
+    {
+        if (t == null) return;
+        t.alignment = align;
+        t.textWrappingMode = TextWrappingModes.Normal;
+        if (t.font == null && TMP_Settings.defaultFontAsset != null) t.font = TMP_Settings.defaultFontAsset;
+        if (t.font == null) return; // ไม่มีฟอนต์ = ใส่ขอบไม่ได้ (ไม่งั้น NullReference)
+        try
+        {
+            t.outlineWidth = 0.22f;
+            t.outlineColor = new Color32(0, 0, 0, 230);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning("[InteractionUI] ใส่ขอบตัวหนังสือไม่ได้: " + t.name + " — " + e.Message);
+        }
+    }
+
+    /// <summary>ตัดอีโมจิที่ฟอนต์ไทยไม่มี (ขึ้นเป็นกล่อง □)</summary>
+    private static string StripEmoji(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return s;
+        var sb = new System.Text.StringBuilder(s.Length);
+        for (int i = 0; i < s.Length; i++)
+        {
+            char c = s[i];
+            if (char.IsSurrogate(c)) continue;                 // อีโมจิส่วนใหญ่ (📰 🪑 👉 ...)
+            if (c == '️' || c == '‍') continue;      // ตัวปรับแต่งอีโมจิ
+            if (c >= '☀' && c <= '➿') continue;      // ⚠ ✅ ❌ ✔ ฯลฯ
+            sb.Append(c);
+        }
+        return sb.ToString().Trim();
+    }
+
+    [Tooltip("แสดงข้อความแจ้งเตือน/คำแนะนำบนจอหรือไม่ (ปิดไว้ — เกมผีไม่ควรมีข้อความเด้งรบกวน)")]
+    public bool showNotifications = false;
+
+    /// <summary>ข้อความสำคัญที่ต้องโชว์แม้ปิดการแจ้งเตือนอยู่ (เช่น จบงานของวันแล้ว ลุกได้)</summary>
+    public void ShowImportantMessage(string message, float duration = 4f)
+    {
+        bool prev = showNotifications;
+        showNotifications = true;
+        ShowNotification(message, duration);
+        showNotifications = prev;
+    }
+
     public void ShowNotification(string message, float duration = 2.5f)
     {
+        if (!showNotifications)
+        {
+            // ไม่แสดงบนจอ เก็บไว้ใน Console สำหรับดีบักเท่านั้น
+            Debug.Log($"[Notification ซ่อน] {message}");
+            lastNotificationMessage = "";
+            notificationTimer = 0f;
+            if (notificationPanel != null) notificationPanel.SetActive(false);
+            return;
+        }
+
+        EnsureFloatingTextStyle();
+        message = StripEmoji(message);
         lastNotificationMessage = message;
         notificationTimer = duration;
 

@@ -114,37 +114,48 @@ public class AltarUpgradeUI : MonoBehaviour
         bool canAfford = wallet >= cost;
         bool isMaxLevel = altar.currentLevel >= 4;
 
-        // ── อัพเดต Canvas Text (ถ้ามี) ──
-        if (titleText != null) titleText.text = "⛩  อัพเกรดโต๊ะหมู่บูชา";
+        // ไม่มี Canvas ในฉาก → สร้างหน้าต่างแบบเรียบ (โทนเดียวกับ UI ใหม่) แทนหน้าต่าง OnGUI เดิม
+        if (panel == null) BuildPanel();
+
+        // ── อัพเดต Canvas Text ── (ภาษาคนเล่น ไม่ใช้คำว่า QTE / Lv.)
+        if (titleText != null) titleText.text = "โต๊ะหมู่บูชา";
         if (levelInfoText != null)
         {
-            levelInfoText.text = isMaxLevel ? $"Lv.{altar.currentLevel} (ระดับสูงสุด)" : $"Lv.{altar.currentLevel}  →  Lv.{nextLevel}";
+            levelInfoText.text = isMaxLevel
+                ? $"ระดับ {altar.currentLevel}  ·  สูงสุดแล้ว"
+                : $"ระดับ {altar.currentLevel}   <color={CandleHex}>→   ระดับ {nextLevel}</color>";
         }
         if (benefitText != null)
         {
-            benefitText.text = isMaxLevel ? BuddhistAltarManager.GetLevelBenefitText(altar.currentLevel) : BuddhistAltarManager.GetLevelBenefitText(nextLevel);
+            benefitText.text = isMaxLevel
+                ? $"<color={MutedHex}><size=80%>ตอนนี้</size></color>\n{PlainBenefit(altar.currentLevel)}"
+                : $"<color={MutedHex}><size=80%>ตอนนี้</size></color>\n{PlainBenefit(altar.currentLevel)}\n\n" +
+                  $"<color={CandleHex}><size=80%>หลังอัพเกรด</size></color>\n{PlainBenefit(nextLevel)}";
         }
         if (costText != null)
         {
-            costText.text = isMaxLevel ? "ระดับสูงสุดแล้ว" : $"ค่าอัพเกรด:  <color=#FFD700>{cost:N0} บาท</color>";
+            costText.text = isMaxLevel ? "" : $"ค่าอัพเกรด  <color={CandleHex}>{cost:N0} บาท</color>";
         }
 
         if (walletText != null)
         {
-            string walletColor = canAfford ? "#4ADE80" : "#F87171";
-            walletText.text = $"เงินของคุณ:  <color={walletColor}>{wallet:N0} บาท</color>";
+            walletText.text = canAfford || isMaxLevel
+                ? $"<color={MutedHex}>มีอยู่ {wallet:N0} บาท</color>"
+                : $"<color={MutedHex}>มีอยู่ {wallet:N0} บาท</color>   <color=#C0392B>ขาดอีก {cost - wallet:N0} บาท</color>";
         }
 
         // ── ปุ่มยืนยัน ──
         if (confirmButton != null)
         {
+            confirmButton.gameObject.SetActive(!isMaxLevel);
             confirmButton.interactable = canAfford && !isMaxLevel;
             if (confirmButtonText != null)
             {
-                if (isMaxLevel) confirmButtonText.text = "สูงสุดแล้ว";
-                else confirmButtonText.text = canAfford ? "อัพเกรด  [T]" : "เงินไม่พอ";
+                confirmButtonText.text = canAfford ? "[T]   อัพเกรด" : "เงินไม่พอ";
+                confirmButtonText.color = canAfford ? Candle : Dim;
             }
         }
+        if (cancelButtonText != null) cancelButtonText.text = isMaxLevel ? "[Esc]   ปิด" : "[Esc]   ไว้ก่อน";
 
         // ── แสดง Canvas Panel และ Freeze Player ──
         if (panel != null) panel.SetActive(true);
@@ -207,6 +218,117 @@ public class AltarUpgradeUI : MonoBehaviour
     }
 
     public bool IsOpen() => isOpen;
+
+    // ──────────────────────────────────────────────────────────
+    // หน้าต่างแบบเรียบ (สร้างตอนรัน): ชื่อ / ระดับ / ตอนนี้ vs หลังอัพเกรด / ราคา / 2 ปุ่ม
+    // ──────────────────────────────────────────────────────────
+    static readonly Color Cream  = new Color32(0xE8, 0xDC, 0xC4, 0xFF);
+    static readonly Color Muted  = new Color32(0xA8, 0x97, 0x7A, 0xFF);
+    static readonly Color Dim    = new Color32(0x7A, 0x70, 0x62, 0xFF);
+    static readonly Color Candle = new Color32(0xFF, 0xB3, 0x5C, 0xFF);
+    const string MutedHex = "#A8977A", CandleHex = "#FFB35C";
+
+    /// <summary>ผลของแต่ละระดับ แบบที่คนเล่นอ่านแล้วเข้าใจ (ระบบจริงอยู่ใน BuddhistAltarManager เหมือนเดิม)</summary>
+    static string PlainBenefit(int level)
+    {
+        switch (level)
+        {
+            case 1: return "มินิเกมพิธียากที่สุด ไม่มีตัวช่วย";
+            case 2: return "จังหวะกดในพิธีกว้างขึ้นเล็กน้อย พลาดยากขึ้น";
+            case 3: return "มีตัวช่วยบอกจังหวะ ให้เห็นว่าต้องกดตอนไหน";
+            case 4: return "ช่วยมากที่สุด: จังหวะกว้างสุด และช่วยรับจังหวะให้อัตโนมัติ";
+            default: return BuddhistAltarManager.GetLevelBenefitText(level);
+        }
+    }
+
+    TMP_FontAsset GameFont()
+    {
+        if (QuestUIManager.Instance != null && QuestUIManager.Instance.questDescriptionText != null)
+            return QuestUIManager.Instance.questDescriptionText.font;
+        var any = FindFirstObjectByType<TextMeshProUGUI>(FindObjectsInactive.Include);
+        return any != null ? any.font : TMP_Settings.defaultFontAsset;
+    }
+
+    TextMeshProUGUI MakeText(Transform parent, string name, float size, Color color, Vector2 pos, Vector2 sizeDelta, TMP_FontAsset font)
+    {
+        var go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+        var t = go.AddComponent<TextMeshProUGUI>();
+        if (font != null) t.font = font;
+        t.fontSize = size;
+        t.color = color;
+        t.alignment = TextAlignmentOptions.Center;
+        t.raycastTarget = false;
+        t.textWrappingMode = TextWrappingModes.Normal;
+        var rt = t.rectTransform;
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = sizeDelta;
+        return t;
+    }
+
+    Button MakeButton(Transform parent, string name, Vector2 pos, Color edge, TMP_FontAsset font, out TextMeshProUGUI label)
+    {
+        var go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+        var rt = go.GetComponent<RectTransform>();
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = new Vector2(250f, 56f);
+        var img = go.AddComponent<Image>();
+        img.color = new Color(0f, 0f, 0f, 0.5f);
+        var ol = go.AddComponent<Outline>();
+        ol.effectColor = new Color(edge.r, edge.g, edge.b, 0.6f);
+        ol.effectDistance = new Vector2(1.5f, -1.5f);
+        var b = go.AddComponent<Button>();
+        var cb = b.colors;
+        cb.highlightedColor = new Color(1f, 0.85f, 0.6f, 1f);
+        cb.disabledColor = new Color(0.6f, 0.6f, 0.6f, 0.6f);
+        b.colors = cb;
+        label = MakeText(go.transform, "Label", 26f, edge, Vector2.zero, rt.sizeDelta, font);
+        label.fontStyle = FontStyles.Bold;
+        return b;
+    }
+
+    void BuildPanel()
+    {
+        var font = GameFont();
+
+        var canvasGO = new GameObject("AltarUpgrade_Canvas", typeof(RectTransform));
+        canvasGO.transform.SetParent(transform, false); // อยู่ข้ามฉากไปพร้อม component นี้
+        var canvas = canvasGO.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 950;
+        var scaler = canvasGO.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.matchWidthOrHeight = 0.5f;
+        canvasGO.AddComponent<GraphicRaycaster>();
+
+        panel = new GameObject("AltarUpgrade_Panel", typeof(RectTransform));
+        panel.transform.SetParent(canvasGO.transform, false);
+        var prt = panel.GetComponent<RectTransform>();
+        prt.sizeDelta = new Vector2(680f, 540f);
+        var bg = panel.AddComponent<Image>();
+        bg.color = new Color(0.04f, 0.03f, 0.02f, 0.9f);
+        var ol = panel.AddComponent<Outline>();
+        ol.effectColor = new Color(Cream.r, Cream.g, Cream.b, 0.25f);
+        ol.effectDistance = new Vector2(1.5f, -1.5f);
+
+        var p = panel.transform;
+        titleText     = MakeText(p, "Title",   42f, Cream,  new Vector2(0f, 220f),  new Vector2(620f, 60f), font);
+        titleText.fontStyle = FontStyles.Bold;
+        levelInfoText = MakeText(p, "Level",   28f, Cream,  new Vector2(0f, 170f),  new Vector2(620f, 44f), font);
+        benefitText   = MakeText(p, "Benefit", 26f, Cream,  new Vector2(0f, 30f),   new Vector2(580f, 210f), font);
+        benefitText.lineSpacing = -8f;
+        costText      = MakeText(p, "Cost",    28f, Cream,  new Vector2(0f, -112f), new Vector2(620f, 40f), font);
+        walletText    = MakeText(p, "Wallet",  22f, Muted,  new Vector2(0f, -150f), new Vector2(620f, 34f), font);
+
+        confirmButton = MakeButton(p, "ConfirmButton", new Vector2(-140f, -218f), Candle, font, out confirmButtonText);
+        cancelButton  = MakeButton(p, "CancelButton",  new Vector2(140f, -218f),  Muted,  font, out cancelButtonText);
+        confirmButton.onClick.AddListener(OnConfirm);
+        cancelButton.onClick.AddListener(OnCancel);
+
+        panel.SetActive(false);
+    }
 
     // ──────────────────────────────────────────────────────────
     // OnGUI Fallback Modal — แสดงผลหน้าต่างเลือกอัพเกรดแบบสวยงาม

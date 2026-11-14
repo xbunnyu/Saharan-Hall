@@ -85,7 +85,9 @@ public class SequentialSlashController : MonoBehaviour
 
         EnsureUIExists();
 
-        if (slashPanel != null)
+        // ซ่อนหน้า UI เฉพาะตอนที่ยังไม่ได้เริ่มเล่น
+        // (ตัวควบคุมถูกสร้างแล้วเริ่มเกมทันทีในเฟรมเดียวกัน → Start() มาทีหลังแล้วเคยไปซ่อน UI ทิ้ง ทำให้หน้าจอไม่ขึ้น)
+        if (slashPanel != null && !isSlashActive)
         {
             slashPanel.SetActive(false);
         }
@@ -179,6 +181,8 @@ public class SequentialSlashController : MonoBehaviour
         slashStartPos = center - dir * (lineLength / 2f);
         slashEndPos = center + dir * (lineLength / 2f);
 
+        try { RefreshGuide(); }
+        catch (Exception e) { Debug.LogError("[SequentialSlash] สร้างเส้นนำทางไม่สำเร็จ: " + e); }
         UpdateUI();
     }
 
@@ -249,6 +253,9 @@ public class SequentialSlashController : MonoBehaviour
             }
         }
 
+        if (isDragging && isPressing) AddTrail(currentMousePos);
+        lastTrailPos = currentMousePos;
+
         if (isJustReleased)
         {
             isDragging = false;
@@ -257,6 +264,7 @@ public class SequentialSlashController : MonoBehaviour
 
     private void TriggerSlashSuccess()
     {
+        SpawnCutMark(slashStartPos, slashEndPos);
         currentSlashIndex++;
         PlaySound(slashSound, 600f + (currentSlashIndex * 80f), 0.18f);
 
@@ -296,8 +304,8 @@ public class SequentialSlashController : MonoBehaviour
         if (statusText != null)
         {
             statusText.text = success 
-                ? "<color=#00FF7F>⚔️ ฟันยันต์สะบั้นสำเร็จ!</color>" 
-                : "<color=#FF4500>💀 พิธีกรรมล้มเหลว!</color>";
+                ? "<color=#E8DCC4>ตัดอาคมขาดสะบั้น</color>" 
+                : "<color=#B0473A>อาคมยังไม่ขาด</color>";
         }
 
         PlaySound(success ? winSound : failSound, success ? 880f : 120f, success ? 0.45f : 0.5f);
@@ -324,18 +332,156 @@ public class SequentialSlashController : MonoBehaviour
         if (promptText != null)
         {
             string speedHint = currentSlashIndex == 0 ? "(เริ่ม 6.0 วิ)" : $"(เร่งสปีด! {currentMaxTime:F1} วิ)";
-            promptText.text = $"<color=#FFD700>⚔️ พิธีตวัดดาบฟันยันต์ (SEQUENTIAL SLASH) ✨</color>\nลากเมาส์ตวัดผ่าทิศทางลูกศรให้ครบ! {speedHint}";
+            promptText.text = $"<color=#E8DCC4><size=120%>พิธีตวัดดาบฟันอาคม</size></color>\n<size=80%><color=#A8977A>กดค้างที่ด้ามดาบ แล้วลากตามรอยชาดไปจนถึงตราประทับ</color></size>";
         }
 
         if (progressText != null)
         {
-            progressText.text = $"<color=#00FF88>จำนวนรอยฟัน: {currentSlashIndex}/{requiredSlashes}</color>  |  <color=#FF3555>หลุดจังหวะ: {currentFailures}/{maxFailures}</color>";
+            progressText.text = $"<color=#E8DCC4>รอยฟัน {currentSlashIndex}/{requiredSlashes}</color>" + (currentFailures > 0 ? $"   <color=#B0473A>พลาด {currentFailures}/{maxFailures}</color>" : "");
         }
 
         if (timerText != null)
         {
-            timerText.text = $"⏱️ เวลาตวัด: <color=#FFD700>{currentTimer:F1}s</color> / {currentMaxTime:F1}s";
+            timerText.text = $"<color={(currentTimer <= 1.5f ? "#B0473A" : "#FFB35C")}>{currentTimer:F1}</color> <size=70%><color=#A8977A>วินาที</color></size>"; UpdateTimerBar();
         }
+    }
+
+    // ══════════ หน้าตาใหม่: รอยชาดนำทาง / ด้ามดาบ / ตราประทับ / แสงดาบ / รอยแผล ══════════
+    private RectTransform guideRoot;
+    private Sprite dotSprite;
+    private Image timerBarFill;
+    private Vector2 lastTrailPos;
+    private static readonly Color Vermilion = new Color(0.66f, 0.18f, 0.12f, 1f);
+    private static readonly Color Cream = new Color(0.91f, 0.86f, 0.77f, 1f);
+
+    private Vector2 ScreenToPanel(Vector2 screen)
+    {
+        RectTransform pr = slashPanel.GetComponent<RectTransform>();
+        Vector2 local;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(pr, screen, null, out local);
+        return local;
+    }
+
+    private Image MakeImg(Transform parent, string name, Vector2 size, Vector2 pos, Color c, Sprite sprite = null, float rot = 0f)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var img = go.AddComponent<Image>();
+        img.sprite = sprite;
+        img.color = c;
+        img.raycastTarget = false;
+        img.rectTransform.sizeDelta = size;
+        img.rectTransform.anchoredPosition = pos;
+        img.rectTransform.localRotation = Quaternion.Euler(0, 0, rot);
+        return img;
+    }
+
+    private void EnsureGuideRoot()
+    {
+        if (slashPanel == null) return;
+        if (dotSprite == null) dotSprite = CreateCircleSprite(64);
+        if (guideRoot == null)
+        {
+            var go = new GameObject("Guide", typeof(RectTransform));
+            go.transform.SetParent(slashPanel.transform, false);
+            guideRoot = go.GetComponent<RectTransform>();
+        }
+        if (timerBarFill == null)
+        {
+            // แถบเวลาเป็นเส้นธูปที่ค่อยๆ มอดไหม้ (ใต้ตัวเลขเวลา)
+            MakeImg(slashPanel.transform, "IncenseBG", new Vector2(300, 6), new Vector2(0, 160), new Color(0.2f, 0.13f, 0.08f, 0.9f));
+            timerBarFill = MakeImg(slashPanel.transform, "IncenseFill", new Vector2(300, 6), new Vector2(-150, 160), new Color(0.75f, 0.35f, 0.15f, 1f));
+            timerBarFill.rectTransform.pivot = new Vector2(0f, 0.5f);
+        }
+    }
+
+    private void UpdateTimerBar()
+    {
+        if (timerBarFill == null || currentMaxTime <= 0f) return;
+        float k = Mathf.Clamp01(currentTimer / currentMaxTime);
+        timerBarFill.rectTransform.sizeDelta = new Vector2(300f * k, 6f);
+    }
+
+    /// <summary>วาดเส้นนำแบบรอยชาดประ + ด้ามดาบที่จุดเริ่ม + ตราประทับที่จุดจบ</summary>
+    private void RefreshGuide()
+    {
+        EnsureGuideRoot();
+        if (guideRoot == null) return;
+        for (int i = guideRoot.childCount - 1; i >= 0; i--) Destroy(guideRoot.GetChild(i).gameObject);
+
+        Vector2 a = ScreenToPanel(slashStartPos);
+        Vector2 b = ScreenToPanel(slashEndPos);
+        Vector2 d = b - a;
+        float len = d.magnitude;
+        float ang = Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg;
+
+        int dashes = Mathf.Max(6, Mathf.RoundToInt(len / 26f));
+        for (int i = 0; i < dashes; i++)
+        {
+            float t = (i + 0.5f) / dashes;
+            MakeImg(guideRoot, "Dash", new Vector2(14, 4), Vector2.Lerp(a, b, t), new Color(Vermilion.r, Vermilion.g, Vermilion.b, 0.75f), null, ang);
+        }
+
+        // ด้ามดาบ (จุดเริ่ม)
+        MakeImg(guideRoot, "HiltRing", new Vector2(58, 58), a, new Color(Cream.r, Cream.g, Cream.b, 0.35f), dotSprite);
+        MakeImg(guideRoot, "HiltCore", new Vector2(20, 20), a, Cream, dotSprite);
+        MakeImg(guideRoot, "Handle", new Vector2(40, 8), a - d.normalized * 34f, new Color(0.35f, 0.22f, 0.12f, 1f), null, ang);
+        MakeImg(guideRoot, "Guard", new Vector2(6, 26), a - d.normalized * 12f, new Color(0.62f, 0.45f, 0.22f, 1f), null, ang);
+
+        // ตราประทับ (จุดจบ)
+        MakeImg(guideRoot, "SealOuter", new Vector2(62, 62), b, new Color(Vermilion.r, Vermilion.g, Vermilion.b, 0.9f), dotSprite);
+        MakeImg(guideRoot, "SealInner", new Vector2(50, 50), b, new Color(0.45f, 0.10f, 0.07f, 1f), dotSprite);
+        var lblGo = new GameObject("SealText");
+        lblGo.transform.SetParent(guideRoot, false);
+        var lbl = lblGo.AddComponent<TextMeshProUGUI>();
+        if (promptText != null) lbl.font = promptText.font;
+        lbl.text = "ฟัน";
+        lbl.fontSize = 20;
+        lbl.alignment = TextAlignmentOptions.Center;
+        lbl.color = Cream;
+        lbl.raycastTarget = false;
+        lbl.rectTransform.sizeDelta = new Vector2(60, 40);
+        lbl.rectTransform.anchoredPosition = b;
+    }
+
+    /// <summary>แสงดาบตามเมาส์ขณะลาก</summary>
+    private void AddTrail(Vector2 screenPos)
+    {
+        if (slashPanel == null || guideRoot == null) return;
+        Vector2 p0 = ScreenToPanel(lastTrailPos);
+        Vector2 p1 = ScreenToPanel(screenPos);
+        Vector2 d = p1 - p0;
+        if (d.sqrMagnitude < 4f) return;
+        var seg = MakeImg(slashPanel.transform, "BladeTrail", new Vector2(d.magnitude + 4f, 5f), (p0 + p1) * 0.5f,
+                          new Color(0.92f, 0.94f, 1f, 0.85f), null, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg);
+        StartCoroutine(FadeAndDestroy(seg, 0.25f));
+    }
+
+    /// <summary>ฟันสำเร็จ: รอยแผลสีแดงคล้ำพาดตามแนวที่ฟัน</summary>
+    private void SpawnCutMark(Vector2 startScreen, Vector2 endScreen)
+    {
+        if (slashPanel == null) return;
+        Vector2 a = ScreenToPanel(startScreen);
+        Vector2 b = ScreenToPanel(endScreen);
+        Vector2 d = b - a;
+        float ang = Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg;
+        var cut = MakeImg(slashPanel.transform, "CutMark", new Vector2(d.magnitude * 1.15f, 7f), (a + b) * 0.5f, new Color(0.55f, 0.06f, 0.05f, 0.95f), null, ang);
+        var glow = MakeImg(slashPanel.transform, "CutGlow", new Vector2(d.magnitude * 1.15f, 2f), (a + b) * 0.5f, new Color(1f, 0.9f, 0.8f, 1f), null, ang);
+        StartCoroutine(FadeAndDestroy(cut, 0.7f));
+        StartCoroutine(FadeAndDestroy(glow, 0.3f));
+    }
+
+    private IEnumerator FadeAndDestroy(Image img, float life)
+    {
+        float t = 0f;
+        Color c0 = img.color;
+        while (t < life && img != null)
+        {
+            t += Time.unscaledDeltaTime;
+            img.color = new Color(c0.r, c0.g, c0.b, c0.a * (1f - t / life));
+            yield return null;
+        }
+        if (img != null) Destroy(img.gameObject);
     }
 
     private void LockPlayerControls(bool lockState)
@@ -449,7 +595,7 @@ public class SequentialSlashController : MonoBehaviour
             GameObject bgCardObj = new GameObject("GlassBG");
             bgCardObj.transform.SetParent(slashPanel.transform, false);
             Image bgCard = bgCardObj.AddComponent<Image>();
-            bgCard.color = new Color(0.04f, 0.05f, 0.08f, 0.85f);
+            bgCard.color = new Color(0f, 0f, 0f, 0.35f); // จางๆ ให้เห็นหลัง NPC ที่จะฟัน
             bgCard.rectTransform.sizeDelta = new Vector2(560, 560);
             bgCard.sprite = circleSprite;
 
@@ -459,7 +605,7 @@ public class SequentialSlashController : MonoBehaviour
             promptText = promptObj.AddComponent<TextMeshProUGUI>();
             promptText.fontSize = 22;
             promptText.alignment = TextAlignmentOptions.Center;
-            promptText.color = Color.white;
+            promptText.color = new Color32(0xE8, 0xDC, 0xC4, 0xFF);
             promptText.rectTransform.anchoredPosition = new Vector2(0, 230);
             promptText.rectTransform.sizeDelta = new Vector2(540, 70);
 
@@ -481,7 +627,7 @@ public class SequentialSlashController : MonoBehaviour
             progressText.fontSize = 18;
             progressText.fontStyle = FontStyles.Bold;
             progressText.alignment = TextAlignmentOptions.Center;
-            progressText.color = Color.white;
+            progressText.color = new Color32(0xE8, 0xDC, 0xC4, 0xFF);
             progressText.rectTransform.anchoredPosition = new Vector2(0, -230);
             progressText.rectTransform.sizeDelta = new Vector2(540, 40);
 
@@ -503,6 +649,9 @@ public class SequentialSlashController : MonoBehaviour
     void OnGUI()
     {
         if (!isSlashActive) return;
+        // Canvas แบบใหม่ทำงานอยู่ → ไม่ต้องวาดสำรองทับ
+        // ระบบวาดสำรองแบบเก่า (START/END, SLASH: 0/4) ปิดถาวร — ใช้หน้า UI แบบใหม่เท่านั้น
+        return;
 
         float centerX = Screen.width / 2f;
         float centerY = Screen.height / 2f;

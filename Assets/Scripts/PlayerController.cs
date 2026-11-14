@@ -78,6 +78,14 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    /// <summary>ใช้มุมก้ม-เงยปัจจุบันของกล้อง (หลังจากถูกหมุนจากภายนอก เช่น ล็อคกล้องตอนมินิเกม)</summary>
+    public void SyncPitchFromCamera()
+    {
+        if (playerCamera == null) return;
+        verticalRotation = playerCamera.localEulerAngles.x;
+        if (verticalRotation > 180f) verticalRotation -= 360f;
+    }
+
     private void HandleLook()
     {
         float lookX = 0f;

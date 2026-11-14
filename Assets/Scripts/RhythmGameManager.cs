@@ -26,6 +26,26 @@ public class RhythmGameManager : MonoBehaviour
     public AudioClip chantSuccessSound;
     public AudioClip chantFailSound;
 
+    [Header("บทสวดจริง (เสียงสวด + โน้ตตรงพยางค์)")]
+    [Tooltip("ใช้เสียงบทสวดจริง โน้ตตกตรงจังหวะพยางค์ / ปิด = โน้ตสุ่มแบบเดิม")]
+    public bool useChantTrack = true;
+    [Tooltip("ไฟล์เสียงบทสวด (เว้นว่าง = โหลดจาก Resources/Audio/ChantTrack)")]
+    public AudioClip chantTrack;
+    [Tooltip("วินาทีในไฟล์เสียงที่มีพยางค์ให้กด (วิเคราะห์จากความดังของเสียงสวด) แก้/เพิ่ม/ลบได้")]
+    public List<float> chantBeatTimes = new List<float>
+    {
+        0.68f, 1.40f, 1.93f, 2.16f, 2.77f, 3.76f, 4.56f, 5.06f, 5.39f, 6.10f,
+        6.55f, 7.02f, 7.53f, 8.12f, 9.39f, 9.83f, 10.48f, 10.83f, 11.63f
+    };
+    [Tooltip("เลื่อนโน้ตทั้งหมด (วินาที) ถ้ารู้สึกว่ากดตรงเสียงแล้วไม่ตรง: + = โน้ตมาช้าลง, - = เร็วขึ้น")]
+    public float chantSyncOffset = -0.06f;
+    [Range(0f, 1f)] public float chantVolume = 0.9f;
+
+    private AudioSource chantSource;
+    private double dspStartTime;
+    private bool useDspClock;
+    private float chantTailUntil;
+
     [Header("Game State (Read Only)")]
     public bool isPlaying = false;
     public float chantingProgress = 0f; // 0% - 100%
@@ -79,11 +99,23 @@ public class RhythmGameManager : MonoBehaviour
         SetupAudioSource();
     }
 
+    /// <summary>เวลาในมินิเกม: ใช้นาฬิกาเสียง (dspTime) ตอนมีบทสวด → โน้ตตรงกับเสียงเสมอ แม้เฟรมกระตุก</summary>
+    private float ElapsedTime()
+    {
+        return useDspClock ? (float)(AudioSettings.dspTime - dspStartTime) : Time.time - gameStartTime;
+    }
+
     void Update()
     {
-        if (!isPlaying) return;
+        if (!isPlaying)
+        {
+            // มินิเกมถูกปิดจากที่อื่น (เช่น เกมโอเวอร์) หรือจบไปแล้ว → หยุดเสียงสวดที่ค้าง
+            if (chantSource != null && chantSource.isPlaying && !isGameEnding && Time.time > chantTailUntil)
+                chantSource.Stop();
+            return;
+        }
 
-        float elapsedTime = Time.time - gameStartTime;
+        float elapsedTime = ElapsedTime();
 
         // อัปเดตตัวนับ Feedback แสงกด
         for (int i = 0; i < 4; i++)
@@ -140,6 +172,16 @@ public class RhythmGameManager : MonoBehaviour
         LockPlayerControls(true);
 
         gameStartTime = Time.time;
+        useDspClock = false;
+        if (chantChartActive && chantSource != null)
+        {
+            // เริ่มนาฬิกาเกมกับเสียงสวดพร้อมกันด้วยนาฬิกาเสียง (ตั้งเวลาล่วงหน้า 0.1 วิ ให้เสียงพร้อม)
+            dspStartTime = AudioSettings.dspTime + 0.1;
+            chantSource.Stop();
+            chantSource.volume = chantVolume;
+            chantSource.PlayScheduled(dspStartTime + chantLeadIn);
+            useDspClock = true;
+        }
         PlaySynthChime(440f, 0.3f); // เสียงระฆังเริ่มพิธี
 
         Debug.Log($"[RhythmGame] 🎵 เริ่มพิธีท่องคาถา! โน้ตทั้งหมด: {totalNotesCount} ตัว, เวลา: {gameDuration:F1}s");
@@ -191,6 +233,10 @@ public class RhythmGameManager : MonoBehaviour
             if (currentQuest.customNoteSpeed > 0) noteTravelTime = currentQuest.customNoteSpeed;
         }
 
+        // บทสวดจริง: โน้ตตกตรงพยางค์ของเสียงสวด (ความยากเปลี่ยนแค่ความเร็วโน้ต / ง่ายสุดตัดพยางค์ที่ชิดกันเกินออก)
+        chantChartActive = TryBuildChantChart(difficulty);
+        if (chantChartActive) return;
+
         totalNotesCount = noteCount;
         float currentTime = initialDelay;
         int lastLane = -1;
@@ -226,6 +272,57 @@ public class RhythmGameManager : MonoBehaviour
         }
 
         gameDuration = currentTime + noteTravelTime;
+    }
+
+    private bool chantChartActive;
+    private float chantLeadIn;
+
+    private bool TryBuildChantChart(QuestDifficulty difficulty)
+    {
+        if (!useChantTrack || chantBeatTimes == null || chantBeatTimes.Count == 0) return false;
+        if (chantTrack == null) chantTrack = Resources.Load<AudioClip>("Audio/ChantTrack");
+        if (chantTrack == null)
+        {
+            Debug.LogWarning("[RhythmGame] ไม่พบเสียงบทสวด (Resources/Audio/ChantTrack) → ใช้โน้ตสุ่มแบบเดิม");
+            return false;
+        }
+        if (chantSource == null) return false;
+        chantSource.clip = chantTrack;
+
+        var beats = new List<float>(chantBeatTimes);
+        beats.Sort();
+        // ง่าย: พยางค์ที่ห่างกันไม่ถึง 0.3 วิ เอาแค่ตัวแรก
+        if (difficulty == QuestDifficulty.Easy)
+        {
+            var thinned = new List<float>();
+            foreach (var b in beats) if (thinned.Count == 0 || b - thinned[thinned.Count - 1] >= 0.3f) thinned.Add(b);
+            beats = thinned;
+        }
+
+        // เสียงเริ่มหลังเกมเริ่ม = เวลาที่โน้ตตัวแรกใช้ตกลงมา (โน้ตตัวแรกโผล่บนสุดพอดีตอนเริ่ม)
+        chantLeadIn = Mathf.Max(0.5f, noteTravelTime - beats[0] + 0.6f);
+
+        int lastLane = -1;
+        float lastTime = -10f;
+        foreach (var b in beats)
+        {
+            float t = chantLeadIn + b + chantSyncOffset;
+            int lane = UnityEngine.Random.Range(0, 4);
+            // โน้ตที่ชิดกัน (< 0.45 วิ) ห้ามอยู่เลนเดียวกัน ไม่งั้นกดตัวหนึ่งแล้วไปโดนอีกตัว
+            if (lane == lastLane && (t - lastTime < 0.45f || UnityEngine.Random.value < 0.6f))
+                lane = (lane + UnityEngine.Random.Range(1, 4)) % 4;
+            activeNotes.Add(new RhythmNote { lane = lane, targetTime = t });
+            lastLane = lane; lastTime = t;
+        }
+
+        totalNotesCount = activeNotes.Count;
+        gameDuration = lastTime + 0.4f;
+        return true;
+    }
+
+    private void StopChant()
+    {
+        if (chantSource != null && chantSource.isPlaying) chantSource.Stop();
     }
 
     /// <summary>
@@ -407,6 +504,9 @@ public class RhythmGameManager : MonoBehaviour
     private IEnumerator FinishGameRoutine(bool forcedFail = false)
     {
         isGameEnding = true;
+        // พิธีล้ม → เสียงสวดขาดทันที / สำเร็จ → ปล่อยหางเสียงสวดเล่นจนจบ
+        if (forcedFail) StopChant();
+        chantTailUntil = Time.time + 6f;
 
         // คำนวณเปอร์เซ็นต์ผลคะแนนรวม
         float maxPossibleScore = totalNotesCount * 100f;
@@ -487,7 +587,7 @@ public class RhythmGameManager : MonoBehaviour
     {
         if (!isPlaying) return;
 
-        float elapsedTime = Time.time - gameStartTime;
+        float elapsedTime = ElapsedTime();
 
         // 1. วาดหัวข้อด้านบนซ้าย ("ท่องคาถา") และแถบแสดงโอกาสพลาด
         DrawHeaderTopLeft();
@@ -911,6 +1011,12 @@ public class RhythmGameManager : MonoBehaviour
         {
             synthAudioSource = gameObject.AddComponent<AudioSource>();
         }
+        // แหล่งเสียงแยกสำหรับบทสวด (เสียงระฆังตอนกดเล่นทับได้โดยไม่ตัดเสียงสวด)
+        chantSource = gameObject.AddComponent<AudioSource>();
+        chantSource.playOnAwake = false;
+        chantSource.loop = false;
+        chantSource.spatialBlend = 0f;
+        chantSource.priority = 64;
         synthAudioSource.playOnAwake = false;
         synthAudioSource.spatialBlend = 0f; // 2D Sound
     }

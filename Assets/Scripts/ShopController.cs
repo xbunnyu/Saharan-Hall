@@ -28,15 +28,12 @@ public class ShopController : MonoBehaviour
 {
     public static ShopController Instance { get; private set; }
 
-    [Header("สินค้าในร้าน (Shop Items - 6 รายการ)")]
+    [Header("สินค้าในร้าน (2 รายการ: ของถวายกุมาร / ของถวายศาลตายาย)")]
+    [Tooltip("ชื่อ 'ขนมไทย' ต้องตรงกับ offeringItemName ของศาลตายาย (ForestShrineInteractable)")]
     public List<ShopItemData> shopItems = new List<ShopItemData>()
     {
-        new ShopItemData("ไอเทม 1", 50, "ไอเทมระดับเริ่มต้นราคาประหยัด"),
-        new ShopItemData("ไอเทม 2", 150, "ไอเทมระดับพื้นฐานสำหรับพิธีกรรม"),
-        new ShopItemData("ไอเทม 3", 350, "ไอเทมระดับกลาง เพิ่มประสิทธิภาพ"),
-        new ShopItemData("ไอเทม 4", 700, "ไอเทมระดับสูง สำหรับพิธีใหญ่"),
-        new ShopItemData("ไอเทม 5", 1500, "ไอเทมระดับพรีเมียม บารมีสูง"),
-        new ShopItemData("ไอเทม 6", 3000, "ไอเทมระดับตำนาน ทรงพลังที่สุด")
+        new ShopItemData("เครื่องเซ่นกุมารทอง", 50, "ของถวายกุมารทอง"),
+        new ShopItemData("ขนมไทย", 150, "ของถวายศาลตายาย")
     };
 
     [Header("Runtime State")]
@@ -198,7 +195,7 @@ public class ShopController : MonoBehaviour
 
         if (walletText != null)
         {
-            walletText.text = $"💰 เงินของคุณ: <color=#FFD700>{curMoney:N0} บาท</color>";
+            walletText.text = $"เงินที่มี  <color=#FFB35C>{curMoney:N0} บาท</color>";
         }
 
         for (int i = 0; i < itemBuyButtons.Count && i < shopItems.Count; i++)
@@ -210,8 +207,8 @@ public class ShopController : MonoBehaviour
             }
             if (itemBuyButtonTexts[i] != null)
             {
-                itemBuyButtonTexts[i].text = canAfford ? $"ซื้อ  [กด {i + 1}]" : "เงินไม่พอ";
-                itemBuyButtonTexts[i].color = canAfford ? Color.white : new Color(0.7f, 0.7f, 0.7f);
+                itemBuyButtonTexts[i].text = canAfford ? $"[{i + 1}]  ซื้อ" : "เงินไม่พอ";
+                itemBuyButtonTexts[i].color = canAfford ? new Color32(0xFF, 0xB3, 0x5C, 0xFF) : new Color32(0x7A, 0x70, 0x62, 0xFF);
             }
         }
     }
@@ -297,28 +294,42 @@ public class ShopController : MonoBehaviour
             shopPanel = new GameObject("ShopPanel");
             shopPanel.transform.SetParent(shopCanvas.transform, false);
 
+            // สีเดียวกับ UI ใหม่ของเกม (ครีม / ส้มเทียน / เทาหม่น) ไม่มีอีโมจิ (ฟอนต์ไทยไม่มี)
+            Color cream = new Color32(0xE8, 0xDC, 0xC4, 0xFF);
+            Color muted = new Color32(0xA8, 0x97, 0x7A, 0xFF);
+            Color candle = new Color32(0xFF, 0xB3, 0x5C, 0xFF);
+
+            int count = Mathf.Min(shopItems.Count, 6);
+            int rows = Mathf.Max(1, (count + 1) / 2);
+            float cardW = 330f, cardH = 170f, gapX = 30f, gapY = 24f;
+            float panelW = 2 * cardW + gapX + 80f;
+            float panelH = 200f + rows * cardH + (rows - 1) * gapY;
+
             RectTransform panelRect = shopPanel.AddComponent<RectTransform>();
             panelRect.anchorMin = new Vector2(0.5f, 0.5f);
             panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-            panelRect.sizeDelta = new Vector2(860, 600);
+            panelRect.sizeDelta = new Vector2(panelW, panelH);
 
-            // BG Card Panel
+            // พื้นดำโปร่ง + เส้นขอบบาง
             Image bg = shopPanel.AddComponent<Image>();
             bg.sprite = boxSprite;
-            bg.color = new Color(0.08f, 0.10f, 0.14f, 0.95f);
+            bg.color = new Color(0.04f, 0.03f, 0.02f, 0.88f);
+            var bgOutline = shopPanel.AddComponent<Outline>();
+            bgOutline.effectColor = new Color(cream.r, cream.g, cream.b, 0.25f);
+            bgOutline.effectDistance = new Vector2(1.5f, -1.5f);
 
-            // Close Button (Top Right X)
+            // ปุ่มปิด: ตัวหนังสือ "ปิด [E]" มุมขวาบน ไม่มีกล่องแดง
             GameObject closeBtnObj = new GameObject("CloseButton");
             closeBtnObj.transform.SetParent(shopPanel.transform, false);
             RectTransform closeRect = closeBtnObj.AddComponent<RectTransform>();
             closeRect.anchorMin = new Vector2(1f, 1f);
             closeRect.anchorMax = new Vector2(1f, 1f);
-            closeRect.anchoredPosition = new Vector2(-25, -25);
-            closeRect.sizeDelta = new Vector2(36, 36);
+            closeRect.pivot = new Vector2(1f, 1f);
+            closeRect.anchoredPosition = new Vector2(-20, -16);
+            closeRect.sizeDelta = new Vector2(110, 36);
 
             Image closeImg = closeBtnObj.AddComponent<Image>();
-            closeImg.sprite = boxSprite;
-            closeImg.color = new Color(0.85f, 0.2f, 0.2f, 0.9f);
+            closeImg.color = new Color(0, 0, 0, 0); // โปร่งใส แต่ยังคลิกได้
 
             Button closeBtn = closeBtnObj.AddComponent<Button>();
             closeBtn.onClick.AddListener(CloseShop);
@@ -326,106 +337,122 @@ public class ShopController : MonoBehaviour
             GameObject closeTxtObj = new GameObject("Text");
             closeTxtObj.transform.SetParent(closeBtnObj.transform, false);
             TextMeshProUGUI closeTMP = closeTxtObj.AddComponent<TextMeshProUGUI>();
-            closeTMP.text = "✕";
+            closeTMP.text = "ปิด  [E]";
             closeTMP.fontSize = 20;
-            closeTMP.alignment = TextAlignmentOptions.Center;
+            closeTMP.color = muted;
+            closeTMP.alignment = TextAlignmentOptions.Right;
             closeTMP.rectTransform.anchoredPosition = Vector2.zero;
-            closeTMP.rectTransform.sizeDelta = new Vector2(36, 36);
+            closeTMP.rectTransform.sizeDelta = new Vector2(110, 36);
 
-            // Header Title
+            // หัวข้อ
             GameObject titleObj = new GameObject("TitleText");
             titleObj.transform.SetParent(shopPanel.transform, false);
             TextMeshProUGUI titleTMP = titleObj.AddComponent<TextMeshProUGUI>();
-            titleTMP.text = "<color=#FFD700>🏪 ร้านค้าวัตถุมงคล (SHOP)</color>";
-            titleTMP.fontSize = 28;
+            titleTMP.text = "ร้านค้าวัตถุมงคล";
+            titleTMP.fontSize = 34;
             titleTMP.fontStyle = FontStyles.Bold;
+            titleTMP.color = cream;
             titleTMP.alignment = TextAlignmentOptions.Center;
-            titleTMP.rectTransform.anchoredPosition = new Vector2(0, 250);
-            titleTMP.rectTransform.sizeDelta = new Vector2(800, 50);
+            titleTMP.rectTransform.anchoredPosition = new Vector2(0, panelH / 2f - 52f);
+            titleTMP.rectTransform.sizeDelta = new Vector2(panelW - 200f, 50);
 
-            // Wallet Display
+            // เงินที่มี
             GameObject walletObj = new GameObject("WalletText");
             walletObj.transform.SetParent(shopPanel.transform, false);
             walletText = walletObj.AddComponent<TextMeshProUGUI>();
             walletText.fontSize = 22;
+            walletText.color = muted;
             walletText.alignment = TextAlignmentOptions.Center;
-            walletText.rectTransform.anchoredPosition = new Vector2(0, 205);
-            walletText.rectTransform.sizeDelta = new Vector2(800, 40);
+            walletText.rectTransform.anchoredPosition = new Vector2(0, panelH / 2f - 96f);
+            walletText.rectTransform.sizeDelta = new Vector2(panelW - 80f, 36);
 
-            // Item Cards Grid (2 Columns x 3 Rows)
+            // การ์ดสินค้า 2 คอลัมน์
             itemBuyButtons.Clear();
             itemBuyButtonTexts.Clear();
 
-            float cardW = 380f;
-            float cardH = 115f;
-            float startX = -200f;
-            float startY = 110f;
-            float spacingX = 400f;
-            float spacingY = 130f;
-
-            for (int i = 0; i < 6 && i < shopItems.Count; i++)
+            float firstY = panelH / 2f - 130f - cardH / 2f;
+            for (int i = 0; i < count; i++)
             {
                 int col = i % 2;
                 int row = i / 2;
                 int itemIdx = i;
                 ShopItemData item = shopItems[i];
+                // แถวสุดท้ายมีชิ้นเดียว → วางกลาง
+                bool alone = (i == count - 1) && (count % 2 == 1);
+                float x = alone ? 0f : (col == 0 ? -(cardW + gapX) / 2f : (cardW + gapX) / 2f);
 
                 GameObject cardObj = new GameObject($"ItemCard_{i}");
                 cardObj.transform.SetParent(shopPanel.transform, false);
                 RectTransform cardRect = cardObj.AddComponent<RectTransform>();
-                cardRect.anchoredPosition = new Vector2(startX + col * spacingX, startY - row * spacingY);
+                cardRect.anchoredPosition = new Vector2(x, firstY - row * (cardH + gapY));
                 cardRect.sizeDelta = new Vector2(cardW, cardH);
 
                 Image cardBg = cardObj.AddComponent<Image>();
                 cardBg.sprite = boxSprite;
-                cardBg.color = new Color(0.14f, 0.17f, 0.23f, 0.9f);
+                cardBg.color = new Color(1f, 1f, 1f, 0.04f);
+                var cardOutline = cardObj.AddComponent<Outline>();
+                cardOutline.effectColor = new Color(cream.r, cream.g, cream.b, 0.15f);
+                cardOutline.effectDistance = new Vector2(1f, -1f);
 
-                // Name & Price Text
+                // ชื่อ / ใช้ทำอะไร / ราคา
                 GameObject infoObj = new GameObject("InfoText");
                 infoObj.transform.SetParent(cardObj.transform, false);
                 TextMeshProUGUI infoTMP = infoObj.AddComponent<TextMeshProUGUI>();
-                infoTMP.text = $"<b><color=#00E5FF>[{i + 1}] {item.itemName}</color></b>\nราคา: <color=#FFD700>{item.price:N0} บาท</color>";
-                infoTMP.fontSize = 18;
-                infoTMP.alignment = TextAlignmentOptions.Left;
-                infoTMP.rectTransform.anchoredPosition = new Vector2(-60, 20);
-                infoTMP.rectTransform.sizeDelta = new Vector2(230, 55);
+                infoTMP.text = $"<size=26><b>{item.itemName}</b></size>\n" +
+                               $"<color=#A8977A>{item.description}</color>\n" +
+                               $"<color=#FFB35C>{item.price:N0} บาท</color>";
+                infoTMP.fontSize = 20;
+                infoTMP.color = cream;
+                infoTMP.alignment = TextAlignmentOptions.Center;
+                infoTMP.rectTransform.anchoredPosition = new Vector2(0, 26);
+                infoTMP.rectTransform.sizeDelta = new Vector2(cardW - 30f, 110);
 
-                // Buy Button
+                // ปุ่มซื้อ: พื้นดำโปร่ง ตัวหนังสือสีเทียน
                 GameObject buyBtnObj = new GameObject("BuyButton");
                 buyBtnObj.transform.SetParent(cardObj.transform, false);
                 RectTransform buyBtnRect = buyBtnObj.AddComponent<RectTransform>();
-                buyBtnRect.anchoredPosition = new Vector2(0, -25);
-                buyBtnRect.sizeDelta = new Vector2(340, 38);
+                buyBtnRect.anchoredPosition = new Vector2(0, -cardH / 2f + 30f);
+                buyBtnRect.sizeDelta = new Vector2(cardW - 60f, 40);
 
                 Image buyBtnImg = buyBtnObj.AddComponent<Image>();
                 buyBtnImg.sprite = boxSprite;
-                buyBtnImg.color = new Color(0.18f, 0.55f, 0.35f, 1f);
+                buyBtnImg.color = new Color(0f, 0f, 0f, 0.45f);
+                var buyOutline = buyBtnObj.AddComponent<Outline>();
+                buyOutline.effectColor = new Color(candle.r, candle.g, candle.b, 0.5f);
+                buyOutline.effectDistance = new Vector2(1f, -1f);
 
                 Button buyBtn = buyBtnObj.AddComponent<Button>();
+                var colors = buyBtn.colors;
+                colors.highlightedColor = new Color(1f, 0.85f, 0.6f, 1f);
+                colors.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+                buyBtn.colors = colors;
                 buyBtn.onClick.AddListener(() => BuyItem(itemIdx));
                 itemBuyButtons.Add(buyBtn);
 
                 GameObject buyTxtObj = new GameObject("Text");
                 buyTxtObj.transform.SetParent(buyBtnObj.transform, false);
                 TextMeshProUGUI buyTMP = buyTxtObj.AddComponent<TextMeshProUGUI>();
-                buyTMP.text = $"ซื้อ  [กด {i + 1}]";
-                buyTMP.fontSize = 18;
+                buyTMP.text = $"[{i + 1}]  ซื้อ";
+                buyTMP.fontSize = 20;
                 buyTMP.fontStyle = FontStyles.Bold;
                 buyTMP.alignment = TextAlignmentOptions.Center;
                 buyTMP.rectTransform.anchoredPosition = Vector2.zero;
-                buyTMP.rectTransform.sizeDelta = new Vector2(340, 38);
+                buyTMP.rectTransform.sizeDelta = new Vector2(cardW - 60f, 40);
                 itemBuyButtonTexts.Add(buyTMP);
             }
 
-            // Footer Guidance
+            // คำแนะนำด้านล่าง
             GameObject guideObj = new GameObject("GuideText");
             guideObj.transform.SetParent(shopPanel.transform, false);
             TextMeshProUGUI guideTMP = guideObj.AddComponent<TextMeshProUGUI>();
-            guideTMP.text = "กด <color=#00FF7F>[1 - 6]</color> หรือคลิกปุ่มเพื่อซื้อ  |  กด <color=#FF6347>[E / Esc]</color> เพื่อปิดร้านค้า";
-            guideTMP.fontSize = 16;
+            guideTMP.text = count > 1
+                ? $"กด [1 - {count}] หรือคลิกปุ่มเพื่อซื้อ    ·    [E / Esc] ปิดร้าน"
+                : "กด [1] หรือคลิกปุ่มเพื่อซื้อ    ·    [E / Esc] ปิดร้าน";
+            guideTMP.fontSize = 17;
+            guideTMP.color = muted;
             guideTMP.alignment = TextAlignmentOptions.Center;
-            guideTMP.rectTransform.anchoredPosition = new Vector2(0, -265);
-            guideTMP.rectTransform.sizeDelta = new Vector2(800, 30);
+            guideTMP.rectTransform.anchoredPosition = new Vector2(0, -panelH / 2f + 30f);
+            guideTMP.rectTransform.sizeDelta = new Vector2(panelW - 60f, 30);
         }
     }
 
