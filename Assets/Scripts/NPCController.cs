@@ -19,9 +19,16 @@ public class NPCController : MonoBehaviour
     public QuestData questData = new QuestData();
 
     [Header("Movement Settings")]
-    public float walkSpeed = 2.5f;
+    public float walkSpeed = 1.4f;   // ความเร็วที่เข้ากับท่าเดิน (เดิม 2.5 เร็วจนเท้าลื่น)
     public float rotationSpeed = 6.0f;
     public float arrivalDistance = 1.0f;
+    [Tooltip("ระยะหยุดเมื่อเดินถึงจุดรับแขก (ReceptionPoint) — ค่าน้อย = หยุดตรงจุดพอดี")]
+    public float receptionStopDistance = 0.2f;
+    [Tooltip("ก้าวขึ้นที่สูงได้ไม่เกินเท่านี้ (เมตร) — กันไม่ให้ NPC ไต่ขึ้นโต๊ะหรือคาน")]
+    public float maxStepHeight = 0.4f;
+    [Tooltip("เวลารอให้ลุกจากท่านั่งก่อนเริ่มเดินออก (วินาที)")]
+    public float standUpDelay = 0.6f;
+    private float leaveMoveTime = 0f;
 
     [Header("Visual / Animation (Optional)")]
     public Animator animator;
@@ -262,7 +269,7 @@ public class NPCController : MonoBehaviour
         interactItem.onRead.AddListener(TriggerQuestDialogue);
 
         // มั่นใจว่าความเร็วเดินไม่เป็น 0
-        if (walkSpeed <= 0.1f) walkSpeed = 2.5f;
+        if (walkSpeed <= 0.1f) walkSpeed = 1.4f;
         if (arrivalDistance <= 0.1f) arrivalDistance = 0.8f;
 
         // ตรวจสอบ NavMeshAgent และพยายามเชื่อมต่อเข้ากับ NavMesh ในฉาก
@@ -358,13 +365,41 @@ public class NPCController : MonoBehaviour
         }
     }
 
+    /// <summary>เดินผ่านจุดใน approachPath ครบแล้ว และกำลังมุ่งหน้าไปจุดรับแขกจุดสุดท้าย</summary>
+    private bool IsHeadingToReception()
+    {
+        return targetReceptionPoint != null &&
+               (approachPath == null || currentApproachIndex >= approachPath.PointCount);
+    }
+
+    /// <summary>controller มีคลิปท่านั่งชื่อ "sit" (ท่านั่งลดระดับตัวเองอยู่แล้ว ไม่ต้องลดความสูงซ้ำ)</summary>
+    private bool HasSitAnimation()
+    {
+        if (animator == null || animator.runtimeAnimatorController == null) return false;
+        foreach (var clip in animator.runtimeAnimatorController.animationClips)
+        {
+            if (clip != null && clip.name == "sit") return true;
+        }
+        return false;
+    }
+
     private Vector3 GetNextApproachTarget()
     {
         if (approachPath != null && approachPath.PointCount > 0 && currentApproachIndex < approachPath.PointCount)
         {
             return approachPath.GetPointPosition(currentApproachIndex);
         }
-        return targetReceptionPoint != null ? targetReceptionPoint.position : Vector3.zero;
+        return targetReceptionPoint != null ? ReceptionFloorTarget() : Vector3.zero;
+    }
+
+    /// <summary>
+    /// ตำแหน่ง ReceptionPoint ที่ระดับเดียวกับตัว NPC (ReceptionPoint ในฉากลอยสูงจากพื้น ~2.7 ม.
+    /// ถ้าส่งความสูงจริงให้ NavMesh มันอาจพาไปจุดบนโต๊ะ/คานที่ใกล้กว่า)
+    /// </summary>
+    private Vector3 ReceptionFloorTarget()
+    {
+        Vector3 rp = targetReceptionPoint.position;
+        return new Vector3(rp.x, transform.position.y, rp.z);
     }
 
     private void HandleApproaching()
@@ -392,7 +427,8 @@ public class NPCController : MonoBehaviour
 
         // เช็คระยะห่างทางกายภาพจริง XZ (ไม่รวมความสูง Y เพื่อป้องกันปัญหาจุดเป้าหมายลอยบนโต๊ะ)
         float distXZ = Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(currentTarget.x, currentTarget.z));
-        float checkDist = Mathf.Max(arrivalDistance, 1.4f);
+        // จุดทางผ่านใช้ระยะหลวม 1.4 ม. แต่จุดรับแขกจุดสุดท้ายให้เดินไปถึงตรงจุดพอดี
+        float checkDist = IsHeadingToReception() ? receptionStopDistance : Mathf.Max(arrivalDistance, 1.4f);
 
         if (isNavMeshActive && navAgent != null && navAgent.enabled)
         {
@@ -411,7 +447,7 @@ public class NPCController : MonoBehaviour
 
                     Debug.LogWarning($"[NPCController] ⚠️ NavMesh ขาดช่วงที่จุด {currentApproachIndex}! สลับใช้ระบบ MoveTowards อิสระ");
                 }
-                else if (distXZ <= checkDist || (navAgent.hasPath && navAgent.remainingDistance <= checkDist))
+                else if (distXZ <= checkDist || (navAgent.hasPath && navAgent.remainingDistance <= Mathf.Max(checkDist, navAgent.stoppingDistance + 0.05f)))
                 {
                     AdvanceApproachWaypoint();
                 }
@@ -458,7 +494,7 @@ public class NPCController : MonoBehaviour
         {
             Vector3 receptionPos = targetReceptionPoint.position;
             float distXZ = Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(receptionPos.x, receptionPos.z));
-            float checkDist = Mathf.Max(arrivalDistance, 1.4f);
+            float checkDist = receptionStopDistance;
             
             if (distXZ > checkDist)
             {
@@ -466,7 +502,7 @@ public class NPCController : MonoBehaviour
                 if (isNavMeshActive && navAgent != null)
                 {
                     navAgent.isStopped = false;
-                    navAgent.SetDestination(receptionPos);
+                    navAgent.SetDestination(ReceptionFloorTarget());
                 }
                 return;
             }
@@ -507,8 +543,12 @@ public class NPCController : MonoBehaviour
         }
 
         // ปรับระดับความสูงลงให้นั่งคุกเข่าติดพื้นพอดี โดยที่ Collider ยังคงตำแหน่งเดิมใน World Space 100%
+        // (ข้ามถ้ามีท่านั่ง "sit" — ท่านั่งพาตัวลงพื้นเองแล้ว ถ้าลดซ้ำตัวละครจะจมพื้น)
         if (sittingHeightCoroutine != null) StopCoroutine(sittingHeightCoroutine);
-        sittingHeightCoroutine = StartCoroutine(AdjustSittingHeightRoutine());
+        if (!HasSitAnimation())
+        {
+            sittingHeightCoroutine = StartCoroutine(AdjustSittingHeightRoutine());
+        }
     }
 
     private float GetKneeWorldY()
@@ -1011,6 +1051,8 @@ public class NPCController : MonoBehaviour
         currentState = NPCState.Leaving;
         currentExitIndex = 0;
         SetAnimationWalking(true);
+        // ถ้ากำลังนั่งอยู่ รอให้ลุกขึ้นก่อน ไม่งั้นตัวจะไถลออกไปทั้งท่านั่ง
+        leaveMoveTime = Time.time + (HasSitAnimation() ? standUpDelay : 0f);
 
         if (sittingHeightCoroutine != null)
         {
@@ -1056,6 +1098,15 @@ public class NPCController : MonoBehaviour
         }
 
         SetAnimationWalking(true);
+
+        // ระหว่างลุกจากท่านั่ง: ยืนอยู่กับที่ก่อน
+        bool navUsable = isNavMeshActive && navAgent != null && navAgent.enabled;
+        if (Time.time < leaveMoveTime)
+        {
+            if (navUsable) navAgent.isStopped = true;
+            return;
+        }
+        if (navUsable && navAgent.isStopped) navAgent.isStopped = false;
 
         // เช็คระยะห่างทางกายภาพจริง XZ
         float distXZ = Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(currentTarget.x, currentTarget.z));
@@ -1143,14 +1194,18 @@ public class NPCController : MonoBehaviour
             transform.position = Vector3.MoveTowards(transform.position, targetPlane, walkSpeed * Time.deltaTime);
 
             // ปรับระดับความสูงตามพื้นดิน (ข้าม Collider ของตัวเอง)
+            // รับเฉพาะพื้นที่สูงกว่าเท้าไม่เกิน maxStepHeight — กันไม่ให้ไต่ขึ้นโต๊ะ/คานหลังคา
+            float heightOffset = GetNpcHeightOffset();
+            float feetY = transform.position.y - heightOffset;
             RaycastHit[] hits = Physics.RaycastAll(transform.position + Vector3.up * 2.0f, Vector3.down, 10f);
             System.Array.Sort(hits, (a, b) => b.point.y.CompareTo(a.point.y));
 
             foreach (var hit in hits)
             {
-                if (hit.transform != transform && !hit.transform.IsChildOf(transform) && !hit.collider.isTrigger)
+                if (hit.transform != transform && !hit.transform.IsChildOf(transform) && !hit.collider.isTrigger
+                    && hit.point.y <= feetY + maxStepHeight)
                 {
-                    transform.position = new Vector3(transform.position.x, hit.point.y + GetNpcHeightOffset(), transform.position.z);
+                    transform.position = new Vector3(transform.position.x, hit.point.y + heightOffset, transform.position.z);
                     break;
                 }
             }
