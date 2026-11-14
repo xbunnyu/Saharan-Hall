@@ -65,6 +65,7 @@ public class NPCStoryData : ScriptableObject
 
     // ─── Runtime tracking ───────────────────────────────────────────
     [System.NonSerialized] public int     currentPhaseIndex   = 0;
+    [System.NonSerialized] public bool    hasStarted          = false;
     [System.NonSerialized] public bool    isScheduledForToday = false;
     [System.NonSerialized] public int     scheduledDay        = -1;
 
@@ -79,6 +80,7 @@ public class NPCStoryData : ScriptableObject
     public void ResetRuntimeState()
     {
         currentPhaseIndex = 0;
+        hasStarted = false;
         isScheduledForToday = false;
         scheduledDay = -1;
         if (phases != null)

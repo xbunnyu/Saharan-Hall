@@ -50,6 +50,8 @@ public class QuestData
     [Header("NPC Info (ข้อมูล NPC)")]
     public string npcName = "ชาวบ้าน";
     public Sprite npcPortrait;
+    [Tooltip("Prefab โมเดล NPC ประจำเควสนี้ (เช่น ai_mong_walk, lungpeng_walk ฯลฯ หากเว้นว่างไว้จะใช้ค่าเริ่มต้นของ HallManager)")]
+    public GameObject npcPrefab;
     [Tooltip("ID กลุ่มชื่อเสียง ใช้ตรงกับ ReputationManager (เช่น 'somjit_family', 'village_monk') ─ เว้นว่างถ้าไม่ใช้ระบบ Reputation")]
     public string npcGroupId = "";
 

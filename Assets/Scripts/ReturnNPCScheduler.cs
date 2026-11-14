@@ -23,6 +23,14 @@ public class ReturnNPCScheduler : MonoBehaviour
     [Header("Story NPC ทั้งหมดในเกม (ลาก NPCStoryData มาใส่)")]
     public List<NPCStoryData> allStoryNPCs = new List<NPCStoryData>();
 
+    [Header("Single Active Story Policy (เควสติดตามทีละคน)")]
+    [Tooltip("เปิดใช้ระบบเควสติดตามทีละคน: ให้มีเควสติดตามดำเนินอยู่ได้เพียง 1 คนเท่านั้น จนกว่าจะจบเนื้อเรื่องทั้งหมด คนอื่นจึงจะมีสิทธิ์เริ่ม")]
+    public bool singleActiveStoryAtATime = true;
+
+    [Header("Runtime Story Tracking")]
+    [Tooltip("Story NPC คนที่กำลังดำเนินเรื่องราวอยู่ในปัจจุบัน (จะว่างลงเมื่อจบทุก Phase)")]
+    public NPCStoryData currentActiveStoryNPC = null;
+
     void Awake()
     {
         if (Instance == null) { Instance = this; DontDestroyOnLoad(gameObject); }
@@ -46,14 +54,100 @@ public class ReturnNPCScheduler : MonoBehaviour
     }
 
     /// <summary>
+    /// ตรวจหา Story NPC ที่กำลังดำเนินเรื่องราวอยู่ (ยังไม่จบทุก Phase และเริ่มไปแล้ว)
+    /// </summary>
+    public NPCStoryData GetActiveInProgressStoryNPC()
+    {
+        if (currentActiveStoryNPC != null)
+        {
+            if (currentActiveStoryNPC.IsFullyCompleted())
+            {
+                currentActiveStoryNPC = null;
+            }
+            else
+            {
+                return currentActiveStoryNPC;
+            }
+        }
+
+        foreach (var story in allStoryNPCs)
+        {
+            if (story != null && !story.IsFullyCompleted() && (story.currentPhaseIndex > 0 || story.hasStarted))
+            {
+                currentActiveStoryNPC = story;
+                return story;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// ดึงรายการ Story NPC ที่พร้อม Spawn ในวันนี้
-    /// (ผ่านเงื่อนไขวัน + ชื่อเสียง + phase ก่อนหน้าเสร็จ)
-    /// ── เรียงตาม phase index เพื่อให้ NPC ที่ค้างไว้นานกว่ามาก่อน ──
+    /// หากเปิด singleActiveStoryAtATime:
+    ///   - ถ้ามี Story NPC คนเดิมที่กำลังดำเนินเรื่องราวอยู่ จะอนุญาตให้เฉพาะคนนี้คนเดียวเท่านั้น
+    ///   - ถ้ายังไม่มีใครเริ่ม (หรือคนก่อนหน้าจบแล้ว) จะสุ่มเลือกมาเพียง 1 คนจากคนที่พร้อมสำหรับวันนี้
     /// </summary>
     public List<NPCStoryData> GetReadyStoryNPCs(int currentDay)
     {
         var result = new List<NPCStoryData>();
 
+        if (singleActiveStoryAtATime)
+        {
+            // 1. ตรวจสอบว่ามี Story NPC คนเดิมที่กำลังดำเนินเรื่องราวค้างอยู่หรือไม่
+            NPCStoryData activeStory = GetActiveInProgressStoryNPC();
+
+            if (activeStory != null)
+            {
+                if (activeStory.isScheduledForToday)
+                {
+                    Debug.Log($"[ReturnNPCScheduler] ⏰ '{activeStory.npcName}' ถูกปล่อยออกมาแล้วสำหรับวันนี้");
+                    return result;
+                }
+
+                if (activeStory.IsReadyForDay(currentDay))
+                {
+                    result.Add(activeStory);
+                    Debug.Log($"[ReturnNPCScheduler] 📅 เควสติดตามต่อเนื่อง: '{activeStory.npcName}' Phase {activeStory.currentPhaseIndex} พร้อม spawn วันที่ {currentDay}");
+                }
+                else
+                {
+                    StoryPhase phase = activeStory.GetCurrentPhase();
+                    string reason = phase != null ? $"(unlockOnDay={phase.unlockOnDay}, requiredRep={phase.requiredReputationLevel})" : "";
+                    Debug.Log($"[ReturnNPCScheduler] ⏳ เควสติดตามของ '{activeStory.npcName}' ยังดำเนินอยู่แต่ยังไม่ถึงเงื่อนไขวันนี้ {reason} — ไม่อนุญาตให้เควสติดตามอื่นเข้ามาแทรก");
+                }
+
+                return result; // คืนค่าเฉพาะคนนี้ (หรือว่างเปล่าถ้ายังไม่ถึงรอบ) ป้องกันไม่ให้เควสติดตามอื่นแทรกคิว
+            }
+
+            // 2. ถ้ายังไม่มีใครเริ่ม หรือคนก่อนหน้าจบสมบูรณ์แล้ว -> สุ่มเลือกเพียง 1 คนจากคนที่พร้อมสำหรับวันนี้
+            var candidateList = new List<NPCStoryData>();
+            foreach (var story in allStoryNPCs)
+            {
+                if (story == null) continue;
+                if (story.IsFullyCompleted()) continue;
+                if (story.isScheduledForToday) continue;
+
+                if (story.IsReadyForDay(currentDay))
+                {
+                    candidateList.Add(story);
+                }
+            }
+
+            if (candidateList.Count > 0)
+            {
+                int randomIndex = Random.Range(0, candidateList.Count);
+                NPCStoryData selected = candidateList[randomIndex];
+                selected.hasStarted = true;
+                currentActiveStoryNPC = selected;
+                result.Add(selected);
+                Debug.Log($"[ReturnNPCScheduler] 🎲 สุ่มเลือกเควสติดตามคนใหม่: '{selected.npcName}' เริ่ม Phase {selected.currentPhaseIndex} (สุ่มจาก {candidateList.Count} คนที่พร้อม)");
+            }
+
+            return result;
+        }
+
+        // กรณีปิด singleActiveStoryAtATime (ทำงานแบบเดิม)
         foreach (var story in allStoryNPCs)
         {
             if (story == null) continue;
@@ -96,6 +190,8 @@ public class ReturnNPCScheduler : MonoBehaviour
         if (storyData == null) return;
         storyData.isScheduledForToday = true;
         storyData.scheduledDay = day;
+        storyData.hasStarted = true;
+        currentActiveStoryNPC = storyData;
     }
 
     /// <summary>
@@ -155,7 +251,12 @@ public class ReturnNPCScheduler : MonoBehaviour
         }
         else
         {
-            // จบทุก phase แล้ว!
+            // จบทุก phase แล้ว! ปลดล็อกให้เควสติดตามคนถัดไปสามารถเริ่มได้
+            if (currentActiveStoryNPC == storyData)
+            {
+                currentActiveStoryNPC = null;
+            }
+
             if (InteractionUIManager.Instance != null)
             {
                 InteractionUIManager.Instance.ShowNotification(
@@ -163,7 +264,7 @@ public class ReturnNPCScheduler : MonoBehaviour
                     4.0f
                 );
             }
-            Debug.Log($"[ReturnNPCScheduler] 🏁 '{storyData.npcName}' จบทุก Phase แล้ว!");
+            Debug.Log($"[ReturnNPCScheduler] 🏁 '{storyData.npcName}' จบทุก Phase แล้ว! เควสติดตามคนถัดไปมีสิทธิ์เริ่มได้");
         }
     }
 

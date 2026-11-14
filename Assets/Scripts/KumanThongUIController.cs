@@ -96,18 +96,59 @@ public class KumanThongUIController : MonoBehaviour
     }
 
     /// <summary>
-    /// กดถวายเครื่องเซ่นกุมารทอง
-    /// - ลดค่า Fail สะสมลง 1 หน่วย (หากมากกว่า 0)
-    /// - เพิ่มค่าพึ่งพา (dependencyLevel) ขึ้น +10 หน่วย (ซ่อนหลังบ้าน)
+    /// กดถวายเครื่องเซ่น (น้ำแดง) แด่กุมารทอง
+    /// - ตรวจสอบว่ามี [น้ำแดง] ในกระเป๋าหรือไม่
+    /// - หักไอเทมน้ำแดง และเปิดโมเดลน้ำแดงบนศาลให้ปรากฏขึ้นมา (เหมือนศาลตายาย)
+    /// - ลดค่า Fail สะสมลง 1 หน่วย / ชำระล้างผีร้าย 1 ตัว
+    /// - เพิ่มค่าพึ่งพากุมารทอง (dependencyLevel) ขึ้น +10 หน่วย (ซ่อนหลังบ้าน)
     /// </summary>
     public void MakeOffering()
     {
         if (!isUIOpen) return;
 
-        // 1. เพิ่มค่าพึ่งพา (dependency) ขึ้น +10 หน่วย (ข้อมูลเบื้องหลัง)
+        KumanThongInteractable shrine = KumanThongInteractable.Instance != null 
+            ? KumanThongInteractable.Instance 
+            : FindFirstObjectByType<KumanThongInteractable>();
+
+        string reqItem = (shrine != null && !string.IsNullOrEmpty(shrine.offeringItemName)) 
+            ? shrine.offeringItemName 
+            : "น้ำแดง";
+
+        bool requireItem = (shrine != null) ? shrine.requireItemToOffer : true;
+
+        if (activePlayer == null)
+        {
+            activePlayer = FindFirstObjectByType<PlayerInteraction>();
+        }
+
+        // 1. ตรวจสอบว่าผู้เล่นมีไอเทมของถวายในกระเป๋าหรือไม่
+        if (requireItem && (activePlayer == null || !activePlayer.HasItem(reqItem)))
+        {
+            if (InteractionUIManager.Instance != null)
+            {
+                InteractionUIManager.Instance.ShowNotification($"⚠️ <color=#FFAA00>ต้องการ <b>[{reqItem}]</b> ในกระเป๋าเพื่อนำมาถวายแด่กุมารทอง!</color>", 4.0f);
+            }
+            PlayWarningSFX();
+            return;
+        }
+
+        // 2. หักไอเทมออกจากกระเป๋าผู้เล่น
+        bool consumeItem = (shrine != null) ? shrine.consumeItemOnOffer : true;
+        if (consumeItem && activePlayer != null)
+        {
+            activePlayer.RemoveItem(reqItem);
+        }
+
+        // 3. แสดงโมเดลน้ำแดงบนศาลกุมารทอง (เหมือนศาลตายาย)
+        if (shrine != null)
+        {
+            shrine.PerformOfferingVisual();
+        }
+
+        // 4. เพิ่มค่าพึ่งพา (dependency) ขึ้น +10 หน่วย (ข้อมูลเบื้องหลัง)
         dependencyLevel += 10;
 
-        // 2. ชำระล้างผีร้ายออกจากตัว 1 ตัว
+        // 5. ชำระล้างผีร้ายออกจากตัว 1 ตัว
         bool hadGhost = false;
         if (GhostCurseManager.Instance != null && GhostCurseManager.Instance.currentGhostCount > 0)
         {
@@ -120,23 +161,18 @@ public class KumanThongUIController : MonoBehaviour
             MinigameManager.Instance.totalFailedMinigames--;
         }
 
-        // 3. เล่นเสียงสังเคราะห์และแสดงผลแจ้งเตือน
+        // 6. เล่นเสียงสังเคราะห์และแสดงผลแจ้งเตือน
         PlaySynthChime();
 
         if (InteractionUIManager.Instance != null)
         {
-            if (hadGhost)
-            {
-                int currentGhosts = GhostCurseManager.Instance != null ? GhostCurseManager.Instance.currentGhostCount : 0;
-                InteractionUIManager.Instance.ShowNotification($"<color=#00FF7F>✨ ถวายเครื่องเซ่นกุมารทองแล้ว!</color> (ชำระล้างผีร้าย 1 ตัว ➔ เหลือ {currentGhosts}/3 ตัว)", 3.5f);
-            }
-            else
-            {
-                InteractionUIManager.Instance.ShowNotification($"<color=#FFD700>✨ ถวายเครื่องเซ่นกุมารทองแล้ว!</color> (กุมารทองคอยปกป้องคุณอยู่)", 3.5f);
-            }
+            string ghostStatus = hadGhost 
+                ? $" (ชำระล้างผีร้าย 1 ตัว ➔ เหลือ {GhostCurseManager.Instance.currentGhostCount}/3 ตัว)" 
+                : " (กุมารทองคอยคุ้มครองคุณอยู่)";
+            InteractionUIManager.Instance.ShowNotification($"✨ <color=#FFD700>ถวาย <b>[{reqItem}]</b> แด่กุมารทองเรียบร้อยแล้ว!</color>{ghostStatus}", 4.5f);
         }
 
-        Debug.Log($"[KumanThong] 👶 ถวายเครื่องเซ่นเรียบร้อย | ค่าพึ่งพาเบื้องหลัง (Dependency) = {dependencyLevel}");
+        Debug.Log($"[KumanThong] 👶 ถวาย [{reqItem}] เรียบร้อย | โมเดลน้ำแดงปรากฏบนศาล | ค่าพึ่งพาเบื้องหลัง (Dependency) = {dependencyLevel}");
 
         RefreshUI();
     }
@@ -145,10 +181,51 @@ public class KumanThongUIController : MonoBehaviour
     {
         int currentGhosts = GhostCurseManager.Instance != null ? GhostCurseManager.Instance.currentGhostCount : 0;
 
+        KumanThongInteractable shrine = KumanThongInteractable.Instance != null 
+            ? KumanThongInteractable.Instance 
+            : FindFirstObjectByType<KumanThongInteractable>();
+
+        string reqItem = (shrine != null && !string.IsNullOrEmpty(shrine.offeringItemName)) 
+            ? shrine.offeringItemName 
+            : "น้ำแดง";
+
+        bool hasItem = activePlayer != null && activePlayer.HasItem(reqItem);
+
         if (failStatusText != null)
         {
-            failStatusText.text = $"👻 วิญญาณผีร้ายตามติด: <color=#FF4500><b>{currentGhosts}/3 ตัว</b></color>";
+            string itemStatus = hasItem 
+                ? $"<color=#00FF7F>✓ มี [{reqItem}] ในกระเป๋า</color>" 
+                : $"<color=#FFAA00>✕ ยังไม่มี [{reqItem}] ในกระเป๋า</color>";
+
+            failStatusText.text = $"👻 วิญญาณผีร้ายตามติด: <color=#FF4500><b>{currentGhosts}/3 ตัว</b></color>\n<size=16>{itemStatus}</size>";
         }
+
+        if (offerButton != null)
+        {
+            TextMeshProUGUI btnTxt = offerButton.GetComponentInChildren<TextMeshProUGUI>();
+            if (btnTxt != null)
+            {
+                btnTxt.text = $"🙏 ถวาย{reqItem} (ลด Fail -1)";
+            }
+        }
+    }
+
+    private void PlayWarningSFX()
+    {
+        if (audioSource == null) return;
+        int sampleRate = 44100;
+        float duration = 0.2f;
+        int sampleCount = Mathf.RoundToInt(sampleRate * duration);
+        float[] samples = new float[sampleCount];
+        for (int i = 0; i < sampleCount; i++)
+        {
+            float t = (float)i / sampleRate;
+            float envelope = 1f - (t / duration);
+            samples[i] = Mathf.Sin(2 * Mathf.PI * 220f * t) * envelope * 0.25f;
+        }
+        AudioClip clip = AudioClip.Create("KumanWarnSFX", sampleCount, 1, sampleRate, false);
+        clip.SetData(samples, 0);
+        audioSource.PlayOneShot(clip);
     }
 
     private void LockPlayerControls(bool lockState)

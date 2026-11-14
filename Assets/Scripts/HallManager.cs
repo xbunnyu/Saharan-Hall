@@ -27,8 +27,10 @@ public class HallManager : MonoBehaviour
     public NPCWaypointPath exitPath;
 
     [Header("3. ข้อมูล NPC & เควส (NPC Prefabs & Quests)")]
-    [Tooltip("Prefab ของตัวละคร NPC (ถ้ามี ให้ใส่ที่นี่ หากเว้นว่างไว้ระบบจะสร้างตัวละครจำลองอัตโนมัติ)")]
+    [Tooltip("Prefab ของตัวละคร NPC ค่าเริ่มต้น (หากเควสไม่ได้ระบุ npcPrefab เฉพาะตัวไว้จะใช้ตัวนี้)")]
     public GameObject defaultNpcPrefab;
+    [Tooltip("รายการ Prefab NPC เพิ่มเติมสำหรับสุ่ม (Optional: กรณีเควสไม่ได้ระบุ npcPrefab เฉพาะตัว และต้องการสุ่มจากหลายโมเดล)")]
+    public GameObject[] randomNpcPrefabs;
     [Tooltip("รายการเควสและบทสนทนาที่จะสุ่ม/วนส่ง NPC เข้ามา")]
     public List<QuestData> questList = new List<QuestData>();
 
@@ -625,6 +627,29 @@ public class HallManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ดึง Prefab โมเดล NPC ที่เหมาะสมสำหรับเควสนี้
+    /// ลำดับความสำคัญ: 1. npcPrefab ประจำเควส -> 2. สุ่มจาก randomNpcPrefabs -> 3. defaultNpcPrefab
+    /// </summary>
+    public GameObject GetPrefabForQuest(QuestData quest)
+    {
+        if (quest != null && quest.npcPrefab != null)
+        {
+            return quest.npcPrefab;
+        }
+
+        if (randomNpcPrefabs != null && randomNpcPrefabs.Length > 0)
+        {
+            var valid = System.Array.FindAll(randomNpcPrefabs, p => p != null);
+            if (valid.Length > 0)
+            {
+                return valid[Random.Range(0, valid.Length)];
+            }
+        }
+
+        return defaultNpcPrefab;
+    }
+
     private void SpawnSingleNPC()
     {
         if (spawnPoints == null || spawnPoints.Length == 0)
@@ -646,10 +671,13 @@ public class HallManager : MonoBehaviour
 
         GameObject npcObj = null;
 
+        // เลือก Prefab: ถ้าเควสระบุโมเดลเฉพาะ (npcPrefab) ให้ใช้โมเดลประจำเควสก่อน หากไม่มีให้สุ่มหรือใช้ defaultNpcPrefab
+        GameObject prefabToUse = GetPrefabForQuest(currentQuest);
+
         // สร้าง NPC จาก Prefab หรือสร้างตัวละครจำลอง (Capsule Humanoid)
-        if (defaultNpcPrefab != null)
+        if (prefabToUse != null)
         {
-            npcObj = Instantiate(defaultNpcPrefab, spawnPoint.position, spawnPoint.rotation);
+            npcObj = Instantiate(prefabToUse, spawnPoint.position, spawnPoint.rotation);
         }
         else
         {
@@ -734,7 +762,7 @@ public class HallManager : MonoBehaviour
 
         // Spawn NPC Object
         GameObject npcObj = null;
-        GameObject prefabToUse = storyData.npcPrefab != null ? storyData.npcPrefab : defaultNpcPrefab;
+        GameObject prefabToUse = storyData.npcPrefab != null ? storyData.npcPrefab : GetPrefabForQuest(phase.quest);
         if (prefabToUse != null)
         {
             npcObj = Instantiate(prefabToUse, spawnPoint.position, spawnPoint.rotation);

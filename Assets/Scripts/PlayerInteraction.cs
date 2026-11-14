@@ -31,6 +31,8 @@ public class PlayerInteraction : MonoBehaviour
     public bool giveThaiDessertOnStart = true;
     [Tooltip("เพิ่มเครื่องรางเข้าตัวผู้เล่น 1 ชิ้นตอนเริ่มเกมอัตโนมัติ (สำหรับนำไปทำพิธีฝัง)")]
     public bool giveAmuletOnStart = true;
+    [Tooltip("เพิ่มน้ำแดงเข้าตัวผู้เล่น 1 ขวดตอนเริ่มเกมอัตโนมัติ (สำหรับนำไปถวายศาลกุมารทอง)")]
+    public bool giveRedWaterOnStart = true;
 
     [Header("4. Settings")]
     public bool freezePlayerWhileReading = true;
@@ -78,6 +80,12 @@ public class PlayerInteraction : MonoBehaviour
         if (giveAmuletOnStart && !HasItem("เครื่องราง"))
         {
             AddAmuletItem();
+        }
+
+        // เพิ่มไอเทมน้ำแดงเข้าตัวผู้เล่น 1 ขวดอัตโนมัติหากยังไม่มีในกระเป๋า
+        if (giveRedWaterOnStart && !HasItem("น้ำแดง"))
+        {
+            AddRedWaterItem();
         }
     }
 
@@ -129,6 +137,31 @@ public class PlayerInteraction : MonoBehaviour
         );
         AddItem(amulet);
         Debug.Log("[PlayerInteraction] 🎁 เพิ่มไอเทม [เครื่องราง] 1 ชิ้นเข้ากระเป๋าผู้เล่นเรียบร้อยแล้ว!");
+    }
+
+    /// <summary>
+    /// เพิ่มไอเทมน้ำแดงเข้ากระเป๋าผู้เล่น 1 ขวด
+    /// </summary>
+    [ContextMenu("🎁 แอดไอเทมน้ำแดง (Add Red Water)")]
+    public void AddRedWaterItem()
+    {
+        if (HasItem("น้ำแดง")) return;
+
+        InventoryItem redWater = new InventoryItem(
+            "น้ำแดง",
+            null,
+            "น้ำหวานสีแดงกลิ่นสละหอมชื่นใจ สำหรับนำไปกราบไหว้ถวายแด่กุมารทองเพื่อช่วยปัดเป่าเคราะห์ร้ายและชำระล้างวิญญาณผีร้าย",
+            true,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true
+        );
+        AddItem(redWater);
+        Debug.Log("[PlayerInteraction] 🎁 เพิ่มไอเทม [น้ำแดง] 1 ขวดเข้ากระเป๋าผู้เล่นเรียบร้อยแล้ว!");
     }
 
     void OnDisable()
