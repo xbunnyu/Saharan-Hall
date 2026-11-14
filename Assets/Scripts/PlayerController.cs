@@ -54,6 +54,7 @@ public class PlayerController : MonoBehaviour
     public float pitchRandomMax = 1.08f;
 
     private CharacterController controller;
+    private PlayerInteraction playerInteraction;
     private Vector3 velocity;
     private float verticalRotation = 0f;
 
@@ -73,6 +74,7 @@ public class PlayerController : MonoBehaviour
     {
         if (stepInterval < 0.2f) stepInterval = 0.45f;
         controller = GetComponent<CharacterController>();
+        playerInteraction = GetComponent<PlayerInteraction>() ?? GetComponentInChildren<PlayerInteraction>() ?? FindFirstObjectByType<PlayerInteraction>();
         InitAudio();
 
         // โหลดความไวเมาส์จากการตั้งค่าใน Main Menu
@@ -115,9 +117,10 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        // หากบทสนทนาเควสกำลังทำงานอยู่ หรือกำลังเล่นมินิเกม Smash Key ห้ามรับ Input การหันกล้องหรือเดิน
+        // หากบทสนทนาเควสกำลังทำงานอยู่, กำลังเล่นมินิเกม Smash Key, กำลังอ่านข้อมูล หรือเปิดกระเป๋า ห้ามรับ Input การหันกล้องหรือเดิน
         if (QuestUIManager.Instance != null && QuestUIManager.Instance.IsDialogActive()) return;
         if (SmashKeyMinigame.Instance != null && SmashKeyMinigame.Instance.IsActive) return;
+        if (playerInteraction != null && (playerInteraction.IsReading() || playerInteraction.IsInventoryOpen())) return;
 
         HandleLook();
         

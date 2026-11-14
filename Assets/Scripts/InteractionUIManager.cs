@@ -30,6 +30,8 @@ public class InteractionUIManager : MonoBehaviour
     public TextMeshProUGUI readingDescriptionText;
     [Tooltip("ข้อความคำแนะนำการปิด เช่น กด [E] หรือ [Esc] เพื่อปิด")]
     public TextMeshProUGUI readingCloseGuideText;
+    [Tooltip("รูปภาพประกอบในหน้าต่างอ่าน (สำหรับแสดงภาพข่าวสาร/เบาะแส)")]
+    public Image readingImage;
     [Tooltip("ปุ่มกดสำหรับปิด (Optional)")]
     public Button closeButton;
 
@@ -302,29 +304,96 @@ public class InteractionUIManager : MonoBehaviour
     // ==========================================
     // ส่วนควบคุม Reading Dialog
     // ==========================================
-    public void ShowReadingDialog(string title, string description, string closeGuide = null)
+    public void ShowReadingDialog(string title, string description, string closeGuide = null, Sprite image = null, Vector2? customImageSize = null)
     {
         if (promptPanel != null) promptPanel.SetActive(false);
+
+        // ปลดล็อคและแสดงเคอร์เซอร์เมาส์ทันที
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
 
         if (readingPanel != null)
         {
             readingPanel.SetActive(true);
 
+            // ตรวจสอบและสร้าง Image แสดงภาพอัตโนมัติหากยังไม่มี
+            if (readingImage == null)
+            {
+                Transform existingImg = readingPanel.transform.Find("ReadingContentImage");
+                if (existingImg != null)
+                {
+                    readingImage = existingImg.GetComponent<Image>();
+                }
+                else if (image != null)
+                {
+                    GameObject imgGO = new GameObject("ReadingContentImage", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                    imgGO.transform.SetParent(readingPanel.transform, false);
+                    readingImage = imgGO.GetComponent<Image>();
+                }
+            }
+
+            if (readingImage != null)
+            {
+                if (image != null)
+                {
+                    readingImage.sprite = image;
+                    readingImage.preserveAspect = true;
+                    readingImage.gameObject.SetActive(true);
+
+                    RectTransform rt = readingImage.rectTransform;
+                    rt.anchorMin = new Vector2(0.5f, 0.5f);
+                    rt.anchorMax = new Vector2(0.5f, 0.5f);
+                    rt.pivot = new Vector2(0.5f, 0.5f);
+
+                    // แก้ปัญหา scale ของ readingPanel ที่ย่อไว้ 0.556 โดยชดเชย scale ของรูปภาพให้ใหญ่ คมชัด เต็มจอ
+                    float parentScaleX = readingPanel.transform.localScale.x;
+                    float comp = (parentScaleX > 0.1f && parentScaleX < 0.95f) ? (1f / parentScaleX) : 1f;
+                    rt.localScale = new Vector3(comp, comp, 1f);
+
+                    Vector2 targetSize = customImageSize.HasValue ? customImageSize.Value : new Vector2(1050f, 700f);
+                    rt.sizeDelta = targetSize;
+                    rt.anchoredPosition = new Vector2(0f, string.IsNullOrEmpty(title) ? 0f : -20f);
+                }
+                else
+                {
+                    readingImage.gameObject.SetActive(false);
+                }
+            }
+
             if (readingTitleText != null)
             {
                 readingTitleText.text = title;
+                bool hasTitle = !string.IsNullOrEmpty(title);
+                readingTitleText.gameObject.SetActive(hasTitle);
+                if (hasTitle)
+                {
+                    // ขยายความกว้างของหัวข้อ ป้องกันตัวหนังสือภาษาไทยตกบรรทัด
+                    RectTransform titleRT = readingTitleText.rectTransform;
+                    titleRT.sizeDelta = new Vector2(Mathf.Max(titleRT.sizeDelta.x, 1000f), Mathf.Max(titleRT.sizeDelta.y, 70f));
+                    readingTitleText.textWrappingMode = TextWrappingModes.NoWrap;
+                }
             }
 
             if (readingDescriptionText != null)
             {
                 readingDescriptionText.text = description;
+                // ถ้ามีรูปภาพและไม่มีข้อความคำอธิบาย ให้ซ่อนกล่องข้อความ
+                readingDescriptionText.gameObject.SetActive(!string.IsNullOrEmpty(description));
             }
 
             if (readingCloseGuideText != null)
             {
                 readingCloseGuideText.text = string.IsNullOrEmpty(closeGuide)
-                    ? "กด <color=#FFD700>[คลิก]</color> หรือ <color=#FFD700>[Space]</color> เพื่อปิด"
+                    ? "กด <color=#FFD700>[คลิก]</color> หรือ <color=#FFD700>[Space]</color> หรือ <color=#FFD700>[E]</color> เพื่อปิด"
                     : closeGuide;
+                readingCloseGuideText.gameObject.SetActive(true);
+            }
+
+            // ให้ปุ่มปิดอยู่เลเยอร์บนสุดเสมอ และเปิดใช้งาน
+            if (closeButton != null)
+            {
+                closeButton.gameObject.SetActive(true);
+                closeButton.transform.SetAsLastSibling();
             }
         }
     }
@@ -334,6 +403,10 @@ public class InteractionUIManager : MonoBehaviour
         if (readingPanel != null)
         {
             readingPanel.SetActive(false);
+            if (readingImage != null)
+            {
+                readingImage.gameObject.SetActive(false);
+            }
         }
     }
 

@@ -49,6 +49,14 @@ public class PlayerInteraction : MonoBehaviour
     void Start()
     {
         playerController = GetComponent<PlayerController>();
+        if (playerController == null)
+        {
+            playerController = GetComponentInParent<PlayerController>();
+        }
+        if (playerController == null)
+        {
+            playerController = FindFirstObjectByType<PlayerController>();
+        }
 
         // กำหนดกล้องผู้เล่น
         if (playerCamera == null)
@@ -270,10 +278,18 @@ public class PlayerInteraction : MonoBehaviour
         // 4. หากกำลังเปิดหน้าต่างอ่านข้อมูลอยู่
         if (isReading)
         {
-            var mouse = Mouse.current;
-            bool clickPressed = mouse != null && mouse.leftButton.wasPressedThisFrame;
+            // ปลดล็อคและแสดงเคอร์เซอร์เมาส์ตลอดเวลาขณะอ่าน เพื่อให้ผู้เล่นคลิกปุ่มปิดได้
+            if (Cursor.lockState != CursorLockMode.None)
+            {
+                Cursor.lockState = CursorLockMode.None;
+            }
+            if (!Cursor.visible)
+            {
+                Cursor.visible = true;
+            }
+
             bool keyDismiss = keyboard != null && (keyboard.eKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame || keyboard.escapeKey.wasPressedThisFrame || keyboard.enterKey.wasPressedThisFrame);
-            if (clickPressed || keyDismiss)
+            if (keyDismiss)
             {
                 CloseReading();
             }
@@ -401,6 +417,7 @@ public class PlayerInteraction : MonoBehaviour
             Debug.Log($"[PlayerInteraction] 👆 กดโต้ตอบกับ [{currentTarget.name}] (อุปกรณ์: {(keyE ? "Keyboard [E]" : padWest ? "Gamepad [West]" : targetKey)})");
 
             bool isNPC = currentTarget.GetComponent<NPCController>() != null || currentTarget.GetComponentInParent<NPCController>() != null;
+            bool hasReadableContent = !string.IsNullOrEmpty(currentTarget.readDescription) || currentTarget.readImage != null || currentTarget is DailyNewsBulletin;
             bool isDirectAction = currentTarget is HallTrigger 
                                || currentTarget is BuddhistAltarManager 
                                || currentTarget is QTEInteractable 
@@ -412,7 +429,7 @@ public class PlayerInteraction : MonoBehaviour
                                || currentTarget is ForestShrineInteractable
                                || currentTarget is RitualCandleInteractable
                                || currentTarget is AmuletBurialSpot
-                               || string.IsNullOrEmpty(currentTarget.readDescription) 
+                               || (!hasReadableContent)
                                || isNPC;
 
             if (isDirectAction)
@@ -736,14 +753,19 @@ public class PlayerInteraction : MonoBehaviour
         readingTitle = string.IsNullOrEmpty(item.readTitle) ? item.itemName : item.readTitle;
         readingContent = item.readDescription;
 
-        if (freezePlayerWhileReading && playerController != null)
+        // ล็อคการเคลื่อนไหวและหยุดการหมุนมุมกล้องของผู้เล่นทันที
+        if (playerController != null)
         {
             playerController.enabled = false;
         }
 
+        // ปลดล็อคเมาส์และแสดงเคอร์เซอร์เมาส์ขึ้นมาทันที
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
         if (InteractionUIManager.Instance != null)
         {
-            InteractionUIManager.Instance.ShowReadingDialog(readingTitle, readingContent);
+            InteractionUIManager.Instance.ShowReadingDialog(readingTitle, readingContent, null, item.readImage, item.readImageSize);
         }
     }
 
