@@ -148,7 +148,12 @@ public class KumanThongInteractable : InteractableItem
 
         if (offeringSuccessSound != null)
         {
-            AudioSource.PlayClipAtPoint(offeringSuccessSound, transform.position);
+            float sfxVol = AudioManager.Instance != null ? AudioManager.Instance.GetCalculatedSFXVolume() : 1f;
+            AudioSource.PlayClipAtPoint(offeringSuccessSound, transform.position, sfxVol);
+        }
+        else if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayKumanThongSound();
         }
     }
 

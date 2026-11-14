@@ -347,6 +347,9 @@ public class MainMenuManager : MonoBehaviour
 
         if (bgmVolumeValueText != null)
             bgmVolumeValueText.text = $"{(int)(volume * 100)}%";
+
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.UpdateVolume();
     }
 
     public void SetSFXVolume(float volume)

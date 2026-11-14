@@ -282,6 +282,10 @@ public class UIButtonBounce : MonoBehaviour, IPointerEnterHandler, IPointerExitH
         {
             AudioSource.PlayClipAtPoint(clickSound, Camera.main != null ? Camera.main.transform.position : Vector3.zero);
         }
+        else if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayButtonClickSound();
+        }
     }
 
     /// <summary>

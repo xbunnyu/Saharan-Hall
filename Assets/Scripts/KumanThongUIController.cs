@@ -161,8 +161,15 @@ public class KumanThongUIController : MonoBehaviour
             MinigameManager.Instance.totalFailedMinigames--;
         }
 
-        // 6. เล่นเสียงสังเคราะห์และแสดงผลแจ้งเตือน
-        PlaySynthChime();
+        // 6. เล่นเสียงถวายกุมารทอง
+        if (AudioManager.Instance != null && AudioManager.Instance.kumanThongSound != null)
+        {
+            AudioManager.Instance.PlayKumanThongSound();
+        }
+        else
+        {
+            PlaySynthChime();
+        }
 
         if (InteractionUIManager.Instance != null)
         {

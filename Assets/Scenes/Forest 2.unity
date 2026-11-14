@@ -3103,6 +3103,18 @@ MonoBehaviour:
   maxVerticalAngle: 85
   lockCursor: 1
   isMovementLocked: 0
+  enableFootsteps: 1
+  footstepSounds:
+  - {fileID: 8300000, guid: b52dc4ddd1f4a2542885ff2a27d1b998, type: 3}
+  foliageFootstepSounds:
+  - {fileID: 8300000, guid: 0f7d670cb763728468b18988b90a618f, type: 3}
+  landSound: {fileID: 0}
+  footstepAudioSource: {fileID: 0}
+  stepInterval: 0.45
+  footstepVolume: 0.85
+  landVolume: 0.7
+  pitchRandomMin: 0.92
+  pitchRandomMax: 1.08
 --- !u!143 &616337839
 CharacterController:
   m_ObjectHideFlags: 0
