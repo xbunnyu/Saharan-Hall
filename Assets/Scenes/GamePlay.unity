@@ -4358,6 +4358,8 @@ MonoBehaviour:
   customReadPromptText: "\u0E01\u0E23\u0E32\u0E1A\u0E44\u0E2B\u0E27\u0E49/\u0E16\u0E27\u0E32\u0E22\u0E02\u0E2D\u0E07"
   readTitle: 
   readDescription: 
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 0
   destroyOnCollect: 1
   isUsable: 1
@@ -4392,6 +4394,17 @@ MonoBehaviour:
   enablePointLightGlow: 1
   enableSparkles: 1
   showImportantBadgeInUI: 1
+  redWaterVisualOnShrine: {fileID: 226903031}
+  offeringSocket: {fileID: 0}
+  redWaterPrefab: {fileID: 843543821627417059, guid: 5f9ab20658b7f7f4eb67111e0594513e, type: 3}
+  offeringItemName: "\u0E19\u0E49\u0E33\u0E41\u0E14\u0E07"
+  consumeItemOnOffer: 1
+  requireItemToOffer: 1
+  resetOfferingOnNewDay: 1
+  offeringSuccessSound: {fileID: 0}
+  shrineGlowLight: {fileID: 0}
+  offeringParticle: {fileID: 0}
+  hasOffered: 0
 --- !u!4 &91687265 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f36e8aea353d990479186e86961bf790, type: 3}
@@ -4948,6 +4961,8 @@ MonoBehaviour:
   customReadPromptText: "\u0E17\u0E48\u0E2D\u0E07\u0E04\u0E32\u0E16\u0E32"
   readTitle: 
   readDescription: 
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 0
   destroyOnCollect: 1
   isUsable: 1
@@ -8010,7 +8025,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89263f30ee6f4cf48be2758458768b9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerWalletManager
-  startingMoney: 0
+  startingMoney: 4500
   money: 0
   onMoneyChanged:
     m_PersistentCalls:
@@ -11094,6 +11109,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 266121385}
   m_LocalEulerAnglesHint: {x: 0.047, y: 89.952, z: 180}
+--- !u!1 &226903031 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 843543821627417059, guid: 5f9ab20658b7f7f4eb67111e0594513e, type: 3}
+  m_PrefabInstance: {fileID: 4251021447222820051}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &228269114
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -19974,6 +19994,7 @@ MonoBehaviour:
   readingTitleText: {fileID: 1554878123}
   readingDescriptionText: {fileID: 617183654}
   readingCloseGuideText: {fileID: 0}
+  readingImage: {fileID: 0}
   closeButton: {fileID: 571348673}
   notificationPanel: {fileID: 1688438781}
   notificationText: {fileID: 0}
@@ -20107,7 +20128,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &384832448
 RectTransform:
   m_ObjectHideFlags: 0
@@ -20143,7 +20164,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.36, g: 0.33, b: 0.31, a: 0.34495997}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -21970,6 +21991,68 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: caf33d4cc8ad2b644a732f0a4a20ce4d, type: 3}
   m_PrefabInstance: {fileID: 192003533}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &418370808
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 418370810}
+  - component: {fileID: 418370809}
+  m_Layer: 0
+  m_Name: AudioManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &418370809
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 418370808}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 694ec7e6da3f9e242848b7f28e1b9ce0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioManager
+  globalSFXVolume: 1
+  enableBGM: 1
+  bgmVolume: 0.85
+  defaultBGM: {fileID: 8300000, guid: e3a8b3f7bdba2814580013f64ecd4bc1, type: 3}
+  forestBGM: {fileID: 8300000, guid: 19b38b208dcfb5d47b5a62607fa8d7dd, type: 3}
+  horrorBGM: {fileID: 8300000, guid: 5095c0b6544818349b5f6e64f1e16198, type: 3}
+  enableButtonClickSound: 1
+  buttonClickVolume: 0.85
+  defaultButtonClickSound: {fileID: 8300000, guid: 4f95f9504859d854898260fd2b29966c, type: 3}
+  switchClickSound: {fileID: 8300000, guid: 79f6048cea8216041886778c28a630ec, type: 3}
+  autoHookAllButtons: 1
+  playerFootstepSound: {fileID: 8300000, guid: b52dc4ddd1f4a2542885ff2a27d1b998, type: 3}
+  playerFoliageFootstepSound: {fileID: 8300000, guid: 0f7d670cb763728468b18988b90a618f, type: 3}
+  kumanThongSound: {fileID: 8300000, guid: 6fefd0a7674d1f6448521a3593e05def, type: 3}
+  jumpscareSound: {fileID: 8300000, guid: 3f979985c2add5e4bad45629faca6dc8, type: 3}
+  ambientDroneSound: {fileID: 8300000, guid: ca404cca0b1ead14e86927495dc9fd99, type: 3}
+  bgmAudioSource: {fileID: 0}
+  sfxAudioSource: {fileID: 0}
+--- !u!4 &418370810
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 418370808}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &420541895
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -25819,8 +25902,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuManager
   isPaused: 0
-  pausePanel: {fileID: 301443430}
-  settingsPanel: {fileID: 0}
+  pausePanel: {fileID: 6840994}
+  settingsPanel: {fileID: 1604781462}
 --- !u!4 &490302212
 Transform:
   m_ObjectHideFlags: 0
@@ -45015,6 +45098,7 @@ MonoBehaviour:
   approachPath: {fileID: 1334625571}
   exitPath: {fileID: 1537411604}
   defaultNpcPrefab: {fileID: 7830911997512763429, guid: 01eb5df0ec1cda24397a147d0696e028, type: 3}
+  randomNpcPrefabs: []
   questList:
   - questId: npc_01
     problemType: "\u0E2B\u0E25\u0E32\u0E19\u0E40\u0E2B\u0E47\u0E19\u0E1C\u0E35\u0E40\u0E14\u0E47\u0E01"
@@ -46215,6 +46299,236 @@ MonoBehaviour:
     currentMinigameFails: 0
     ownerStoryData: {fileID: 0}
     ownerPhaseIndex: -1
+  - questId: 03
+    problemType: "\u0E2B\u0E25\u0E32\u0E19\u0E40\u0E2B\u0E47\u0E19\u0E1C\u0E35\u0E40\u0E14\u0E47\u0E01"
+    questTitle: 
+    questDescription: "\u0E2B\u0E21\u0E2D\u0E08\u0E4A\u0E30 \u0E2B\u0E25\u0E32\u0E19\u0E22\u0E32\u0E22\u0E0A\u0E35\u0E49\u0E21\u0E38\u0E21\u0E2B\u0E49\u0E2D\u0E07\u0E17\u0E38\u0E01\u0E04\u0E37\u0E19
+      \u0E1A\u0E2D\u0E01\u0E27\u0E48\u0E32\u0E21\u0E35\u0E40\u0E14\u0E47\u0E01\u0E21\u0E32\u0E22\u0E37\u0E19\u0E40\u0E23\u0E35\u0E22\u0E01\u0E40\u0E25\u0E48\u0E19\u0E14\u0E49\u0E27\u0E22
+      \u0E22\u0E32\u0E22\u0E01\u0E25\u0E31\u0E27\u0E40\u0E2B\u0E25\u0E37\u0E2D\u0E40\u0E01\u0E34\u0E19
+      \u0E0A\u0E48\u0E27\u0E22\u0E14\u0E39\u0E43\u0E2B\u0E49\u0E17\u0E35\u0E19\u0E30"
+    difficulty: 0
+    customNoteSpeed: 0
+    customNoteCount: 0
+    passPercentage: 60
+    npcName: "\u0E22\u0E32\u0E22\u0E17\u0E2D\u0E07"
+    npcPortrait: {fileID: 1707211250, guid: 582d85b6ad204784ebb715458ac77e76, type: 3}
+    npcPrefab: {fileID: 5966069092664298501, guid: 9eac3b6735c2c244eba58bd73707109e, type: 3}
+    npcGroupId: 
+    inquiryDialogues:
+    - "...(NPC \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E27\u0E49\u0E43\u0E08\u0E1E\u0E2D\u0E17\u0E35\u0E48\u0E08\u0E30\u0E1A\u0E2D\u0E01)"
+    - "\u0E04\u0E27\u0E32\u0E21\u0E08\u0E23\u0E34\u0E07\u0E01\u0E47\u0E04\u0E37\u0E2D...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 1)"
+    - "\u0E21\u0E35\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E17\u0E35\u0E48\u0E0B\u0E48\u0E2D\u0E19\u0E2D\u0E22\u0E39\u0E48...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 2)"
+    - "\u0E02\u0E49\u0E32\u0E08\u0E30\u0E1A\u0E2D\u0E01\u0E04\u0E27\u0E32\u0E21\u0E25\u0E31\u0E1A\u0E2A\u0E38\u0E14\u0E17\u0E49\u0E32\u0E22...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 3)"
+    greetingDialogue: 
+    waitingDialogue: "\u0E22\u0E32\u0E22\u0E44\u0E21\u0E48\u0E21\u0E35\u0E40\u0E07\u0E34\u0E19\u0E21\u0E32\u0E01\u0E2B\u0E23\u0E2D\u0E01\u0E08\u0E49\u0E30
+      \u0E41\u0E15\u0E48\u0E0A\u0E48\u0E27\u0E22\u0E2B\u0E25\u0E32\u0E19\u0E22\u0E32\u0E22\u0E17\u0E35\u0E40\u0E16\u0E2D\u0E30\u0E19\u0E30"
+    completeDialogue: "\u0E02\u0E2D\u0E1A\u0E43\u0E08\u0E21\u0E32\u0E01\u0E19\u0E30\u0E2B\u0E21\u0E2D
+      \u0E22\u0E32\u0E22\u0E44\u0E21\u0E48\u0E21\u0E35\u0E2D\u0E30\u0E44\u0E23\u0E15\u0E2D\u0E1A\u0E41\u0E17\u0E19\u0E21\u0E32\u0E01
+      \u0E02\u0E2D\u0E43\u0E2B\u0E49\u0E1A\u0E38\u0E0D\u0E23\u0E31\u0E01\u0E29\u0E32\u0E19\u0E30\u0E08\u0E4A\u0E30"
+    declineDialogue: "\u0E2B\u0E21\u0E2D\u0E44\u0E21\u0E48\u0E0A\u0E48\u0E27\u0E22\u0E08\u0E23\u0E34\u0E07
+      \u0E46 \u0E2B\u0E23\u0E37\u0E2D...\u0E22\u0E32\u0E22\u0E04\u0E07\u0E15\u0E49\u0E2D\u0E07\u0E1E\u0E32\u0E2B\u0E25\u0E32\u0E19\u0E01\u0E25\u0E31\u0E1A\u0E44\u0E1B\u0E17\u0E19\u0E40\u0E2D\u0E32\u0E40\u0E2D\u0E07\u0E2A\u0E34\u0E19\u0E30"
+    failDialogue: "\u0E44\u0E21\u0E48\u0E40\u0E2B\u0E47\u0E19\u0E40\u0E01\u0E48\u0E07\u0E40\u0E25\u0E22\u0E19\u0E35\u0E48\u0E2B\u0E27\u0E48\u0E32...
+      \u0E02\u0E49\u0E32\u0E44\u0E1B\u0E2B\u0E32\u0E2B\u0E21\u0E2D\u0E18\u0E23\u0E23\u0E21\u0E04\u0E19\u0E2D\u0E37\u0E48\u0E19\u0E14\u0E35\u0E01\u0E27\u0E48\u0E32!"
+    requiredItemName: 
+    requiredQuantity: 0
+    isTaskCompleted: 0
+    rewardDescription: 600
+    rewardMoney: 120
+    rewardItemName: 
+    karmaReward: 30
+    requiredMinigameSequence: 01000000
+    completedMinigameSequence: 
+    isAccepted: 0
+    isCompleted: 0
+    currentMinigameFails: 0
+    ownerStoryData: {fileID: 0}
+    ownerPhaseIndex: -1
+  - questId: 04
+    problemType: "\u0E23\u0E31\u0E1A\u0E1C\u0E39\u0E49\u0E42\u0E14\u0E22\u0E2A\u0E32\u0E23\u0E1C\u0E35"
+    questTitle: 
+    questDescription: "\u0E1B\u0E49\u0E2D\u0E2B\u0E21\u0E2D\u0E40\u0E08\u0E49\u0E32
+      \u0E04\u0E37\u0E19\u0E01\u0E48\u0E2D\u0E19\u0E02\u0E49\u0E32\u0E40\u0E08\u0E49\u0E32\u0E23\u0E31\u0E1A\u0E1C\u0E39\u0E49\u0E2B\u0E0D\u0E34\u0E07\u0E02\u0E36\u0E49\u0E19\u0E23\u0E16
+      \u0E1E\u0E2D\u0E16\u0E36\u0E07\u0E17\u0E32\u0E07\u0E41\u0E22\u0E01\u0E40\u0E1B\u0E34\u0E49\u0E19\u0E2B\u0E32\u0E22\u0E44\u0E1B\u0E40\u0E25\u0E22
+      \u0E15\u0E31\u0E49\u0E07\u0E41\u0E15\u0E48\u0E19\u0E31\u0E49\u0E19\u0E23\u0E16\u0E21\u0E35\u0E01\u0E25\u0E34\u0E48\u0E19\u0E18\u0E39\u0E1B\u0E01\u0E39\u0E49\u0E04\u0E37\u0E19
+      \u0E0A\u0E48\u0E27\u0E22\u0E1C\u0E48\u0E2D\u0E01\u0E33"
+    difficulty: 1
+    customNoteSpeed: 0
+    customNoteCount: 0
+    passPercentage: 60
+    npcName: "\u0E2D\u0E49\u0E32\u0E22\u0E40\u0E21\u0E37\u0E2D\u0E07"
+    npcPortrait: {fileID: 1707211250, guid: 582d85b6ad204784ebb715458ac77e76, type: 3}
+    npcPrefab: {fileID: 7830911997512763429, guid: 01eb5df0ec1cda24397a147d0696e028, type: 3}
+    npcGroupId: 
+    inquiryDialogues:
+    - "...(NPC \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E27\u0E49\u0E43\u0E08\u0E1E\u0E2D\u0E17\u0E35\u0E48\u0E08\u0E30\u0E1A\u0E2D\u0E01)"
+    - "\u0E04\u0E27\u0E32\u0E21\u0E08\u0E23\u0E34\u0E07\u0E01\u0E47\u0E04\u0E37\u0E2D...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 1)"
+    - "\u0E21\u0E35\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E17\u0E35\u0E48\u0E0B\u0E48\u0E2D\u0E19\u0E2D\u0E22\u0E39\u0E48...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 2)"
+    - "\u0E02\u0E49\u0E32\u0E08\u0E30\u0E1A\u0E2D\u0E01\u0E04\u0E27\u0E32\u0E21\u0E25\u0E31\u0E1A\u0E2A\u0E38\u0E14\u0E17\u0E49\u0E32\u0E22...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 3)"
+    greetingDialogue: 
+    waitingDialogue: "\u0E02\u0E49\u0E32\u0E40\u0E08\u0E49\u0E32\u0E1A\u0E48\u0E01\u0E25\u0E49\u0E32\u0E02\u0E31\u0E1A\u0E23\u0E16\u0E15\u0E2D\u0E19\u0E04\u0E48\u0E33\u0E41\u0E25\u0E49\u0E27\u0E40\u0E08\u0E49\u0E32
+      \u0E1D\u0E32\u0E01\u0E1B\u0E49\u0E2D\u0E2B\u0E21\u0E2D\u0E0A\u0E48\u0E27\u0E22\u0E40\u0E19\u0E49\u0E2D"
+    completeDialogue: "\u0E02\u0E2D\u0E1A\u0E04\u0E38\u0E13\u0E19\u0E31\u0E01\u0E40\u0E08\u0E49\u0E32
+      \u0E04\u0E23\u0E32\u0E27\u0E19\u0E35\u0E49\u0E02\u0E49\u0E32\u0E40\u0E08\u0E49\u0E32\u0E04\u0E07\u0E01\u0E25\u0E31\u0E1A\u0E44\u0E1B\u0E17\u0E33\u0E21\u0E32\u0E2B\u0E32\u0E01\u0E34\u0E19\u0E44\u0E14\u0E49"
+    declineDialogue: "\u0E1A\u0E48\u0E0A\u0E48\u0E27\u0E22\u0E01\u0E47\u0E1A\u0E48\u0E40\u0E1B\u0E47\u0E19\u0E2B\u0E22\u0E31\u0E07\u0E40\u0E08\u0E49\u0E32
+      \u0E41\u0E15\u0E48\u0E16\u0E49\u0E32\u0E02\u0E49\u0E32\u0E40\u0E08\u0E49\u0E32\u0E2B\u0E32\u0E01\u0E34\u0E19\u0E1A\u0E48\u0E44\u0E14\u0E49
+      \u0E01\u0E47\u0E19\u0E48\u0E32\u0E40\u0E2A\u0E35\u0E22\u0E14\u0E32\u0E22\u0E17\u0E35\u0E48\u0E21\u0E32\u0E02\u0E2D\u0E16\u0E36\u0E07\u0E19\u0E35\u0E48"
+    failDialogue: "\u0E44\u0E21\u0E48\u0E40\u0E2B\u0E47\u0E19\u0E40\u0E01\u0E48\u0E07\u0E40\u0E25\u0E22\u0E19\u0E35\u0E48\u0E2B\u0E27\u0E48\u0E32...
+      \u0E02\u0E49\u0E32\u0E44\u0E1B\u0E2B\u0E32\u0E2B\u0E21\u0E2D\u0E18\u0E23\u0E23\u0E21\u0E04\u0E19\u0E2D\u0E37\u0E48\u0E19\u0E14\u0E35\u0E01\u0E27\u0E48\u0E32!"
+    requiredItemName: 
+    requiredQuantity: 0
+    isTaskCompleted: 0
+    rewardDescription: 600
+    rewardMoney: 220
+    rewardItemName: 
+    karmaReward: 30
+    requiredMinigameSequence: 0100000005000000
+    completedMinigameSequence: 
+    isAccepted: 0
+    isCompleted: 0
+    currentMinigameFails: 0
+    ownerStoryData: {fileID: 0}
+    ownerPhaseIndex: -1
+  - questId: 06
+    problemType: "\u0E1D\u0E31\u0E19\u0E23\u0E49\u0E32\u0E22\u0E08\u0E32\u0E01\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E23\u0E32\u0E07"
+    questTitle: 
+    questDescription: "\u0E2B\u0E21\u0E2D\u0E08\u0E4A\u0E30 \u0E21\u0E35\u0E04\u0E19\u0E43\u0E2B\u0E49\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E23\u0E32\u0E07\u0E09\u0E31\u0E19\u0E21\u0E32
+      \u0E15\u0E31\u0E49\u0E07\u0E41\u0E15\u0E48\u0E40\u0E2D\u0E32\u0E40\u0E02\u0E49\u0E32\u0E1A\u0E49\u0E32\u0E19\u0E01\u0E47\u0E1D\u0E31\u0E19\u0E40\u0E2B\u0E47\u0E19\u0E1C\u0E39\u0E49\u0E2B\u0E0D\u0E34\u0E07\u0E21\u0E32\u0E08\u0E49\u0E2D\u0E07\u0E17\u0E38\u0E01\u0E04\u0E37\u0E19
+      \u0E0A\u0E48\u0E27\u0E22\u0E14\u0E39\u0E43\u0E2B\u0E49\u0E17\u0E35\u0E19\u0E30"
+    difficulty: 0
+    customNoteSpeed: 0
+    customNoteCount: 0
+    passPercentage: 60
+    npcName: "\u0E19\u0E27\u0E25"
+    npcPortrait: {fileID: 1707211250, guid: 582d85b6ad204784ebb715458ac77e76, type: 3}
+    npcPrefab: {fileID: 3324292485599687885, guid: 391303a41e8344d41a53e88d89521005, type: 3}
+    npcGroupId: 
+    inquiryDialogues:
+    - "...(NPC \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E27\u0E49\u0E43\u0E08\u0E1E\u0E2D\u0E17\u0E35\u0E48\u0E08\u0E30\u0E1A\u0E2D\u0E01)"
+    - "\u0E04\u0E27\u0E32\u0E21\u0E08\u0E23\u0E34\u0E07\u0E01\u0E47\u0E04\u0E37\u0E2D...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 1)"
+    - "\u0E21\u0E35\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E17\u0E35\u0E48\u0E0B\u0E48\u0E2D\u0E19\u0E2D\u0E22\u0E39\u0E48...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 2)"
+    - "\u0E02\u0E49\u0E32\u0E08\u0E30\u0E1A\u0E2D\u0E01\u0E04\u0E27\u0E32\u0E21\u0E25\u0E31\u0E1A\u0E2A\u0E38\u0E14\u0E17\u0E49\u0E32\u0E22...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 3)"
+    greetingDialogue: 
+    waitingDialogue: "\u0E09\u0E31\u0E19\u0E40\u0E1B\u0E47\u0E19\u0E2B\u0E48\u0E27\u0E07\u0E25\u0E39\u0E01\u0E43\u0E19\u0E17\u0E49\u0E2D\u0E07\u0E08\u0E49\u0E30\u0E2B\u0E21\u0E2D
+      \u0E0A\u0E48\u0E27\u0E22\u0E09\u0E31\u0E19\u0E2B\u0E19\u0E48\u0E2D\u0E22\u0E19\u0E30"
+    completeDialogue: "\u0E02\u0E2D\u0E1A\u0E04\u0E38\u0E13\u0E21\u0E32\u0E01\u0E19\u0E30\u0E08\u0E4A\u0E30\u0E2B\u0E21\u0E2D
+      \u0E09\u0E31\u0E19\u0E2A\u0E1A\u0E32\u0E22\u0E43\u0E08\u0E02\u0E36\u0E49\u0E19\u0E40\u0E22\u0E2D\u0E30\u0E40\u0E25\u0E22"
+    declineDialogue: "\u0E09\u0E31\u0E19\u0E21\u0E32\u0E02\u0E2D\u0E40\u0E1E\u0E23\u0E32\u0E30\u0E01\u0E25\u0E31\u0E27\u0E25\u0E39\u0E01\u0E08\u0E30\u0E40\u0E1B\u0E47\u0E19\u0E2D\u0E30\u0E44\u0E23...\u0E2B\u0E21\u0E2D\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E0A\u0E48\u0E27\u0E22\u0E2D\u0E35\u0E01\u0E2B\u0E23\u0E37\u0E2D\u0E08\u0E4A\u0E30"
+    failDialogue: "\u0E44\u0E21\u0E48\u0E40\u0E2B\u0E47\u0E19\u0E40\u0E01\u0E48\u0E07\u0E40\u0E25\u0E22\u0E19\u0E35\u0E48\u0E2B\u0E27\u0E48\u0E32...
+      \u0E02\u0E49\u0E32\u0E44\u0E1B\u0E2B\u0E32\u0E2B\u0E21\u0E2D\u0E18\u0E23\u0E23\u0E21\u0E04\u0E19\u0E2D\u0E37\u0E48\u0E19\u0E14\u0E35\u0E01\u0E27\u0E48\u0E32!"
+    requiredItemName: 
+    requiredQuantity: 0
+    isTaskCompleted: 0
+    rewardDescription: 600
+    rewardMoney: 120
+    rewardItemName: 
+    karmaReward: 10
+    requiredMinigameSequence: 03000000
+    completedMinigameSequence: 
+    isAccepted: 0
+    isCompleted: 0
+    currentMinigameFails: 0
+    ownerStoryData: {fileID: 0}
+    ownerPhaseIndex: -1
+  - questId: 07
+    problemType: "\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E19\u0E42\u0E14\u0E19\u0E1C\u0E35\u0E15\u0E32\u0E21"
+    questTitle: 
+    questDescription: "\u0E1E\u0E48\u0E2D\u0E2B\u0E21\u0E2D \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E19\u0E02\u0E48\u0E2D\u0E22\u0E44\u0E1B\u0E25\u0E2D\u0E07\u0E02\u0E2D\u0E07\u0E43\u0E19\u0E1B\u0E48\u0E32\u0E0A\u0E49\u0E32\u0E41\u0E25\u0E49\u0E27\u0E15\u0E2D\u0E19\u0E19\u0E35\u0E49\u0E21\u0E31\u0E19\u0E40\u0E2B\u0E47\u0E19\u0E1C\u0E35\u0E40\u0E1A\u0E34\u0E14\u0E21\u0E37\u0E49\u0E2D
+      \u0E0A\u0E48\u0E27\u0E22\u0E21\u0E31\u0E19\u0E41\u0E19\u0E40\u0E14\u0E49\u0E2D"
+    difficulty: 0
+    customNoteSpeed: 0
+    customNoteCount: 0
+    passPercentage: 60
+    npcName: "\u0E2B\u0E19\u0E39\u0E41\u0E14\u0E07"
+    npcPortrait: {fileID: 1707211250, guid: 582d85b6ad204784ebb715458ac77e76, type: 3}
+    npcPrefab: {fileID: 5763331592819886625, guid: 0ca79f50066d2b641bb619ef0010647f, type: 3}
+    npcGroupId: 
+    inquiryDialogues:
+    - "...(NPC \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E27\u0E49\u0E43\u0E08\u0E1E\u0E2D\u0E17\u0E35\u0E48\u0E08\u0E30\u0E1A\u0E2D\u0E01)"
+    - "\u0E04\u0E27\u0E32\u0E21\u0E08\u0E23\u0E34\u0E07\u0E01\u0E47\u0E04\u0E37\u0E2D...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 1)"
+    - "\u0E21\u0E35\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E17\u0E35\u0E48\u0E0B\u0E48\u0E2D\u0E19\u0E2D\u0E22\u0E39\u0E48...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 2)"
+    - "\u0E02\u0E49\u0E32\u0E08\u0E30\u0E1A\u0E2D\u0E01\u0E04\u0E27\u0E32\u0E21\u0E25\u0E31\u0E1A\u0E2A\u0E38\u0E14\u0E17\u0E49\u0E32\u0E22...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 3)"
+    greetingDialogue: 
+    waitingDialogue: "\u0E21\u0E31\u0E19\u0E1A\u0E48\u0E01\u0E25\u0E49\u0E32\u0E2D\u0E2D\u0E01\u0E08\u0E32\u0E01\u0E40\u0E2E\u0E37\u0E2D\u0E19\u0E41\u0E25\u0E49\u0E27\u0E1E\u0E48\u0E2D\u0E2B\u0E21\u0E2D
+      \u0E02\u0E48\u0E2D\u0E22\u0E22\u0E48\u0E32\u0E19\u0E21\u0E31\u0E19\u0E2A\u0E34\u0E40\u0E1B\u0E47\u0E19\u0E2B\u0E19\u0E31\u0E01\u0E01\u0E27\u0E48\u0E32\u0E40\u0E01\u0E48\u0E32"
+    completeDialogue: "\u0E02\u0E2D\u0E1A\u0E04\u0E38\u0E13\u0E2B\u0E25\u0E32\u0E22\u0E40\u0E14\u0E49\u0E2D
+      \u0E15\u0E48\u0E2D\u0E44\u0E1B\u0E02\u0E48\u0E2D\u0E22\u0E2A\u0E34\u0E2B\u0E49\u0E32\u0E21\u0E21\u0E31\u0E19\u0E1A\u0E48\u0E43\u0E2B\u0E49\u0E44\u0E1B\u0E40\u0E25\u0E48\u0E19\u0E1E\u0E34\u0E40\u0E23\u0E19\u0E17\u0E23\u0E4C\u0E2D\u0E35\u0E01"
+    declineDialogue: "\u0E1E\u0E48\u0E2D\u0E2B\u0E21\u0E2D\u0E1A\u0E48\u0E0A\u0E48\u0E27\u0E22\u0E01\u0E30\u0E44\u0E14\u0E49...\u0E41\u0E15\u0E48\u0E16\u0E49\u0E32\u0E21\u0E31\u0E19\u0E40\u0E1B\u0E47\u0E19\u0E2B\u0E22\u0E31\u0E07\u0E02\u0E36\u0E49\u0E19\u0E21\u0E32
+      \u0E02\u0E48\u0E2D\u0E22\u0E04\u0E07\u0E42\u0E01\u0E23\u0E18\u0E2B\u0E25\u0E32\u0E22"
+    failDialogue: "\u0E44\u0E21\u0E48\u0E40\u0E2B\u0E47\u0E19\u0E40\u0E01\u0E48\u0E07\u0E40\u0E25\u0E22\u0E19\u0E35\u0E48\u0E2B\u0E27\u0E48\u0E32...
+      \u0E02\u0E49\u0E32\u0E44\u0E1B\u0E2B\u0E32\u0E2B\u0E21\u0E2D\u0E18\u0E23\u0E23\u0E21\u0E04\u0E19\u0E2D\u0E37\u0E48\u0E19\u0E14\u0E35\u0E01\u0E27\u0E48\u0E32!"
+    requiredItemName: 
+    requiredQuantity: 0
+    isTaskCompleted: 0
+    rewardDescription: 600
+    rewardMoney: 120
+    rewardItemName: 
+    karmaReward: 10
+    requiredMinigameSequence: 03000000
+    completedMinigameSequence: 
+    isAccepted: 0
+    isCompleted: 0
+    currentMinigameFails: 0
+    ownerStoryData: {fileID: 0}
+    ownerPhaseIndex: -1
+  - questId: 08
+    problemType: "\u0E25\u0E39\u0E01\u0E02\u0E27\u0E31\u0E0D\u0E2B\u0E32\u0E22"
+    questTitle: 
+    questDescription: "\u0E1B\u0E49\u0E2D\u0E2B\u0E21\u0E2D\u0E40\u0E08\u0E49\u0E32
+      \u0E25\u0E39\u0E01\u0E02\u0E49\u0E32\u0E40\u0E08\u0E49\u0E32\u0E44\u0E1B\u0E15\u0E01\u0E43\u0E08\u0E4B\u0E2D\u0E30\u0E2B\u0E22\u0E31\u0E07\u0E21\u0E32
+      \u0E01\u0E25\u0E31\u0E1A\u0E40\u0E2E\u0E37\u0E2D\u0E19\u0E41\u0E25\u0E49\u0E27\u0E1A\u0E48\u0E1B\u0E32\u0E01\u0E1A\u0E48\u0E08\u0E4B\u0E32
+      \u0E0A\u0E48\u0E27\u0E22\u0E2E\u0E49\u0E2D\u0E07\u0E02\u0E27\u0E31\u0E0D\u0E2B\u0E37\u0E49\u0E2D\u0E01\u0E33\u0E40\u0E08\u0E49\u0E32"
+    difficulty: 1
+    customNoteSpeed: 0
+    customNoteCount: 0
+    passPercentage: 60
+    npcName: "\u0E2A\u0E32\u0E22\u0E04\u0E33"
+    npcPortrait: {fileID: 1707211250, guid: 582d85b6ad204784ebb715458ac77e76, type: 3}
+    npcPrefab: {fileID: 1834858639542607105, guid: 4776b6dda20d4ba4cbb153a8015645c9, type: 3}
+    npcGroupId: 
+    inquiryDialogues:
+    - "...(NPC \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E27\u0E49\u0E43\u0E08\u0E1E\u0E2D\u0E17\u0E35\u0E48\u0E08\u0E30\u0E1A\u0E2D\u0E01)"
+    - "\u0E04\u0E27\u0E32\u0E21\u0E08\u0E23\u0E34\u0E07\u0E01\u0E47\u0E04\u0E37\u0E2D...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 1)"
+    - "\u0E21\u0E35\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E17\u0E35\u0E48\u0E0B\u0E48\u0E2D\u0E19\u0E2D\u0E22\u0E39\u0E48...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 2)"
+    - "\u0E02\u0E49\u0E32\u0E08\u0E30\u0E1A\u0E2D\u0E01\u0E04\u0E27\u0E32\u0E21\u0E25\u0E31\u0E1A\u0E2A\u0E38\u0E14\u0E17\u0E49\u0E32\u0E22...
+      (\u0E23\u0E30\u0E14\u0E31\u0E1A 3)"
+    greetingDialogue: 
+    waitingDialogue: "\u0E25\u0E39\u0E01\u0E22\u0E31\u0E07\u0E19\u0E31\u0E48\u0E07\u0E40\u0E2B\u0E21\u0E48\u0E2D\u0E2D\u0E22\u0E39\u0E48\u0E40\u0E25\u0E22\u0E40\u0E08\u0E49\u0E32
+      \u0E1D\u0E32\u0E01\u0E1B\u0E49\u0E2D\u0E2B\u0E21\u0E2D\u0E0A\u0E48\u0E27\u0E22\u0E01\u0E33\u0E40\u0E19\u0E49\u0E2D"
+    completeDialogue: "\u0E02\u0E2D\u0E1A\u0E04\u0E38\u0E13\u0E19\u0E31\u0E01\u0E40\u0E08\u0E49\u0E32
+      \u0E40\u0E2B\u0E47\u0E19\u0E25\u0E39\u0E01\u0E01\u0E25\u0E31\u0E1A\u0E21\u0E32\u0E22\u0E34\u0E49\u0E21\u0E44\u0E14\u0E49
+      \u0E02\u0E49\u0E32\u0E40\u0E08\u0E49\u0E32\u0E01\u0E47\u0E2B\u0E32\u0E22\u0E2B\u0E48\u0E27\u0E07"
+    declineDialogue: "\u0E25\u0E39\u0E01\u0E02\u0E49\u0E32\u0E40\u0E08\u0E49\u0E32\u0E40\u0E1B\u0E47\u0E19\u0E08\u0E30\u0E2D\u0E35\u0E49\u0E22\u0E31\u0E07\u0E1A\u0E48\u0E0A\u0E48\u0E27\u0E22\u0E2D\u0E35\u0E01\u0E01\u0E32...\u0E02\u0E49\u0E32\u0E40\u0E08\u0E49\u0E32\u0E1C\u0E34\u0E14\u0E2B\u0E27\u0E31\u0E07\u0E41\u0E15\u0E4A
+      \u0E46 \u0E40\u0E08\u0E49\u0E32"
+    failDialogue: "\u0E44\u0E21\u0E48\u0E40\u0E2B\u0E47\u0E19\u0E40\u0E01\u0E48\u0E07\u0E40\u0E25\u0E22\u0E19\u0E35\u0E48\u0E2B\u0E27\u0E48\u0E32...
+      \u0E02\u0E49\u0E32\u0E44\u0E1B\u0E2B\u0E32\u0E2B\u0E21\u0E2D\u0E18\u0E23\u0E23\u0E21\u0E04\u0E19\u0E2D\u0E37\u0E48\u0E19\u0E14\u0E35\u0E01\u0E27\u0E48\u0E32!"
+    requiredItemName: 
+    requiredQuantity: 0
+    isTaskCompleted: 0
+    rewardDescription: 600
+    rewardMoney: 240
+    rewardItemName: 
+    karmaReward: 20
+    requiredMinigameSequence: 0100000003000000
+    completedMinigameSequence: 
+    isAccepted: 0
+    isCompleted: 0
+    currentMinigameFails: 0
+    ownerStoryData: {fileID: 0}
+    ownerPhaseIndex: -1
   preventDuplicateQuests: 1
   avoidConsecutiveRepeat: 1
   autoSupplementDefaultQuests: 1
@@ -46239,6 +46553,9 @@ MonoBehaviour:
   currentActiveMerchant: {fileID: 0}
   storyNPCList:
   - {fileID: 11400000, guid: 18da02dcf5f339849931fd11b991c733, type: 2}
+  - {fileID: 11400000, guid: 096168f8235ea6c4380d0d4f0e180e73, type: 2}
+  - {fileID: 11400000, guid: a43f7d54147e02d48978024418914e50, type: 2}
+  - {fileID: 11400000, guid: 1df62f4c694582e4eac0ddb268d1abba, type: 2}
   randomizeStoryWithNormal: 0
 --- !u!4 &906452943
 Transform:
@@ -47327,6 +47644,8 @@ MonoBehaviour:
   customReadPromptText: "\u0E15\u0E27\u0E31\u0E14\u0E14\u0E32\u0E1A\u0E1F\u0E31\u0E19\u0E22\u0E31\u0E19\u0E15\u0E4C"
   readTitle: 
   readDescription: 
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 0
   destroyOnCollect: 1
   isUsable: 1
@@ -52910,6 +53229,8 @@ MonoBehaviour:
     (\u0E01\u0E14 E)"
   readTitle: 
   readDescription: 
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 0
   destroyOnCollect: 1
   isUsable: 1
@@ -55002,6 +55323,8 @@ MonoBehaviour:
   customReadPromptText: 
   readTitle: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E2D\u0E40\u0E17\u0E21"
   readDescription: "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E17\u0E35\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E43\u0E2B\u0E49\u0E2D\u0E48\u0E32\u0E19..."
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 0
   destroyOnCollect: 0
   isUsable: 0
@@ -55036,6 +55359,15 @@ MonoBehaviour:
   enablePointLightGlow: 1
   enableSparkles: 1
   showImportantBadgeInUI: 1
+  useImageNews: 1
+  clueImages:
+  - {fileID: -348136519, guid: 0bebda57b638e804e9b640a28e49cc58, type: 3}
+  - {fileID: -1206962881, guid: 1afc6b91070fa384b8c18225e9ae52d4, type: 3}
+  - {fileID: 1414525053, guid: 3b57d157701e3f54da3f5323105cd8c0, type: 3}
+  randomMode: 0
+  imageNewsTitle: "\U0001F4F0 \u0E02\u0E48\u0E32\u0E27\u0E2A\u0E32\u0E23\u0E41\u0E25\u0E30\u0E40\u0E1A\u0E32\u0E30\u0E41\u0E2A"
+  imageNewsCaption: 
+  clueDisplaySize: {x: 1536, y: 1040}
   displayMode: 0
   fixedTargetDay: 1
   fallbackNoNewsText: "\u0E44\u0E21\u0E48\u0E21\u0E35\u0E02\u0E48\u0E32\u0E27\u0E2A\u0E32\u0E23\u0E2B\u0E23\u0E37\u0E2D\u0E1B\u0E23\u0E30\u0E01\u0E32\u0E28\u0E43\u0E2B\u0E21\u0E48\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E27\u0E31\u0E19\u0E19\u0E35\u0E49..."
@@ -62786,6 +63118,8 @@ MonoBehaviour:
   customReadPromptText: "\u0E42\u0E1B\u0E23\u0E22\u0E02\u0E49\u0E32\u0E27\u0E2A\u0E32\u0E23"
   readTitle: 
   readDescription: 
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 0
   destroyOnCollect: 1
   isUsable: 1
@@ -78629,6 +78963,8 @@ MonoBehaviour:
     Lv.1\u21922 (450 \u0E1A\u0E32\u0E17)"
   readTitle: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E2D\u0E40\u0E17\u0E21"
   readDescription: "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E17\u0E35\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E43\u0E2B\u0E49\u0E2D\u0E48\u0E32\u0E19..."
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 1
   destroyOnCollect: 1
   isUsable: 1
@@ -83136,6 +83472,81 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: aae9f4d42f9799f4493022098f0dac40, type: 3}
+--- !u!1 &1604781462
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1604781463}
+  - component: {fileID: 1604781465}
+  - component: {fileID: 1604781464}
+  m_Layer: 5
+  m_Name: PanelSettings
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &1604781463
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1604781462}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1757861014}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: -0.000061035156}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1604781464
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1604781462}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.392}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  m_Type: 1
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &1604781465
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1604781462}
+  m_CullTransparentMesh: 1
 --- !u!1001 &1605797355
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -84632,6 +85043,8 @@ MonoBehaviour:
   customReadPromptText: "   \u0E19\u0E2D\u0E19\u0E2B\u0E25\u0E31\u0E1A (\u0E02\u0E36\u0E49\u0E19\u0E27\u0E31\u0E19\u0E43\u0E2B\u0E21\u0E48)"
   readTitle: 
   readDescription: 
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 0
   destroyOnCollect: 1
   isUsable: 1
@@ -86721,6 +87134,18 @@ MonoBehaviour:
   minVerticalAngle: -85
   maxVerticalAngle: 85
   lockCursor: 1
+  enableFootsteps: 1
+  footstepSounds:
+  - {fileID: 8300000, guid: b52dc4ddd1f4a2542885ff2a27d1b998, type: 3}
+  foliageFootstepSounds:
+  - {fileID: 8300000, guid: 0f7d670cb763728468b18988b90a618f, type: 3}
+  landSound: {fileID: 0}
+  footstepAudioSource: {fileID: 0}
+  stepInterval: 0.45
+  footstepVolume: 0.85
+  landVolume: 0.7
+  pitchRandomMin: 0.92
+  pitchRandomMax: 1.08
   isMovementLocked: 0
 --- !u!143 &1651890033
 CharacterController:
@@ -86880,6 +87305,7 @@ MonoBehaviour:
   selectedInventoryIndex: -1
   giveThaiDessertOnStart: 1
   giveAmuletOnStart: 1
+  giveRedWaterOnStart: 1
   freezePlayerWhileReading: 1
 --- !u!1 &1652264900
 GameObject:
@@ -91875,6 +92301,7 @@ RectTransform:
   - {fileID: 6840997}
   - {fileID: 1984797460}
   - {fileID: 464091605}
+  - {fileID: 1604781463}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -109195,6 +109622,8 @@ MonoBehaviour:
     (\u0E40\u0E1B\u0E34\u0E14\u0E15\u0E33\u0E2B\u0E19\u0E31\u0E01)"
   readTitle: 
   readDescription: 
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 0
   destroyOnCollect: 1
   isUsable: 1
@@ -110240,6 +110669,8 @@ MonoBehaviour:
   customReadPromptText: "\u0E40\u0E02\u0E35\u0E22\u0E19\u0E22\u0E31\u0E19\u0E15\u0E4C"
   readTitle: 
   readDescription: 
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 0
   destroyOnCollect: 1
   isUsable: 1
@@ -115200,6 +115631,63 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e2f2e019909ccc1458e4a5790c588b50, type: 3}
+--- !u!1001 &4251021447222820051
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 843543821627417059, guid: 5f9ab20658b7f7f4eb67111e0594513e, type: 3}
+      propertyPath: m_Name
+      value: red waterrrrrr
+      objectReference: {fileID: 0}
+    - target: {fileID: 4569249247278032417, guid: 5f9ab20658b7f7f4eb67111e0594513e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 7.889
+      objectReference: {fileID: 0}
+    - target: {fileID: 4569249247278032417, guid: 5f9ab20658b7f7f4eb67111e0594513e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.5341
+      objectReference: {fileID: 0}
+    - target: {fileID: 4569249247278032417, guid: 5f9ab20658b7f7f4eb67111e0594513e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -19.029
+      objectReference: {fileID: 0}
+    - target: {fileID: 4569249247278032417, guid: 5f9ab20658b7f7f4eb67111e0594513e, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4569249247278032417, guid: 5f9ab20658b7f7f4eb67111e0594513e, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4569249247278032417, guid: 5f9ab20658b7f7f4eb67111e0594513e, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4569249247278032417, guid: 5f9ab20658b7f7f4eb67111e0594513e, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4569249247278032417, guid: 5f9ab20658b7f7f4eb67111e0594513e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4569249247278032417, guid: 5f9ab20658b7f7f4eb67111e0594513e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4569249247278032417, guid: 5f9ab20658b7f7f4eb67111e0594513e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 5f9ab20658b7f7f4eb67111e0594513e, type: 3}
 --- !u!1001 &4957521946415622123
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -115370,3 +115858,5 @@ SceneRoots:
   - {fileID: 1326875046}
   - {fileID: 3520826028223153097}
   - {fileID: 493271057}
+  - {fileID: 4251021447222820051}
+  - {fileID: 418370810}

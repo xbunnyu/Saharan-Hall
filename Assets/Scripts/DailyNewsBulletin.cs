@@ -46,6 +46,16 @@ public enum NewsDisplayMode
 }
 
 /// <summary>
+/// รูปแบบการสุ่มรูปภาพเบาะแสข่าวสาร
+/// </summary>
+public enum ClueRandomMode
+{
+    RandomPerDay,       // สุ่มวันละ 1 ภาพ (ตลอดทั้งวันนั้นผู้เล่นจะได้ภาพเดิม)
+    RandomEveryRead,    // สุ่มใหม่ทุกครั้งที่กดอ่าน [E]
+    SequenceByDay       // เรียงตามลำดับในรายการตามวัน (วันที่ 1 ภาพที่ 1, วันที่ 2 ภาพที่ 2...)
+}
+
+/// <summary>
 /// วัตถุหนังสือพิมพ์, กระดานข่าวสาร, สมุดบันทึก หรือสิ่งของแจ้งเตือนอีเวนต์ในฉาก
 /// - รองรับการกด [E] อ่านข้อมูล
 /// - ปรับเปลี่ยนเนื้อหาข่าวสารและคำเตือนอีเวนต์ตามวันในเกมอัตโนมัติ (DayManager)
@@ -54,7 +64,26 @@ public enum NewsDisplayMode
 [SelectionBase]
 public class DailyNewsBulletin : InteractableItem
 {
-    [Header("═════ ตั้งค่าระบบข่าวสารและอีเวนต์ (Daily News & Event) ═════")]
+    [Header("═════ ข่าวสารแบบรูปภาพ / สุ่มเบาะแส (Image Clues) ═════")]
+    [Tooltip("เปิดใช้งานโหมดรูปภาพ (สุ่มภาพเบาะแสที่ทำไว้แสดงแทนข้อความล้วน)")]
+    public bool useImageNews = true;
+
+    [Tooltip("รายการรูปภาพเบาะแสหรือข่าวสารที่ทำไว้ทั้งหมด (ลากไฟล์รูปภาพ Sprite มาใส่ในลิสต์นี้ได้เลย)")]
+    public List<Sprite> clueImages = new List<Sprite>();
+
+    [Tooltip("รูปแบบการสุ่มรูปภาพ:\n- RandomPerDay: สุ่มวันละ 1 ภาพ (ตลอดวันนั้นจะได้ภาพเดิม)\n- RandomEveryRead: สุ่มใหม่ทุกครั้งที่กดอ่าน\n- SequenceByDay: เรียงตามลำดับตามวัน")]
+    public ClueRandomMode randomMode = ClueRandomMode.RandomPerDay;
+
+    [Tooltip("หัวข้อด้านบน (ปล่อยว่างได้ถ้าไม่ต้องการให้มีข้อความบังภาพ)")]
+    public string imageNewsTitle = "📰 ข่าวสารและเบาะแส";
+
+    [Tooltip("ข้อความคำอธิบายใต้ภาพ (ปล่อยว่างได้ถ้าต้องการดูภาพเพียวๆ)")]
+    public string imageNewsCaption = "";
+
+    [Tooltip("ขนาดของรูปภาพเบาะแสบนหน้าจอ (กว้าง x สูง)")]
+    public Vector2 clueDisplaySize = new Vector2(1000f, 650f);
+
+    [Header("═════ ตั้งค่าระบบข่าวสารแบบข้อความเดิม (Text Fallback) ═════")]
     [Tooltip("รูปแบบการเลือกข่าวสารมาแสดง")]
     public NewsDisplayMode displayMode = NewsDisplayMode.MatchCurrentDay;
 
@@ -100,6 +129,38 @@ public class DailyNewsBulletin : InteractableItem
     // ข้อมูลข่าวปัจจุบันที่เลือกมาแสดง
     private DailyNewsEntry currentActiveEntry;
     private int lastObservedDay = -1;
+    private int cachedClueIndex = -1;
+    private int cachedClueDay = -1;
+    private HashSet<int> readDays = new HashSet<int>();
+
+    /// <summary>
+    /// สุ่มเลือกภาพเบาะแสตามโหมดที่ตั้งค่าไว้
+    /// </summary>
+    public Sprite GetClueImage(int day)
+    {
+        if (clueImages == null || clueImages.Count == 0) return null;
+
+        if (randomMode == ClueRandomMode.RandomEveryRead)
+        {
+            int rnd = Random.Range(0, clueImages.Count);
+            return clueImages[rnd];
+        }
+        else if (randomMode == ClueRandomMode.SequenceByDay)
+        {
+            int index = Mathf.Clamp(day - 1, 0, clueImages.Count - 1);
+            return clueImages[index];
+        }
+
+        // RandomPerDay: สุ่มวันละ 1 ภาพ (ตลอดทั้งวันนั้นจะได้ภาพเดิม)
+        if (cachedClueDay != day || cachedClueIndex < 0 || cachedClueIndex >= clueImages.Count)
+        {
+            cachedClueDay = day;
+            System.Random prng = new System.Random(day * 1337 + 42);
+            cachedClueIndex = prng.Next(0, clueImages.Count);
+        }
+
+        return clueImages[cachedClueIndex];
+    }
 
     protected override void Awake()
     {
@@ -163,18 +224,29 @@ public class DailyNewsBulletin : InteractableItem
     public void RefreshContent()
     {
         int day = GetCurrentGameDay();
-        currentActiveEntry = FindEntryForDay(day);
 
-        // จัดเตรียมหัวข้อและเนื้อหาสำหรับ Reading Dialog
-        if (currentActiveEntry != null)
+        if (useImageNews && clueImages != null && clueImages.Count > 0)
         {
-            readTitle = string.IsNullOrEmpty(currentActiveEntry.publicationTitle) ? itemName : currentActiveEntry.publicationTitle;
-            readDescription = FormatReadingDescription(currentActiveEntry, day);
+            readImage = GetClueImage(day);
+            readTitle = string.IsNullOrEmpty(imageNewsTitle) ? "" : $"{imageNewsTitle} (วันที่ {day})";
+            readDescription = imageNewsCaption;
         }
         else
         {
-            readTitle = $"{itemName} (วันที่ {day})";
-            readDescription = fallbackNoNewsText;
+            readImage = null;
+            currentActiveEntry = FindEntryForDay(day);
+
+            // จัดเตรียมหัวข้อและเนื้อหาสำหรับ Reading Dialog
+            if (currentActiveEntry != null)
+            {
+                readTitle = string.IsNullOrEmpty(currentActiveEntry.publicationTitle) ? itemName : currentActiveEntry.publicationTitle;
+                readDescription = FormatReadingDescription(currentActiveEntry, day);
+            }
+            else
+            {
+                readTitle = $"{itemName} (วันที่ {day})";
+                readDescription = fallbackNoNewsText;
+            }
         }
 
         // จัดการระบบเรืองแสงเตือนผู้เล่น
@@ -188,7 +260,18 @@ public class DailyNewsBulletin : InteractableItem
     {
         if (!glowWhenHasUnreadNews) return;
 
-        bool hasUnread = currentActiveEntry != null && !currentActiveEntry.hasBeenRead;
+        int day = GetCurrentGameDay();
+        bool hasUnread = false;
+
+        if (useImageNews && clueImages != null && clueImages.Count > 0)
+        {
+            hasUnread = !readDays.Contains(day);
+        }
+        else
+        {
+            hasUnread = currentActiveEntry != null && !currentActiveEntry.hasBeenRead;
+        }
+
         isImportantItem = hasUnread;
 
         var highlighter = GetComponent<ItemHighlighter>();
@@ -309,22 +392,30 @@ public class DailyNewsBulletin : InteractableItem
     /// </summary>
     public override void OnRead(PlayerInteraction interactor)
     {
+        int day = GetCurrentGameDay();
+
         RefreshContent();
 
-        // แสดงหน้าต่างอ่านข้อความ
-        if (InteractionUIManager.Instance != null)
+        // บันทึกสถานะว่าอ่านแล้ว
+        readDays.Add(day);
+
+        // สั่งให้ PlayerInteraction ทำการ Freeze ผู้เล่นและปลดล็อคเมาส์
+        if (interactor != null && !interactor.IsReading())
         {
-            InteractionUIManager.Instance.ShowReadingDialog(readTitle, readDescription);
+            interactor.OpenReading(this);
+        }
+        else if (InteractionUIManager.Instance != null)
+        {
+            InteractionUIManager.Instance.ShowReadingDialog(readTitle, readDescription, null, readImage, clueDisplaySize);
         }
 
-        // บันทึกสถานะว่าอ่านแล้ว
         if (currentActiveEntry != null)
         {
             if (!currentActiveEntry.hasBeenRead)
             {
                 currentActiveEntry.hasBeenRead = true;
                 currentActiveEntry.onFirstRead?.Invoke();
-                Debug.Log($"[DailyNewsBulletin] 📖 ผู้เล่นเปิดอ่านข่าวสารวันที่ {GetCurrentGameDay()} เป็นครั้งแรก!");
+                Debug.Log($"[DailyNewsBulletin] 📖 ผู้เล่นเปิดอ่านข่าวสารวันที่ {day} เป็นครั้งแรก!");
             }
         }
 
@@ -366,4 +457,39 @@ public class DailyNewsBulletin : InteractableItem
 
         RefreshContent();
     }
+
+#if UNITY_EDITOR
+    [ContextMenu("Auto Find Clue Images From Assets")]
+    public void AutoFindClueImages()
+    {
+        string[] searchFolders = new string[] { "Assets/UI.V1", "Assets/Image" };
+        string[] guids = UnityEditor.AssetDatabase.FindAssets("t:Sprite", searchFolders);
+        if (guids == null || guids.Length == 0)
+        {
+            guids = UnityEditor.AssetDatabase.FindAssets("t:Sprite", new string[] { "Assets" });
+        }
+
+        if (guids != null && guids.Length > 0)
+        {
+            if (clueImages == null) clueImages = new List<Sprite>();
+            int added = 0;
+            foreach (var guid in guids)
+            {
+                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+                Sprite sp = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                if (sp != null && !clueImages.Contains(sp))
+                {
+                    clueImages.Add(sp);
+                    added++;
+                }
+            }
+            UnityEditor.EditorUtility.SetDirty(this);
+            Debug.Log($"[DailyNewsBulletin] ✅ ค้นหาและดึงรูปภาพ Sprite เข้ามาในลิสต์เพิ่ม {added} ภาพ (รวมทั้งหมด {clueImages.Count} ภาพ)");
+        }
+        else
+        {
+            Debug.LogWarning("[DailyNewsBulletin] ⚠️ ไม่พบไฟล์ประเภท Sprite ใน Assets (ตรวจสอบ Texture Type ให้เป็น 'Sprite (2D and UI)')");
+        }
+    }
+#endif
 }

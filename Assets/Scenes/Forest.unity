@@ -2609,6 +2609,7 @@ MonoBehaviour:
   selectedInventoryIndex: -1
   giveThaiDessertOnStart: 1
   giveAmuletOnStart: 1
+  giveRedWaterOnStart: 1
   freezePlayerWhileReading: 1
 --- !u!114 &616337838
 MonoBehaviour:
@@ -2631,6 +2632,18 @@ MonoBehaviour:
   minVerticalAngle: -85
   maxVerticalAngle: 85
   lockCursor: 1
+  enableFootsteps: 1
+  footstepSounds:
+  - {fileID: 8300000, guid: b52dc4ddd1f4a2542885ff2a27d1b998, type: 3}
+  foliageFootstepSounds:
+  - {fileID: 8300000, guid: 0f7d670cb763728468b18988b90a618f, type: 3}
+  landSound: {fileID: 0}
+  footstepAudioSource: {fileID: 0}
+  stepInterval: 0.45
+  footstepVolume: 0.85
+  landVolume: 0.7
+  pitchRandomMin: 0.92
+  pitchRandomMax: 1.08
   isMovementLocked: 0
 --- !u!143 &616337839
 CharacterController:
@@ -5388,7 +5401,7 @@ MonoBehaviour:
   returnSpawnPointName: CarReturnSpawnPoint
   removeBoxOnDefeat: 1
   boxItemName: "\u0E01\u0E25\u0E48\u0E2D\u0E07\u0E42\u0E1A\u0E23\u0E32\u0E13"
-  spawnSound: {fileID: 0}
+  spawnSound: {fileID: 8300000, guid: 35d8d83548a47b244aa2e3e20cfe8a0d, type: 3}
   chaseSound: {fileID: 0}
   grabJumpscareSound: {fileID: 0}
   escapeSound: {fileID: 0}

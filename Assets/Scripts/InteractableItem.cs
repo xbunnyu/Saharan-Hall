@@ -17,6 +17,10 @@ public class InteractableItem : MonoBehaviour
     public string readTitle = "ข้อมูลไอเทม";
     [TextArea(3, 8)]
     public string readDescription = "รายละเอียดหรือข้อความที่ต้องการให้อ่าน...";
+    [Tooltip("รูปภาพประกอบหรือภาพเอกสาร/เบาะแส (ถ้ามี จะแสดงในหน้าต่างอ่าน)")]
+    public Sprite readImage;
+    [Tooltip("ขนาดของรูปภาพในหน้าต่างอ่าน (กว้าง x สูง แนะนำ 1000 x 650 ขึ้นไปเพื่อให้ภาพใหญ่คมชัด)")]
+    public Vector2 readImageSize = new Vector2(1000f, 650f);
 
     [Header("ระบบเก็บไอเทม (Press F)")]
     public bool canCollect = true;
