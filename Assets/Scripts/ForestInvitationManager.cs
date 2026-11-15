@@ -339,7 +339,10 @@ public class ForestInvitationManager : MonoBehaviour
 
         letterInteract.UpdatePromptState();
 
-        Debug.Log($"[ForestInvitationManager] 📜 วางจดหมายเชิญลงที่ {spawnPos} เรียบร้อยแล้ว!");
+        string how = customLetterSpawnPoint != null ? "customLetterSpawnPoint"
+                   : namedPoint != null ? "วัตถุ LetterSpawnPoint ในฉาก"
+                   : "หาตำแหน่งเองอัตโนมัติ (ถ้าผิดที่ ให้ตั้ง LetterSpawnPoint: Tools > Saharan Hall > ระบบจดหมายเชิญไปป่า > 5)";
+        Debug.Log($"[ForestInvitationManager] 📜 วางจดหมายเชิญลงที่ {spawnPos} เรียบร้อยแล้ว! (วิธี: {how})");
     }
 
     /// <summary>

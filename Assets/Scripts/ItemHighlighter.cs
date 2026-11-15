@@ -113,10 +113,14 @@ public class ItemHighlighter : MonoBehaviour
         CacheRenderers();
     }
 
+    /// <summary>ประกายวิ้งวับรอบของ: ปิดทั้งเกม (true = เปิดกลับ) — ตัวเรืองแสง/ไฟส่องยังทำงานปกติ</summary>
+    public static bool SparklesAllowed = false;
+
     private void Start()
     {
         FindPlayerCamera();
         SetupPointLight();
+        if (!SparklesAllowed) enableSparkles = false;
         SetupSparkles();
     }
 
@@ -213,6 +217,16 @@ public class ItemHighlighter : MonoBehaviour
 
     private void Update()
     {
+        // แก้โค้ดตอนกด Play อยู่ → Unity โหลดสคริปต์ใหม่โดยไม่เรียก Awake ซ้ำ ค่านี้จะหาย → error แดงทุกเฟรม
+        if (propBlock == null) propBlock = new MaterialPropertyBlock();
+
+        // บางระบบเปิดประกายกลับทีหลัง (เช่น ตั้งค่าจาก InteractableItem) → ปิดทุกเฟรม
+        if (!SparklesAllowed && enableSparkles)
+        {
+            enableSparkles = false;
+            if (glowParticles != null) glowParticles.gameObject.SetActive(false);
+        }
+
         // ปิดไฮไลท์ไว้ แต่ผู้เล่นกำลังเล็งมอง → ยังเรืองแสงตอนเล็ง (ไม่มีไฟส่อง/ประกาย)
         if (!isHighlightActive && (isHovered || currentHoverFactor > 0.001f))
         {
@@ -361,6 +375,7 @@ public class ItemHighlighter : MonoBehaviour
     private void ResetEmission()
     {
         if (targetRenderers == null) return;
+        if (propBlock == null) propBlock = new MaterialPropertyBlock();
         for (int i = 0; i < targetRenderers.Count; i++)
         {
             var rend = targetRenderers[i];

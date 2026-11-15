@@ -248,7 +248,7 @@ public class GameEndingManager : MonoBehaviour
         // 1. ตรวจสอบการกดข้ามในโหมดวิดิโอ
         if (isVideoPlaying)
         {
-            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
+            if (InputCompat.Down(KeyCode.Escape) || InputCompat.Down(KeyCode.Space) || InputCompat.Down(KeyCode.Return))
             {
                 SkipVideoCutscene();
             }
@@ -258,14 +258,14 @@ public class GameEndingManager : MonoBehaviour
         // 2. ตรวจสอบการควบคุมในโหมด Text Cutscene
         if (!isCutsceneActive) return;
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (InputCompat.Down(KeyCode.Escape))
         {
             SkipCutscene();
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) ||
-            Input.GetKeyDown(KeyCode.E) || Input.GetMouseButtonDown(0))
+        if (InputCompat.Down(KeyCode.Space) || InputCompat.Down(KeyCode.Return) ||
+            InputCompat.Down(KeyCode.E) || InputCompat.MouseDown(0))
         {
             if (isTyping)
             {
@@ -933,8 +933,9 @@ public class GameEndingManager : MonoBehaviour
             }
         }
 
+        // โปรเจกต์ใช้ Input System ใหม่อย่างเดียว → ต้องใช้ InputSystemUIInputModule (StandaloneInputModule จะ error)
         if (EventSystem.current == null)
-            new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+            new GameObject("EventSystem", typeof(EventSystem), typeof(UnityEngine.InputSystem.UI.InputSystemUIInputModule));
         endingUIShown = true;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
@@ -1073,7 +1074,12 @@ public class GameEndingManager : MonoBehaviour
         GameObject glowGO = new GameObject("GlowBorder");
         glowGO.transform.SetParent(cardGO.transform, false);
         RectTransform glowRT = glowGO.AddComponent<RectTransform>();
-        SetFullScreenAnchor(glowRT);
+        // เส้นบางสีประจำฉากจบที่ขอบบนของการ์ด (เดิมเต็มการ์ด → ฉากจบชั่วเป็นกล่องสีชมพูทึบทั้งกล่อง)
+        glowRT.anchorMin = new Vector2(0f, 1f);
+        glowRT.anchorMax = new Vector2(1f, 1f);
+        glowRT.pivot = new Vector2(0.5f, 1f);
+        glowRT.sizeDelta = new Vector2(0f, 2f);
+        glowRT.anchoredPosition = Vector2.zero;
         cardGlowBorder = glowGO.AddComponent<Image>();
         cardGlowBorder.color = new Color(1f, 0.8f, 0.3f, 0.25f);
         cardGlowBorder.raycastTarget = false;

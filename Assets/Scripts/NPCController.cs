@@ -19,7 +19,9 @@ public class NPCController : MonoBehaviour
     public QuestData questData = new QuestData();
 
     [Header("Movement Settings")]
-    public float walkSpeed = 1.4f;   // ความเร็วที่เข้ากับท่าเดิน (เดิม 2.5 เร็วจนเท้าลื่น)
+    public float walkSpeed = 2.1f;   // เดินเร็วขึ้น 1.5 เท่า (ท่าเดินเร่งตามด้วย เท้าไม่ลื่น)
+    [Tooltip("ความเร็วที่ท่าเดินดูพอดีเท้าไม่ลื่น (ท่าเดินจะเร่ง/ช้าตาม walkSpeed เทียบกับค่านี้)")]
+    public float walkAnimMatchedSpeed = 1.4f;
     public float rotationSpeed = 6.0f;
     public float arrivalDistance = 1.0f;
     [Tooltip("ระยะหยุดเมื่อเดินถึงจุดรับแขก (ReceptionPoint) — ค่าน้อย = หยุดตรงจุดพอดี")]
@@ -271,7 +273,7 @@ public class NPCController : MonoBehaviour
         interactItem.enabled = false;
 
         // มั่นใจว่าความเร็วเดินไม่เป็น 0
-        if (walkSpeed <= 0.1f) walkSpeed = 1.4f;
+        if (walkSpeed <= 0.1f) walkSpeed = 2.1f;
         if (arrivalDistance <= 0.1f) arrivalDistance = 0.8f;
 
         // ตรวจสอบ NavMeshAgent และพยายามเชื่อมต่อเข้ากับ NavMesh ในฉาก
@@ -1293,6 +1295,11 @@ public class NPCController : MonoBehaviour
             {
                 animator.SetBool(targetParam, walking);
             }
+
+            // เดินเร็วขึ้น → เร่งท่าเดินตาม (ก้าวเท้าทันพื้น) / หยุดเดิน (นั่ง/คุย) → ความเร็วท่าปกติ
+            animator.speed = walking && walkAnimMatchedSpeed > 0.1f
+                ? Mathf.Clamp(walkSpeed / walkAnimMatchedSpeed, 0.5f, 2.5f)
+                : 1f;
         }
     }
 

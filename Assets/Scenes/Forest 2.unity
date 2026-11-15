@@ -2338,6 +2338,8 @@ MonoBehaviour:
   customReadPromptText: 
   readTitle: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E2D\u0E40\u0E17\u0E21"
   readDescription: "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E17\u0E35\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E43\u0E2B\u0E49\u0E2D\u0E48\u0E32\u0E19..."
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 1
   destroyOnCollect: 1
   isUsable: 1
@@ -2529,6 +2531,8 @@ MonoBehaviour:
   customReadPromptText: 
   readTitle: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E2D\u0E40\u0E17\u0E21"
   readDescription: "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E17\u0E35\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E43\u0E2B\u0E49\u0E2D\u0E48\u0E32\u0E19..."
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 1
   destroyOnCollect: 1
   isUsable: 1
@@ -2614,6 +2618,8 @@ MonoBehaviour:
   customReadPromptText: 
   readTitle: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E2D\u0E40\u0E17\u0E21"
   readDescription: "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E17\u0E35\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E43\u0E2B\u0E49\u0E2D\u0E48\u0E32\u0E19..."
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 1
   destroyOnCollect: 1
   isUsable: 1
@@ -3080,6 +3086,7 @@ MonoBehaviour:
   selectedInventoryIndex: -1
   giveThaiDessertOnStart: 1
   giveAmuletOnStart: 1
+  giveRedWaterOnStart: 1
   freezePlayerWhileReading: 1
 --- !u!114 &616337838
 MonoBehaviour:
@@ -3102,7 +3109,6 @@ MonoBehaviour:
   minVerticalAngle: -85
   maxVerticalAngle: 85
   lockCursor: 1
-  isMovementLocked: 0
   enableFootsteps: 1
   footstepSounds:
   - {fileID: 8300000, guid: b52dc4ddd1f4a2542885ff2a27d1b998, type: 3}
@@ -3115,6 +3121,7 @@ MonoBehaviour:
   landVolume: 0.7
   pitchRandomMin: 0.92
   pitchRandomMax: 1.08
+  isMovementLocked: 0
 --- !u!143 &616337839
 CharacterController:
   m_ObjectHideFlags: 0
@@ -3483,6 +3490,8 @@ MonoBehaviour:
   customReadPromptText: 
   readTitle: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E2D\u0E40\u0E17\u0E21"
   readDescription: "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E17\u0E35\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E43\u0E2B\u0E49\u0E2D\u0E48\u0E32\u0E19..."
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 1
   destroyOnCollect: 1
   isUsable: 1
@@ -4915,6 +4924,8 @@ MonoBehaviour:
   customReadPromptText: 
   readTitle: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E2D\u0E40\u0E17\u0E21"
   readDescription: "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E17\u0E35\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E43\u0E2B\u0E49\u0E2D\u0E48\u0E32\u0E19..."
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 1
   destroyOnCollect: 1
   isUsable: 1
@@ -5290,6 +5301,8 @@ MonoBehaviour:
   customReadPromptText: 
   readTitle: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E2D\u0E40\u0E17\u0E21"
   readDescription: "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E17\u0E35\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E43\u0E2B\u0E49\u0E2D\u0E48\u0E32\u0E19..."
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 1
   destroyOnCollect: 1
   isUsable: 1
@@ -5355,6 +5368,8 @@ MonoBehaviour:
   customReadPromptText: 
   readTitle: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E2D\u0E40\u0E17\u0E21"
   readDescription: "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E17\u0E35\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E43\u0E2B\u0E49\u0E2D\u0E48\u0E32\u0E19..."
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 1
   destroyOnCollect: 1
   isUsable: 1
@@ -7885,6 +7900,7 @@ MonoBehaviour:
   readingTitleText: {fileID: 2068022042}
   readingDescriptionText: {fileID: 1580295761}
   readingCloseGuideText: {fileID: 108077973}
+  readingImage: {fileID: 0}
   closeButton: {fileID: 437699625}
   notificationPanel: {fileID: 1922755000}
   notificationText: {fileID: 0}
@@ -7907,6 +7923,7 @@ MonoBehaviour:
   heldItemIcon: {fileID: 0}
   heldItemNameText: {fileID: 0}
   heldItemGuideText: {fileID: 0}
+  showNotifications: 0
 --- !u!4 &2093818091
 Transform:
   m_ObjectHideFlags: 0
@@ -8036,6 +8053,8 @@ MonoBehaviour:
     (\u0E01\u0E14 E)"
   readTitle: 
   readDescription: 
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 0
   destroyOnCollect: 1
   isUsable: 1
@@ -8417,6 +8436,8 @@ MonoBehaviour:
   customReadPromptText: 
   readTitle: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E2D\u0E40\u0E17\u0E21"
   readDescription: "\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E17\u0E35\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E43\u0E2B\u0E49\u0E2D\u0E48\u0E32\u0E19..."
+  readImage: {fileID: 0}
+  readImageSize: {x: 1000, y: 650}
   canCollect: 1
   destroyOnCollect: 1
   isUsable: 1

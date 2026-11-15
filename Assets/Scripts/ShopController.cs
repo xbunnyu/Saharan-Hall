@@ -9,12 +9,26 @@ public class ShopItemData
     public string itemName;
     public int price;
     public string description;
+    [Tooltip("รูปสินค้าในโฟลเดอร์ Resources (ไม่ต้องใส่ .png) เช่น ShopIcons/Offering_RedWater")]
+    public string iconResource;
 
-    public ShopItemData(string name, int itemPrice, string desc = "")
+    [System.NonSerialized] private Sprite cachedIcon;
+
+    public ShopItemData(string name, int itemPrice, string desc = "", string icon = "")
     {
         itemName = name;
         price = itemPrice;
         description = desc;
+        iconResource = icon;
+    }
+
+    /// <summary>โหลดรูปสินค้าจาก Resources (รูป PNG ธรรมดา ไม่ต้องตั้งเป็น Sprite)</summary>
+    public Sprite GetIcon()
+    {
+        if (cachedIcon != null || string.IsNullOrEmpty(iconResource)) return cachedIcon;
+        var tex = Resources.Load<Texture2D>(iconResource);
+        if (tex != null) cachedIcon = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+        return cachedIcon;
     }
 }
 
@@ -29,11 +43,11 @@ public class ShopController : MonoBehaviour
     public static ShopController Instance { get; private set; }
 
     [Header("สินค้าในร้าน (2 รายการ: ของถวายกุมาร / ของถวายศาลตายาย)")]
-    [Tooltip("ชื่อ 'ขนมไทย' ต้องตรงกับ offeringItemName ของศาลตายาย (ForestShrineInteractable)")]
+    [Tooltip("ชื่อต้องตรงกับ offeringItemName ของศาล: 'น้ำแดง' = ศาลกุมารทอง (KumanThongInteractable), 'ขนมไทย' = ศาลตายาย (ForestShrineInteractable)")]
     public List<ShopItemData> shopItems = new List<ShopItemData>()
     {
-        new ShopItemData("เครื่องเซ่นกุมารทอง", 50, "ของถวายกุมารทอง"),
-        new ShopItemData("ขนมไทย", 150, "ของถวายศาลตายาย")
+        new ShopItemData("น้ำแดง", 50, "ของถวายกุมารทอง", "ShopIcons/Offering_RedWater"),
+        new ShopItemData("ขนมไทย", 150, "ห่อใบตอง ของถวายศาลตายาย", "ShopIcons/Offering_Khanom")
     };
 
     [Header("Runtime State")]
@@ -77,7 +91,7 @@ public class ShopController : MonoBehaviour
         }
 
         // กด Esc หรือ E หรือ Tab เพื่อปิดร้านค้า
-        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Tab))
+        if (InputCompat.Down(KeyCode.Escape) || InputCompat.Down(KeyCode.E) || InputCompat.Down(KeyCode.Tab))
         {
             CloseShop();
             return;
@@ -86,7 +100,7 @@ public class ShopController : MonoBehaviour
         // คีย์ลัดกดเลข 1-6 เพื่อซื้อสินค้า
         for (int i = 0; i < 6 && i < shopItems.Count; i++)
         {
-            if (Input.GetKeyDown(KeyCode.Alpha1 + i) || Input.GetKeyDown(KeyCode.Keypad1 + i))
+            if (InputCompat.Down(KeyCode.Alpha1 + i) || InputCompat.Down(KeyCode.Keypad1 + i))
             {
                 BuyItem(i);
             }
@@ -169,7 +183,7 @@ public class ShopController : MonoBehaviour
         {
             InventoryItem newItem = new InventoryItem(
                 item.itemName,
-                null,
+                item.GetIcon(), // รูปเดียวกับในร้าน โชว์ในกระเป๋าด้วย
                 $"{item.description} (ราคาซื้อ: {item.price:N0} บาท)",
                 true,
                 null,
@@ -254,6 +268,27 @@ public class ShopController : MonoBehaviour
         audioSource.PlayOneShot(clip);
     }
 
+    private static Sprite radialGlow;
+    /// <summary>วงแสงจางจากกลางออกขอบ (วางหลังรูปสินค้า)</summary>
+    private static Sprite RadialGlowSprite()
+    {
+        if (radialGlow != null) return radialGlow;
+        const int S = 128;
+        var tex = new Texture2D(S, S, TextureFormat.RGBA32, false);
+        var px = new Color32[S * S];
+        for (int y = 0; y < S; y++)
+            for (int x = 0; x < S; x++)
+            {
+                float dx = (x + 0.5f) / S * 2f - 1f, dy = (y + 0.5f) / S * 2f - 1f;
+                float a = Mathf.Clamp01(1f - Mathf.Sqrt(dx * dx + dy * dy));
+                px[y * S + x] = new Color32(255, 255, 255, (byte)(a * a * 255));
+            }
+        tex.SetPixels32(px);
+        tex.Apply();
+        radialGlow = Sprite.Create(tex, new Rect(0, 0, S, S), new Vector2(0.5f, 0.5f));
+        return radialGlow;
+    }
+
     private Sprite CreateRoundedRectSprite(int width = 64, int height = 64)
     {
         Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
@@ -301,7 +336,8 @@ public class ShopController : MonoBehaviour
 
             int count = Mathf.Min(shopItems.Count, 6);
             int rows = Mathf.Max(1, (count + 1) / 2);
-            float cardW = 330f, cardH = 170f, gapX = 30f, gapY = 24f;
+            // การ์ดสูงขึ้นเพื่อใส่รูปสินค้าด้านบน
+            float cardW = 340f, cardH = 470f, gapX = 36f, gapY = 24f;
             float panelW = 2 * cardW + gapX + 80f;
             float panelH = 200f + rows * cardH + (rows - 1) * gapY;
 
@@ -394,25 +430,53 @@ public class ShopController : MonoBehaviour
                 cardOutline.effectColor = new Color(cream.r, cream.g, cream.b, 0.15f);
                 cardOutline.effectDistance = new Vector2(1f, -1f);
 
-                // ชื่อ / ใช้ทำอะไร / ราคา
+                // รูปสินค้า: แสงเทียนสลัวๆ ด้านหลัง + รูป (รักษาสัดส่วน)
+                float iconY = cardH / 2f - 150f;
+                GameObject glowObj = new GameObject("IconGlow");
+                glowObj.transform.SetParent(cardObj.transform, false);
+                Image glowImg = glowObj.AddComponent<Image>();
+                glowImg.sprite = RadialGlowSprite();
+                glowImg.color = new Color(candle.r, candle.g, candle.b, 0.22f);
+                glowImg.raycastTarget = false;
+                glowImg.rectTransform.anchoredPosition = new Vector2(0, iconY);
+                glowImg.rectTransform.sizeDelta = new Vector2(280, 280);
+
+                Sprite icon = item.GetIcon();
+                if (icon != null)
+                {
+                    GameObject iconObj = new GameObject("Icon");
+                    iconObj.transform.SetParent(cardObj.transform, false);
+                    Image iconImg = iconObj.AddComponent<Image>();
+                    iconImg.sprite = icon;
+                    iconImg.preserveAspect = true;
+                    iconImg.raycastTarget = false;
+                    iconImg.rectTransform.anchoredPosition = new Vector2(0, iconY);
+                    iconImg.rectTransform.sizeDelta = new Vector2(230, 230);
+                    var shadow = iconObj.AddComponent<Shadow>();
+                    shadow.effectColor = new Color(0, 0, 0, 0.6f);
+                    shadow.effectDistance = new Vector2(4, -6);
+                }
+
+                // ชื่อ / ใช้ทำอะไร / ราคา (ใต้รูป)
                 GameObject infoObj = new GameObject("InfoText");
                 infoObj.transform.SetParent(cardObj.transform, false);
                 TextMeshProUGUI infoTMP = infoObj.AddComponent<TextMeshProUGUI>();
-                infoTMP.text = $"<size=26><b>{item.itemName}</b></size>\n" +
+                infoTMP.text = $"<size=30><b>{item.itemName}</b></size>\n" +
                                $"<color=#A8977A>{item.description}</color>\n" +
-                               $"<color=#FFB35C>{item.price:N0} บาท</color>";
+                               $"<size=26><color=#FFB35C>{item.price:N0} บาท</color></size>";
                 infoTMP.fontSize = 20;
                 infoTMP.color = cream;
                 infoTMP.alignment = TextAlignmentOptions.Center;
-                infoTMP.rectTransform.anchoredPosition = new Vector2(0, 26);
-                infoTMP.rectTransform.sizeDelta = new Vector2(cardW - 30f, 110);
+                infoTMP.raycastTarget = false;
+                infoTMP.rectTransform.anchoredPosition = new Vector2(0, -cardH / 2f + 140f);
+                infoTMP.rectTransform.sizeDelta = new Vector2(cardW - 30f, 120);
 
                 // ปุ่มซื้อ: พื้นดำโปร่ง ตัวหนังสือสีเทียน
                 GameObject buyBtnObj = new GameObject("BuyButton");
                 buyBtnObj.transform.SetParent(cardObj.transform, false);
                 RectTransform buyBtnRect = buyBtnObj.AddComponent<RectTransform>();
-                buyBtnRect.anchoredPosition = new Vector2(0, -cardH / 2f + 30f);
-                buyBtnRect.sizeDelta = new Vector2(cardW - 60f, 40);
+                buyBtnRect.anchoredPosition = new Vector2(0, -cardH / 2f + 40f);
+                buyBtnRect.sizeDelta = new Vector2(cardW - 60f, 48);
 
                 Image buyBtnImg = buyBtnObj.AddComponent<Image>();
                 buyBtnImg.sprite = boxSprite;
@@ -433,11 +497,11 @@ public class ShopController : MonoBehaviour
                 buyTxtObj.transform.SetParent(buyBtnObj.transform, false);
                 TextMeshProUGUI buyTMP = buyTxtObj.AddComponent<TextMeshProUGUI>();
                 buyTMP.text = $"[{i + 1}]  ซื้อ";
-                buyTMP.fontSize = 20;
+                buyTMP.fontSize = 22;
                 buyTMP.fontStyle = FontStyles.Bold;
                 buyTMP.alignment = TextAlignmentOptions.Center;
                 buyTMP.rectTransform.anchoredPosition = Vector2.zero;
-                buyTMP.rectTransform.sizeDelta = new Vector2(cardW - 60f, 40);
+                buyTMP.rectTransform.sizeDelta = new Vector2(cardW - 60f, 48);
                 itemBuyButtonTexts.Add(buyTMP);
             }
 

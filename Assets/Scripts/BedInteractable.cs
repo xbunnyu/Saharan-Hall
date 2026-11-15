@@ -78,6 +78,24 @@ public class BedInteractable : InteractableItem
     private void Update()
     {
         UpdatePromptState();
+        KeepGlowSteady();
+    }
+
+    /// <summary>
+    /// เตียงเป็นของชิ้นเดียวที่ไม่กระพริบ: ไม่เรืองแสงค้าง ไม่มีไฟ/ประกาย และตอนเล็งเรืองแสงนิ่งๆ (ไม่หายใจเข้าออก)
+    /// ไฮไลต์อาจถูกเพิ่มทีหลังตอนผู้เล่นเล็งครั้งแรก → เช็กทุกเฟรมจนเจอ
+    /// </summary>
+    private ItemHighlighter bedHighlighter;
+    private void KeepGlowSteady()
+    {
+        if (bedHighlighter == null) bedHighlighter = GetComponentInChildren<ItemHighlighter>();
+        if (bedHighlighter == null) return;
+        bedHighlighter.isHighlightActive = false;
+        bedHighlighter.enablePointLight = false;
+        bedHighlighter.enableSparkles = false;
+        float steady = 0.6f;
+        bedHighlighter.minEmissionIntensity = steady;
+        bedHighlighter.maxEmissionIntensity = steady;
     }
 
     private void UpdatePromptState()

@@ -48,7 +48,7 @@ public class KumanThongUIController : MonoBehaviour
         if (!isUIOpen) return;
 
         // กด Esc หรือ E หรือ Tab เพื่อปิดหน้าต่าง
-        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Tab))
+        if (InputCompat.Down(KeyCode.Escape) || InputCompat.Down(KeyCode.E) || InputCompat.Down(KeyCode.Tab))
         {
             CloseUI();
         }

@@ -157,7 +157,7 @@ public class SmashKeyMinigame : MonoBehaviour
         promptText.fontStyle = FontStyles.Bold;
         promptText.alignment = TextAlignmentOptions.Center;
         promptText.color = new Color(1f, 0.25f, 0.25f);
-        promptText.text = "⚠️ โดนผีจับตัว! กด [ SPACEBAR ] รัวๆ เพื่อดิ้นให้หลุด!";
+        promptText.text = "โดนผีจับตัว! กด [ SPACEBAR ] รัวๆ เพื่อดิ้นให้หลุด!";
 
         // 6. Big Key Prompt & Smash Counter Text
         GameObject counterObj = new GameObject("CounterText");
@@ -232,7 +232,7 @@ public class SmashKeyMinigame : MonoBehaviour
         timerText.fontStyle = FontStyles.Bold;
         timerText.alignment = TextAlignmentOptions.Center;
         timerText.color = new Color(1f, 0.85f, 0.2f);
-        timerText.text = "⏱️ เวลาที่เหลือ: 7.0 วินาที";
+        timerText.text = "เวลาที่เหลือ: 7.0 วินาที";
 
         minigamePanel.SetActive(false);
     }
@@ -285,7 +285,7 @@ public class SmashKeyMinigame : MonoBehaviour
         }
         else if (promptText != null)
         {
-            promptText.text = "⚠️ โดนผีจับตัว! กด [ SPACEBAR ] รัวๆ เพื่อดิ้นให้หลุด!";
+            promptText.text = "โดนผีจับตัว! กด [ SPACEBAR ] รัวๆ เพื่อดิ้นให้หลุด!";
         }
 
         UpdateDisplay();
@@ -421,7 +421,7 @@ public class SmashKeyMinigame : MonoBehaviour
         {
             float displayTime = Mathf.Max(0f, timeRemaining);
             string timeColor = displayTime <= 2.0f ? "#FF2222" : "#FFD700";
-            timerText.text = $"⏱️ เวลาที่เหลือ: <color={timeColor}>{displayTime:F1}</color> วินาที";
+            timerText.text = $"เวลาที่เหลือ: <color={timeColor}>{displayTime:F1}</color> วินาที";
         }
     }
 

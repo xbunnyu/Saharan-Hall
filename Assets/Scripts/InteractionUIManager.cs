@@ -778,6 +778,9 @@ public class InteractionUIManager : MonoBehaviour
             lastNotificationMessage = "";
             notificationTimer = 0f;
             if (notificationPanel != null) notificationPanel.SetActive(false);
+            // ในป่า: ข้อความสำคัญ (ผีไล่ จุดเทียน ถวายศาล ขุดเจอของ) ต้องเห็น → โชว์แบบ UI ใหม่ (ตัวหนังสือครีมกลางล่างจอ)
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name.StartsWith("Forest"))
+                HorrorUIStyle.ShowEventMessage(message, duration);
             return;
         }
 

@@ -394,8 +394,14 @@ public class PlayerInteraction : MonoBehaviour
         return hl;
     }
 
-    /// <summary>โมเดลชิ้นเล็กๆ (ไม่เกิน 3 ม.) ที่ซ้อนอยู่ในพื้นที่ของกล่องชน</summary>
-    private static List<Renderer> FindRenderersOverlapping(InteractableItem target)
+    /// <summary>
+    /// หาโมเดลจริงใต้กล่องชนล่องหน เพื่อเรืองแสงแทนกล่อง:
+    /// 1) ของที่อยู่ในกล่อง (ไม่เกิน 3 ม. / ไม่ใหญ่กว่ากล่องเกิน 2.5 เท่า — ดาบยาวยื่นพ้นกล่องได้)
+    /// 2) ตัดของแบนกว้าง (ผ้าปู เสื่อ กระดาษรอง) ออกเสมอ ถ้ายังมีของชิ้นอื่น
+    /// 3) เลือก "ชิ้นที่เป้าเล็งชี้อยู่จริง" (ชิ้นแรกที่เส้นเล็งผ่าน) + ชิ้นส่วนอื่นของโมเดลเดียวกัน
+    ///    ไม่มีชิ้นไหนโดนเส้นเล็ง → ชิ้นที่ใกล้กลางกล่องที่สุด
+    /// </summary>
+    private List<Renderer> FindRenderersOverlapping(InteractableItem target)
     {
         var result = new List<Renderer>();
         var cols = target.GetComponentsInChildren<Collider>();
@@ -404,16 +410,69 @@ public class PlayerInteraction : MonoBehaviour
         for (int i = 1; i < cols.Length; i++) area.Encapsulate(cols[i].bounds);
         area.Expand(0.05f);
 
+        var candidates = new List<Renderer>();
         foreach (var r in FindObjectsByType<Renderer>(FindObjectsSortMode.None))
         {
             if (r == null || !r.enabled || r is ParticleSystemRenderer || r is TrailRenderer) continue;
             if (r.GetComponentInParent<NPCController>() != null || r.GetComponentInParent<PlayerController>() != null) continue;
             Bounds b = r.bounds;
             if (b.size.x > 3f || b.size.y > 3f || b.size.z > 3f) continue;   // ไม่เอาพื้น/ผนัง/บ้าน
-            if (area.Contains(b.center) || (area.Intersects(b) && b.size.magnitude < area.size.magnitude * 2f))
-                result.Add(r);
+            if (!area.Intersects(b)) continue;
+            bool notHuge = b.size.x <= area.size.x * 2.5f + 0.1f && b.size.z <= area.size.z * 2.5f + 0.1f;
+            if (notHuge) candidates.Add(r);
         }
+        if (candidates.Count == 0) return result;
+
+        var solid = candidates.FindAll(r => !IsFlatSheet(r.bounds));
+        var pool = solid.Count > 0 ? solid : candidates;
+
+        // ชิ้นที่เป้าเล็งชี้อยู่
+        Renderer picked = null;
+        Camera cam = playerCamera != null ? playerCamera : Camera.main;
+        if (cam != null)
+        {
+            Ray ray = new Ray(cam.transform.position, cam.transform.forward);
+            float best = float.MaxValue;
+            foreach (var r in pool)
+            {
+                Bounds b = r.bounds; b.Expand(0.03f);
+                if (b.IntersectRay(ray, out float d) && d < best) { best = d; picked = r; }
+            }
+        }
+        if (picked == null)
+        {
+            float best = float.MaxValue;
+            foreach (var r in pool)
+            {
+                float d = (r.bounds.center - area.center).sqrMagnitude;
+                if (d < best) { best = d; picked = r; }
+            }
+        }
+
+        // รวมชิ้นส่วนอื่นของโมเดลเดียวกัน (เช่น ใบดาบ + ด้าม) แต่ไม่เอาของชิ้นอื่นบนโต๊ะ
+        // (ถ้าตัวแม่เป็นกลุ่มใหญ่ เช่น ของทั้งโต๊ะอยู่ใต้วัตถุเดียวกัน → เอาแค่ชิ้นที่ชี้)
+        Transform model = picked.transform.parent;
+        bool smallModel = false;
+        if (model != null)
+        {
+            var rs = model.GetComponentsInChildren<Renderer>();
+            Bounds mb = rs[0].bounds;
+            for (int i = 1; i < rs.Length; i++) mb.Encapsulate(rs[i].bounds);
+            smallModel = Mathf.Max(mb.size.x, Mathf.Max(mb.size.y, mb.size.z)) < 1.2f;
+        }
+        foreach (var r in pool)
+            if (r == picked || (smallModel && r.transform.IsChildOf(model)))
+                result.Add(r);
         return result;
+    }
+
+    /// <summary>แผ่นแบน: บางไม่เกิน 4 ซม. และกว้างกว่า 0.12 ตร.ม. (ราว 35×35 ซม.)</summary>
+    private static bool IsFlatSheet(Bounds b)
+    {
+        float thin = Mathf.Min(b.size.x, Mathf.Min(b.size.y, b.size.z));
+        float a = b.size.x * b.size.y, c = b.size.x * b.size.z, d = b.size.y * b.size.z;
+        float face = Mathf.Max(a, Mathf.Max(c, d));
+        return thin < 0.04f && face > 0.12f;
     }
 
     private float interactionCooldown = 0f;

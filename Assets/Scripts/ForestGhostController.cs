@@ -476,7 +476,7 @@ public class ForestGhostController : MonoBehaviour
                 smashTimeLimit,
                 OnEscapeSuccess,
                 OnCatchFail,
-                "⚠️ ผีร้ายจับตัวคุณไว้แน่น! กด [ SPACEBAR ] รัวๆ เพื่อดิ้นให้หลุด!"
+                "ผีร้ายจับตัวคุณไว้แน่น! กด [ SPACEBAR ] รัวๆ เพื่อดิ้นให้หลุด!"
             );
         }
         else
@@ -489,7 +489,7 @@ public class ForestGhostController : MonoBehaviour
                 smashTimeLimit,
                 OnEscapeSuccess,
                 OnCatchFail,
-                "⚠️ ผีร้ายจับตัวคุณไว้แน่น! กด [ SPACEBAR ] รัวๆ เพื่อดิ้นให้หลุด!"
+                "ผีร้ายจับตัวคุณไว้แน่น! กด [ SPACEBAR ] รัวๆ เพื่อดิ้นให้หลุด!"
             );
         }
 

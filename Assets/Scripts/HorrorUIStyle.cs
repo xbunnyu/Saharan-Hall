@@ -512,27 +512,23 @@ public class HorrorUIStyle : MonoBehaviour
         float fill;
         if (rm != null)
         {
-            int score = rm.GetScore(), level = rm.GetLevel();
-            int[] th = { 0, rm.thresholdLevel1, rm.thresholdLevel2, rm.thresholdLevel3 };
-            if (level >= 3)
-            {
-                text = $"ชื่อเสียง  {score}  ·  ระดับ {level} (สูงสุด)";
-                fill = 1f;
-            }
-            else
-            {
-                int lo = th[level], hi = th[level + 1];
-                text = $"ชื่อเสียง  {score}/{hi}  ·  ระดับ {level}";
-                fill = hi > lo ? Mathf.Clamp01((score - lo) / (float)(hi - lo)) : 0f;
-            }
+            int level = rm.GetLevel();
+            // โชว์แค่ระดับ (ไม่โชว์คะแนน/แถบ)
+            text = level >= 3 ? $"ชื่อเสียงระดับ {level} (สูงสุด)" : $"ชื่อเสียงระดับ {level}";
+            fill = 0f;
         }
         else
         {
-            text = repSrc != null ? repSrc.text : "ชื่อเสียง  0  ·  ระดับ 0";
+            text = "ชื่อเสียงระดับ 0";
             fill = 0f;
         }
         if (text != lastRep) { lastRep = text; repLabel.text = text; }
-        if (repFill != null) repFill.fillAmount = fill;
+        if (repFill != null)
+        {
+            repFill.fillAmount = fill;
+            var bar = repFill.transform.parent;
+            if (bar != null && bar.gameObject.activeSelf) bar.gameObject.SetActive(false);
+        }
     }
 
     Image MakeRepBar(Vector2 pos)
@@ -870,7 +866,9 @@ public class HorrorUIStyle : MonoBehaviour
     {
         string muted = Hex(Muted), candle = Hex(Candle);
         string key = !string.IsNullOrEmpty(item.interactionKeyText) ? item.interactionKeyText.ToUpper() : "E";
-        string action = !string.IsNullOrEmpty(item.customReadPromptText) ? item.customReadPromptText : "อ่านข้อมูล";
+        // ล้างอีโมจิ (เช่น 🚗 🔒 ของรถไปป่า) — ฟอนต์ไทยไม่มี จะขึ้นเป็น □
+        string action = !string.IsNullOrEmpty(item.customReadPromptText) ? CleanPrompt(item.customReadPromptText) : "อ่านข้อมูล";
+        action = action.Replace("(กด E)", "").Replace("(กด " + key + ")", "").Trim();
         string name = CleanPrompt(item.itemName);
 
         MinigameType mg = MinigameType.None;
@@ -911,12 +909,60 @@ public class HorrorUIStyle : MonoBehaviour
         return sb.ToString().TrimEnd('\n');
     }
 
+    // ══════════ ข้อความเหตุการณ์ (ใช้ในป่า): ตัวหนังสือครีมกลางล่างจอ ไม่มีกรอบ/อีโมจิ/สี ค่อยๆ โผล่แล้วจาง ══════════
+    TMP_Text eventMsg;
+    CanvasGroup eventGroup;
+    float eventUntil;
+
+    /// <summary>โชว์ข้อความแบบ UI ใหม่ (InteractionUIManager เรียกตอนอยู่ในฉากป่า)</summary>
+    public static void ShowEventMessage(string message, float duration)
+    {
+        var inst = FindFirstObjectByType<HorrorUIStyle>();
+        if (inst != null) inst.ShowMessageInternal(message, duration);
+    }
+
+    void ShowMessageInternal(string message, float duration)
+    {
+        if (trackerRoot == null || string.IsNullOrEmpty(message)) return;
+        if (eventMsg == null)
+        {
+            var go = new GameObject("HUD_EventMessage", typeof(RectTransform));
+            go.transform.SetParent(trackerRoot, false);
+            eventMsg = go.AddComponent<TextMeshProUGUI>();
+            Style(eventMsg, NewTextFont(bodyFont), 34f, Cream, 0.25f);
+            eventMsg.alignment = TextAlignmentOptions.Center;
+            eventMsg.textWrappingMode = TextWrappingModes.Normal;
+            eventMsg.raycastTarget = false;
+            var rt = eventMsg.rectTransform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.30f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(1400f, 140f);
+            rt.anchoredPosition = Vector2.zero;
+            eventGroup = go.AddComponent<CanvasGroup>();
+            eventGroup.alpha = 0f;
+            eventGroup.blocksRaycasts = false;
+        }
+        // ล้างแท็กสี/ตัวหนา และอีโมจิ ทีละบรรทัด (เก็บการขึ้นบรรทัดใหม่ไว้)
+        var lines = message.Replace("\r", "").Split('\n');
+        for (int i = 0; i < lines.Length; i++) lines[i] = CleanPrompt(lines[i]);
+        eventMsg.text = string.Join("\n", lines).Trim();
+        eventUntil = Time.unscaledTime + Mathf.Max(1.5f, duration);
+    }
+
+    void UpdateEventMessage()
+    {
+        if (eventGroup == null) return;
+        bool show = Time.unscaledTime < eventUntil;
+        eventGroup.alpha = Mathf.MoveTowards(eventGroup.alpha, show ? 1f : 0f, Time.unscaledDeltaTime * (show ? 5f : 1.5f));
+    }
+
     // ══════════ ทุกเฟรม: คงหน้าตาใหม่ไว้ (ระบบเดิมเปลี่ยนข้อความ/เปิดปิดของตลอด) ══════════
     void LateUpdate()
     {
         if (!useHorrorUI || !applied) return;
         UpdateHUD();
         UpdateTracker();
+        UpdateEventMessage();
         bool labelShown = UpdateItemLabel();
 
         // ป้าย [E]: ล้างอีโมจิ/ลูกศร/สี (ฟอนต์ไม่มีตัวพวกนี้ → ขึ้นเป็นตัวประหลาด)
